@@ -3,6 +3,7 @@ plugins {
 	id 'org.jetbrains.kotlin.plugin.spring' version '2.2.21'
 	id 'org.springframework.boot' version '4.0.5'
 	id 'io.spring.dependency-management' version '1.1.7'
+	id 'io.gitlab.arturbosch.detekt' version '1.23.7'
 }
 
 group = 'depromeet.hotsix'
@@ -26,6 +27,9 @@ dependencies {
 	testImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'
 	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+
+	// ArchUnit - 아키텍처 규칙 검증
+	testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.0'
 }
 
 kotlin {
@@ -34,6 +38,31 @@ kotlin {
 	}
 }
 
+// Detekt 설정
+detekt {
+	config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
+	buildUponDefaultConfig = true
+	allRules = false
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
+}
+
+// Harness 통합 검증 태스크
+tasks.register('harness') {
+	dependsOn 'detekt', 'test'
+	group = 'verification'
+	description = 'Runs all harness validations (detekt + ArchUnit + tests)'
+}
+
+// Git Hooks 자동 설치
+tasks.register('installGitHooks', Copy) {
+	from "$rootDir/.githooks"
+	into "$rootDir/.git/hooks"
+	fileMode 0755
+}
+
+tasks.named('build') {
+	dependsOn 'installGitHooks'
 }
