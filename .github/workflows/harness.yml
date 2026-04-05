@@ -1,4 +1,4 @@
-name: Harness Validation
+name: Build and Harness Validation
 
 on:
   pull_request:
@@ -22,8 +22,8 @@ jobs:
       - name: Setup Gradle
         uses: gradle/actions/setup-gradle@v4
 
-      - name: Run harness validation
-        run: ./gradlew harness
+      - name: Run build validation
+        run: ./gradlew build
 
       - name: Upload ktlint report
         if: always()

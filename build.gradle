@@ -48,24 +48,46 @@ ktlint {
 	}
 }
 
+tasks.named('check') {
+	dependsOn 'ktlintCheck'
+}
+
 tasks.named('test') {
 	useJUnitPlatform()
 }
 
 // Harness 통합 검증 태스크
 tasks.register('harness') {
-	dependsOn 'ktlintCheck', 'test'
+	dependsOn 'check'
 	group = 'verification'
 	description = 'Runs all harness validations (ktlint + ArchUnit + tests)'
 }
 
-// Git Hooks 자동 설치
-tasks.register('installGitHooks', Copy) {
-	from "$rootDir/.githooks"
-	into "$rootDir/.git/hooks"
-	fileMode 0755
-}
+// Git Hooks 설치는 명시적인 로컬 개발 환경 설정으로만 수행한다.
+tasks.register('installGitHooks') {
+	group = 'setup'
+	description = 'Installs local git hooks for this repository.'
+	inputs.dir("$rootDir/.githooks")
 
-tasks.named('build') {
-	dependsOn 'installGitHooks'
+	onlyIf {
+		file("$rootDir/.githooks").exists() && file("$rootDir/.git").exists()
+	}
+
+	doLast {
+		def hooksDir = providers.exec {
+			commandLine 'git', 'rev-parse', '--git-path', 'hooks'
+		}.standardOutput.asText.get().trim()
+
+		if (!hooksDir) {
+			throw new GradleException('Could not resolve git hooks directory.')
+		}
+
+		copy {
+			from "$rootDir/.githooks"
+			into hooksDir
+			filePermissions {
+				unix('rwxr-xr-x')
+			}
+		}
+	}
 }

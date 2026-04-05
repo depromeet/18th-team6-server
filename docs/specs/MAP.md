@@ -48,12 +48,14 @@ HTTP Response
 - 요청 유효성 검증 (`@Valid`)
 - Service 호출 및 DTO 반환
 - 비즈니스 로직 포함 금지
+- 같은 도메인의 `controller`, `service`, `dto`와 `global` 패키지만 참조
 
 ### Service
 - 비즈니스 로직 수행
 - 트랜잭션 관리 (`@Transactional`)
 - DTO ↔ Entity 변환
 - 다른 도메인의 Service 호출 가능
+- 필요 시 `service` 패키지 내부 mapper/assembler로 변환 로직 분리 가능
 
 ### Entity
 - 도메인 모델 정의
@@ -68,7 +70,7 @@ HTTP Response
 ### DTO
 - 외부 인터페이스용 데이터 구조
 - 요청 DTO (Request), 응답 DTO (Response) 분리
-- Entity를 직접 노출하지 않음
+- Entity를 직접 노출하거나 참조하지 않음
 
 ## 의존성 방향
 
@@ -80,5 +82,8 @@ Controller → Service → Repository
 
 - 의존성은 항상 **안쪽(도메인)** 방향으로 흐른다
 - Entity는 어떤 레이어에도 의존하지 않는다
+- Controller는 같은 도메인의 `controller/service/dto`와 `global`만 참조한다
+- Service는 같은 도메인의 `service/entity/repository/dto`, 다른 도메인의 `service`, `global`만 참조한다
+- DTO ↔ Entity 변환은 Service 레이어에서 수행한다
 - Controller는 다른 도메인의 Controller를 직접 호출하지 않는다
 - 도메인 간 통신은 Service를 통해서만 한다

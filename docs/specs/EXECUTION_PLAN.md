@@ -17,17 +17,18 @@ Claude Code에서는 `/dev-plan {기능명}` 스킬을 사용하면 이 순서�
 - `JpaRepository` 상속
 - `src/main/kotlin/.../{도메인}/repository/` 에 배치
 
-### 3. Service 구현
-- 비즈니스 로직 작성
-- DTO ↔ Entity 변환 로직 포함
-- `@Transactional` 적용
-- `src/main/kotlin/.../{도메인}/service/` 에 배치
-
-### 4. DTO 정의
+### 3. DTO 정의
 - 요청 DTO (`*Request`) + 응답 DTO (`*Response`)
 - validation 어노테이션 적용
-- `companion object`에 `from()` 팩토리 메서드
+- DTO는 Entity 타입을 직접 참조하지 않음
 - `src/main/kotlin/.../{도메인}/dto/` 에 배치
+
+### 4. Service 구현
+- 비즈니스 로직 작성
+- DTO ↔ Entity 변환 로직 포함
+- 필요 시 `service` 패키지 내부 mapper/assembler로 분리
+- `@Transactional` 적용
+- `src/main/kotlin/.../{도메인}/service/` 에 배치
 
 ### 5. Controller 구현
 - REST API 엔드포인트 작성

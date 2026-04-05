@@ -26,10 +26,10 @@ depromeet.hotsix.obrit/
 
 ### 의존성 규칙
 
-- `controller` → 같은 도메인의 `service`, `dto`만 사용
-- `service` → 같은 도메인의 `entity`, `repository`, `dto` + 다른 도메인의 `service` 사용 가능
+- `controller` → 같은 도메인의 `controller`, `service`, `dto` + `global`만 사용
+- `service` → 같은 도메인의 `service`, `entity`, `repository`, `dto` + 다른 도메인의 `service` + `global` 사용 가능
 - `entity` → 다른 도메인의 `entity`만 참조 가능. 다른 레이어 의존 금지
-- `dto` → `entity`를 직접 노출하지 않음. DTO ↔ Entity 변환은 `service`에서 수행
+- `dto` → `entity`를 직접 참조하지 않음. DTO ↔ Entity 변환은 `service` 레이어에서 수행
 - `controller`는 다른 도메인의 `controller` 직접 호출 금지
 
 ## 코딩 컨벤션
@@ -59,7 +59,8 @@ depromeet.hotsix.obrit/
 ## 빌드 및 검증
 
 ```bash
-./gradlew build      # 빌드 (hook 자동 설치 포함)
+./gradlew installGitHooks # 로컬 git hook 설치 (초기 셋업 1회)
+./gradlew build      # 빌드 및 전체 검증
 ./gradlew test       # 테스트 실행
 ./gradlew ktlintCheck # 스타일 검증
 ./gradlew ktlintFormat # 스타일 자동 수정

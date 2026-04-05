@@ -24,5 +24,5 @@
 
 - [ ] `CLAUDE.md`를 읽었는가?
 - [ ] 작업할 도메인의 패키지 구조를 이해했는가?
-- [ ] 의존성 규칙을 숙지했는가? (controller → service/dto, entity는 외부 의존 금지 등)
+- [ ] 의존성 규칙을 숙지했는가? (controller → 같은 도메인 controller/service/dto + global, DTO ↔ Entity 변환은 service 레이어 소유 등)
 - [ ] 커밋 전 `./gradlew harness` 실행 방법을 알고 있는가?

@@ -10,7 +10,7 @@
 | `docs/specs/EXECUTION_PLAN.md` | 기능 구현 템플릿 |
 | `docs/specs/ADR/*.md` | 아키텍처 결정 기록 |
 | `docs/HARNESS_GUIDE.md` | 하네스 구조 가이드 |
-| `config/detekt/detekt.yml` | 정적 분석 규칙 |
+| `.editorconfig` | Kotlin 스타일 규칙 |
 | `src/test/.../architecture/*.kt` | ArchUnit 아키텍처 테스트 |
 | `.githooks/*` | Git hooks |
 | `.github/workflows/*.yml` | CI 워크플로우 |
@@ -32,8 +32,8 @@
 3. 형식: `{번호}-{주제}.md` (예: `003-redis-cache.md`)
 4. 관련된 다른 하네스 파일 업데이트 (CLAUDE.md, MAP.md 등)
 
-#### Detekt 규칙 추가/수정
-1. `config/detekt/detekt.yml` 읽기
+#### ktlint 규칙 추가/수정
+1. 루트 `.editorconfig` 읽기
 2. 요청된 규칙 추가/수정
 3. `docs/specs/CONVENTIONS.md`에 관련 컨벤션 반영
 
@@ -45,7 +45,7 @@
 #### 컨벤션 수정
 1. `docs/specs/CONVENTIONS.md` 수정
 2. `CLAUDE.md`에 요약 반영
-3. 필요 시 detekt 규칙이나 ArchUnit 테스트도 함께 업데이트
+3. 필요 시 `.editorconfig`나 ArchUnit 테스트도 함께 업데이트
 
 #### Git Hook / CI 수정
 1. 해당 파일 수정
@@ -69,6 +69,6 @@
 ## 사용 예시
 
 - `/harness-update 새로운 ADR 추가: Redis 캐시 도입 결정`
-- `/harness-update detekt에 ForbiddenComment 규칙 추가 (TODO 금지)`
+- `/harness-update ktlint 줄 길이 규칙 조정`
 - `/harness-update ArchUnit에 global 패키지는 도메인 패키지를 의존하면 안 되는 규칙 추가`
 - `/harness-update 커밋 메시지 컨벤션에 breaking change 표기법 추가`

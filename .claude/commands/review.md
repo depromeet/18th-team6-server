@@ -18,8 +18,8 @@ Approve는 사람이 합니다. 이 스킬은 리뷰 코멘트만 담당합니�
 **아키텍처 (필수)**
 - DDD 패키지 구조를 따르는가? (controller/service/dto/entity/repository)
 - 레이어 의존성 방향이 올바른가?
-  - controller → service, dto만 의존
-  - service → entity, repository, dto + 다른 도메인 service만 의존
+  - controller → 같은 도메인의 controller, service, dto + global만 의존
+  - service → 같은 도메인의 service, entity, repository, dto + 다른 도메인 service + global만 의존
   - entity → 외부 레이어 의존 금지
 - Controller에서 Entity를 직접 반환하지 않는가?
 - DTO ↔ Entity 변환이 Service에서 수행되는가?

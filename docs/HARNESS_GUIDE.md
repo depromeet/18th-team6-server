@@ -59,7 +59,7 @@
 
 ### docs/specs/EXECUTION_PLAN.md
 - **역할**: 기능 구현 순서 템플릿
-- **내용**: Entity → Repository → Service → DTO → Controller → Test → Harness 검증
+- **내용**: Entity → Repository → DTO → Service → Controller → Test → Harness 검증
 
 ### docs/specs/ADR/
 - **역할**: 아키텍처 결정 기록 (Architecture Decision Records)
@@ -84,7 +84,7 @@
 
 ### Git Hooks
 - **위치**: `.githooks/`
-- **설치**: `./gradlew build` 시 자동 설치
+- **설치**: 초기 셋업 시 `./gradlew installGitHooks` 1회 실행
 - **pre-commit**: `ktlintCheck` 실행 (~5초). 실패 시 커밋 차단
 - **pre-push**: `./gradlew harness` 전체 실행 (~30초~1분). 실패 시 푸시 차단
 
@@ -105,7 +105,7 @@
     │                              ↓ 실패 시 푸시 차단
     ↓
 [PR 생성] → /review 스킬 → 코드 리뷰 코멘트
-    │       → harness.yml CI → ./gradlew harness
+    │       → harness.yml CI → ./gradlew build
     │                              ↓ 실패 시 머지 차단
     ↓
 [사람이 Approve] → [PR 머지] → main에 반영
@@ -147,7 +147,7 @@
 
 1. 관련 하네스 파일 수정
 2. 연관 문서 동기화
-3. `./gradlew harness` 검증
+3. `./gradlew installGitHooks`, `./gradlew build`, `./gradlew harness` 기준으로 영향 점검
 
 ## 하네스 수정/확장 방법
 

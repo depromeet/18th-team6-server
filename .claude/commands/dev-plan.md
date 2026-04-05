@@ -25,8 +25,8 @@
 ## Tasks
 - [ ] 🔴 Entity 클래스 생성
 - [ ] 🔴 Repository 인터페이스 정의
-- [ ] 🔴 Service 비즈니스 로직 구현
 - [ ] 🔴 DTO 정의 (요청/응답)
+- [ ] 🔴 Service 비즈니스 로직 구현
 - [ ] 🔴 Controller API 엔드포인트 구현
 - [ ] 🔴 테스트 작성
 - [ ] 🔴 ./gradlew harness 검증 통과
@@ -59,5 +59,5 @@ Task를 위에서 아래로 하나씩 실행하세요.
 
 - 반드시 `docs/specs/CONVENTIONS.md`의 코딩 컨벤션을 따르세요
 - 반드시 `docs/specs/MAP.md`의 아키텍처 규칙을 따르세요
-- Entity → Repository → Service → DTO → Controller → Test 순서를 지키세요
+- Entity → Repository → DTO → Service → Controller → Test 순서를 지키세요
 - 각 Task 완료 시 개발 문서를 반드시 업데이트하세요

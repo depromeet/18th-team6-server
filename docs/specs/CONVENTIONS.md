@@ -59,14 +59,18 @@ class UserService(
             email = request.email,
         )
         val savedUser = userRepository.save(user)
-        return UserResponse.from(savedUser)
+        return UserResponse(
+            id = savedUser.id,
+            name = savedUser.name,
+            email = savedUser.email,
+        )
     }
 }
 ```
 
 - 클래스 레벨에 `@Transactional(readOnly = true)`, 쓰기 메서드에만 `@Transactional`
-- DTO → Entity 변환은 Service에서 수행
-- Entity → DTO 변환은 DTO의 companion object `from()` 사용
+- DTO ↔ Entity 변환은 Service 레이어에서 수행
+- 필요 시 `service` 패키지 내부 mapper/assembler로 변환 로직을 분리할 수 있음
 
 ## Entity 컨벤션
 
@@ -105,20 +109,12 @@ data class UserResponse(
     val id: Long,
     val name: String,
     val email: String,
-) {
-    companion object {
-        fun from(user: User): UserResponse = UserResponse(
-            id = user.id,
-            name = user.name,
-            email = user.email,
-        )
-    }
-}
+)
 ```
 
 - `data class` 사용
 - 요청 DTO: validation 어노테이션은 `@field:` prefix 사용
-- 응답 DTO: `companion object`에 `from()` 팩토리 메서드
+- DTO는 Entity 타입을 직접 참조하지 않음
 
 ## Repository 컨벤션
 
@@ -130,7 +126,7 @@ interface UserRepository : JpaRepository<User, Long> {
 
 - `JpaRepository` 상속
 - Spring Data JPA 쿼리 메서드 활용
-- 복잡한 �리는 `@Query` 또는 QueryDSL 사용
+- 복잡한 쿼리는 `@Query` 또는 QueryDSL 사용
 
 ## 테스트 컨벤션
 
