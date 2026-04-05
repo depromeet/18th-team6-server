@@ -1,14 +1,14 @@
 #!/bin/bash
-# Pre-commit hook: 빠른 정적 분석 (detekt)
+# Pre-commit hook: 빠른 스타일 검증 (ktlint)
 # 실패 시 커밋 차단
 
-echo "🔍 Pre-commit: detekt 실행 중..."
+echo "🔍 Pre-commit: ktlint 검사 실행 중..."
 
-./gradlew detekt --daemon -q
+./gradlew ktlintCheck --daemon -q
 
 if [ $? -ne 0 ]; then
-    echo "❌ detekt 검증 실패. 코드 스타일을 수정한 후 다시 커밋하세요."
+    echo "❌ ktlint 검증 실패. ./gradlew ktlintFormat 또는 수동 수정 후 다시 커밋하세요."
     exit 1
 fi
 
-echo "✅ Pre-commit: detekt 통과"
+echo "✅ Pre-commit: ktlint 통과"

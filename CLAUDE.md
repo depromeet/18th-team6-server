@@ -61,8 +61,9 @@ depromeet.hotsix.obrit/
 ```bash
 ./gradlew build      # 빌드 (hook 자동 설치 포함)
 ./gradlew test       # 테스트 실행
-./gradlew detekt     # 정적 분석
-./gradlew harness    # 전체 검증 (detekt + ArchUnit + 테스트)
+./gradlew ktlintCheck # 스타일 검증
+./gradlew ktlintFormat # 스타일 자동 수정
+./gradlew harness    # 전체 검증 (ktlint + ArchUnit + 테스트)
 ```
 
 커밋 전에 반드시 `./gradlew harness` 실행.
@@ -71,7 +72,7 @@ depromeet.hotsix.obrit/
 
 - `/dev-plan {기능명}` - 개발 문서 작성 → Task 분해 → 순차 실행 → 상태 추적
 - `/review` - 워크스페이스 diff를 코드 리뷰하고 코멘트 남기기 (Approve는 사람이 담당)
-- `/harness-update {작업}` - 하네스 인프라 관리/업데이트 (ADR, detekt, ArchUnit 등)
+- `/harness-update {작업}` - 하네스 인프라 관리/업데이트 (ADR, ktlint, ArchUnit 등)
 
 ## 하네스 가이드
 

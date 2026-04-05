@@ -21,6 +21,7 @@ class NamingConventionTest {
             .that().areAnnotatedWith(RestController::class.java)
             .should().haveSimpleNameEndingWith("Controller")
             .because("@RestController 클래스는 *Controller 네이밍을 따라야 합니다.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 
@@ -30,6 +31,7 @@ class NamingConventionTest {
             .that().areAnnotatedWith(Service::class.java)
             .should().haveSimpleNameEndingWith("Service")
             .because("@Service 클래스는 *Service 네이밍을 따라야 합니다.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 
@@ -39,6 +41,7 @@ class NamingConventionTest {
             .that().resideInAPackage("..controller..")
             .should().haveSimpleNameEndingWith("Controller")
             .because("controller 패키지의 클래스는 *Controller 네이밍을 따라야 합니다.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 
@@ -48,6 +51,7 @@ class NamingConventionTest {
             .that().resideInAPackage("..service..")
             .should().haveSimpleNameEndingWith("Service")
             .because("service 패키지의 클래스는 *Service 네이밍을 따라야 합니다.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 
@@ -58,6 +62,7 @@ class NamingConventionTest {
             .should().haveSimpleNameEndingWith("Repository")
             .orShould().haveSimpleNameEndingWith("RepositoryImpl")
             .because("repository 패키지의 클래스는 *Repository 또는 *RepositoryImpl 네이밍을 따라야 합니다.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 }

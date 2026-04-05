@@ -32,9 +32,9 @@
 │                  FEEDBACK (검증)                   │
 │                                                   │
 │  ArchUnit ──────── 아키텍처 규칙 자동 테스트       │
-│  Detekt ────────── 정적 분석 / 린트                │
+│  ktlint ────────── Kotlin 스타일 린트              │
 │  Git Hooks                                        │
-│    pre-commit ──── 커밋 시 detekt                  │
+│    pre-commit ──── 커밋 시 ktlintCheck             │
 │    pre-push ────── 푸시 시 전체 harness             │
 │  GitHub Actions                                   │
 │    harness.yml ─── PR 시 CI 검증                   │
@@ -75,14 +75,17 @@
   - `LayerDependencyTest.kt` - 레이어 간 의존성 방향 검증
   - `NamingConventionTest.kt` - 네이밍 컨벤션 검증
 
-### Detekt
-- **설정**: `config/detekt/detekt.yml`
-- **역할**: Kotlin 정적 분석 (함수 길이, 파라미터 수, 와일드카드 임포트 등)
+### ktlint
+- **설정**: 루트 `.editorconfig`
+- **역할**: Kotlin 스타일 린트와 포맷 검증 (최대 줄 길이, 와일드카드 임포트 방지 등)
+- **명령**:
+  - `./gradlew ktlintCheck`
+  - `./gradlew ktlintFormat`
 
 ### Git Hooks
 - **위치**: `.githooks/`
 - **설치**: `./gradlew build` 시 자동 설치
-- **pre-commit**: detekt 실행 (~5초). 실패 시 커밋 차단
+- **pre-commit**: `ktlintCheck` 실행 (~5초). 실패 시 커밋 차단
 - **pre-push**: `./gradlew harness` 전체 실행 (~30초~1분). 실패 시 푸시 차단
 
 ### GitHub Actions CI
@@ -95,7 +98,7 @@
 ```
 [개발자/에이전트 코딩]
     ↓
-[git commit] → pre-commit hook → detekt (lint)
+[git commit] → pre-commit hook → ktlintCheck
     │                                 ↓ 실패 시 커밋 차단
     ↓
 [git push] → pre-push hook → ./gradlew harness
@@ -139,7 +142,7 @@
 
 ```
 /harness-update 새로운 ADR 추가: Redis 캐시 도입
-/harness-update detekt에 ForbiddenComment 규칙 추가
+/harness-update ktlint 규칙/설정 조정
 ```
 
 1. 관련 하네스 파일 수정
@@ -154,8 +157,8 @@
 3. `docs/specs/MAP.md` 에 규칙 문서화
 4. `CLAUDE.md` 에 요약 반영
 
-### 새로운 정적 분석 규칙 추가
-1. `config/detekt/detekt.yml` 에 규칙 추가
+### 새로운 스타일 규칙 추가
+1. 루트 `.editorconfig` 에 `ktlint` 관련 설정 추가
 2. `docs/specs/CONVENTIONS.md` 에 관련 컨벤션 문서화
 
 ### 새로운 ADR 추가

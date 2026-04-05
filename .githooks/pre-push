@@ -1,8 +1,8 @@
 #!/bin/bash
-# Pre-push hook: 전체 harness 검증 (detekt + ArchUnit + 테스트)
+# Pre-push hook: 전체 harness 검증 (ktlint + ArchUnit + 테스트)
 # 실패 시 푸시 차단
 
-echo "🔍 Pre-push: harness 전체 검증 실행 중..."
+echo "🔍 Pre-push: ktlint + 테스트 포함 harness 검증 실행 중..."
 
 ./gradlew harness --daemon -q
 

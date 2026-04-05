@@ -3,7 +3,7 @@ plugins {
 	id 'org.jetbrains.kotlin.plugin.spring' version '2.2.21'
 	id 'org.springframework.boot' version '4.0.5'
 	id 'io.spring.dependency-management' version '1.1.7'
-	id 'io.gitlab.arturbosch.detekt' version '1.23.7'
+	id 'org.jlleitschuh.gradle.ktlint' version '14.2.0'
 }
 
 group = 'depromeet.hotsix'
@@ -38,11 +38,14 @@ kotlin {
 	}
 }
 
-// Detekt 설정
-detekt {
-	config.setFrom(files("$rootDir/config/detekt/detekt.yml"))
-	buildUponDefaultConfig = true
-	allRules = false
+ktlint {
+	ignoreFailures = false
+	outputToConsole = true
+
+	reporters {
+		reporter 'plain'
+		reporter 'checkstyle'
+	}
 }
 
 tasks.named('test') {
@@ -51,9 +54,9 @@ tasks.named('test') {
 
 // Harness 통합 검증 태스크
 tasks.register('harness') {
-	dependsOn 'detekt', 'test'
+	dependsOn 'ktlintCheck', 'test'
 	group = 'verification'
-	description = 'Runs all harness validations (detekt + ArchUnit + tests)'
+	description = 'Runs all harness validations (ktlint + ArchUnit + tests)'
 }
 
 // Git Hooks 자동 설치

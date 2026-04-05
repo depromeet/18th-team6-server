@@ -44,7 +44,7 @@ Claude Code에서는 `/dev-plan {기능명}` 스킬을 사용하면 이 순서�
 ```bash
 ./gradlew harness
 ```
-- detekt (정적 분석) 통과
+- ktlintCheck (스타일 검증) 통과
 - ArchUnit (아키텍처 규칙) 통과
 - 전체 테스트 통과
 

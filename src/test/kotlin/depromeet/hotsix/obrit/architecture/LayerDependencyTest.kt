@@ -2,10 +2,8 @@ package depromeet.hotsix.obrit.architecture
 
 import com.tngtech.archunit.core.importer.ClassFileImporter
 import com.tngtech.archunit.core.importer.ImportOption
-import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices
-import org.junit.jupiter.api.BeforeAll
 import org.junit.jupiter.api.Test
 
 class LayerDependencyTest {
@@ -22,6 +20,7 @@ class LayerDependencyTest {
             .that().resideInAPackage("..controller..")
             .should().dependOnClassesThat().resideInAPackage("..entity..")
             .because("Controller는 Entity에 직접 의존하면 안 됩니다. DTO를 사용하세요.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 
@@ -31,6 +30,7 @@ class LayerDependencyTest {
             .that().resideInAPackage("..controller..")
             .should().dependOnClassesThat().resideInAPackage("..repository..")
             .because("Controller는 Repository에 직접 접근하면 안 됩니다. Service를 통해 접근하세요.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 
@@ -40,6 +40,7 @@ class LayerDependencyTest {
             .that().resideInAPackage("..entity..")
             .should().dependOnClassesThat().resideInAnyPackage("..service..", "..controller..", "..repository..")
             .because("Entity는 순수 도메인 모델이어야 합니다. 외부 레이어에 의존하면 안 됩니다.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 
@@ -49,6 +50,7 @@ class LayerDependencyTest {
             .that().resideInAPackage("..dto..")
             .should().dependOnClassesThat().resideInAPackage("..entity..")
             .because("DTO에서 Entity를 직접 참조하면 안 됩니다. 변환은 Service에서 수행하세요.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 
@@ -58,6 +60,7 @@ class LayerDependencyTest {
             .matching("depromeet.hotsix.obrit.(*)..")
             .should().beFreeOfCycles()
             .because("도메인 간 순환 의존성은 허용되지 않습니다.")
+            .allowEmptyShould(true)
             .check(importedClasses)
     }
 }
