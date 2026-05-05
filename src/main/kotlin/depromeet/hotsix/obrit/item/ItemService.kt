@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.item
 
 import depromeet.hotsix.obrit.category.CategoryRepository
 import depromeet.hotsix.obrit.common.BusinessException
+import depromeet.hotsix.obrit.common.CategoryItemCleaner
 import depromeet.hotsix.obrit.common.ResourceNotFoundException
 import depromeet.hotsix.obrit.user.UserRepository
 import org.springframework.stereotype.Service
@@ -14,11 +15,10 @@ class ItemService(
     private val itemReplacementHistoryRepository: ItemReplacementHistoryRepository,
     private val categoryRepository: CategoryRepository,
     private val userRepository: UserRepository,
-) {
+) : CategoryItemCleaner {
 
     @Transactional(readOnly = true)
-    fun listItems(userId: Long): List<ItemResponse> =
-        itemRepository.findActiveByUserId(userId).map { it.toResponse() }
+    fun listItems(userId: Long): List<ItemResponse> = itemRepository.findActiveByUserId(userId).map { it.toResponse() }
 
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
@@ -67,6 +67,11 @@ class ItemService(
     @Transactional
     fun deleteItem(userId: Long, itemId: Long) {
         findActiveItem(userId, itemId).softDelete()
+    }
+
+    @Transactional
+    override fun softDeleteActiveItemsByCategory(categoryId: Long, userId: Long) {
+        itemRepository.findActiveByCategoryIdAndUserId(categoryId, userId).forEach { it.softDelete() }
     }
 
     @Transactional

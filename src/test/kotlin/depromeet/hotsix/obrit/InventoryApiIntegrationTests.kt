@@ -103,7 +103,7 @@ class InventoryApiIntegrationTests {
     }
 
     @Test
-    fun `creates items with category defaults, sorts by next replacement date, updates items, and records replacements`() {
+    fun `creates sorts updates and records replacements`() {
         val officeItemId = createItem(200, "사무실 제로콜라", 12, "2026-04-20", null)
         val homeItemId = createItem(200, "집 제로콜라", 6, "2026-04-18", 10)
 

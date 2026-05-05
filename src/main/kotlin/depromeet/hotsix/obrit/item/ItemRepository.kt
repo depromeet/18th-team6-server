@@ -28,10 +28,7 @@ interface ItemRepository : JpaRepository<Item, Long> {
           and i.deletedAt is null
         """,
     )
-    fun findActiveByIdAndUserId(
-        @Param("itemId") itemId: Long,
-        @Param("userId") userId: Long,
-    ): Item?
+    fun findActiveByIdAndUserId(@Param("itemId") itemId: Long, @Param("userId") userId: Long): Item?
 
     @Query(
         """
@@ -43,7 +40,9 @@ interface ItemRepository : JpaRepository<Item, Long> {
         """,
     )
     fun findActiveByCategoryIdAndUserId(
-        @Param("categoryId") categoryId: Long,
-        @Param("userId") userId: Long,
+        @Param("categoryId")
+        categoryId: Long,
+        @Param("userId")
+        userId: Long,
     ): List<Item>
 }

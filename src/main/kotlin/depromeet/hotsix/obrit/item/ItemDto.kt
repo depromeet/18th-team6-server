@@ -34,9 +34,7 @@ data class UpdateItemRequest(
     val replacementIntervalDays: Int? = null,
 )
 
-data class CreateReplacementRequest(
-    val replacedDate: LocalDate? = null,
-)
+data class CreateReplacementRequest(val replacedDate: LocalDate? = null)
 
 data class ItemResponse(
     val id: Long,
@@ -49,14 +47,13 @@ data class ItemResponse(
     val nextReplacementDate: LocalDate,
 )
 
-fun Item.toResponse(): ItemResponse =
-    ItemResponse(
-        id = requireNotNull(id),
-        categoryId = requireNotNull(category.id),
-        categoryName = category.name,
-        name = name,
-        count = quantity,
-        replacementIntervalDays = replacementIntervalDays,
-        lastReplacedDate = lastReplacedDate,
-        nextReplacementDate = nextReplacementDate,
-    )
+fun Item.toResponse(): ItemResponse = ItemResponse(
+    id = requireNotNull(id),
+    categoryId = requireNotNull(category.id),
+    categoryName = category.name,
+    name = name,
+    count = quantity,
+    replacementIntervalDays = replacementIntervalDays,
+    lastReplacedDate = lastReplacedDate,
+    nextReplacementDate = nextReplacementDate,
+)

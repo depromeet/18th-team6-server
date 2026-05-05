@@ -15,14 +15,10 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/items")
-class ItemController(
-    private val itemService: ItemService,
-) {
+class ItemController(private val itemService: ItemService) {
 
     @GetMapping
-    fun listItems(
-        @RequestHeader("X-User-Id") userId: Long,
-    ): List<ItemResponse> = itemService.listItems(userId)
+    fun listItems(@RequestHeader("X-User-Id") userId: Long): List<ItemResponse> = itemService.listItems(userId)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -40,10 +36,7 @@ class ItemController(
 
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteItem(
-        @RequestHeader("X-User-Id") userId: Long,
-        @PathVariable itemId: Long,
-    ) {
+    fun deleteItem(@RequestHeader("X-User-Id") userId: Long, @PathVariable itemId: Long) {
         itemService.deleteItem(userId, itemId)
     }
 

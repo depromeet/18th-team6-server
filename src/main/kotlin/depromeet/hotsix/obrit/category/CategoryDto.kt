@@ -21,11 +21,10 @@ data class CategoryResponse(
     val preset: Boolean,
 )
 
-fun Category.toResponse(): CategoryResponse =
-    CategoryResponse(
-        id = requireNotNull(id),
-        name = name,
-        imageUrl = imageUrl,
-        defaultReplacementIntervalDays = defaultReplacementIntervalDays,
-        preset = isPreset,
-    )
+fun Category.toResponse(): CategoryResponse = CategoryResponse(
+    id = requireNotNull(id),
+    name = name,
+    imageUrl = imageUrl,
+    defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+    preset = isPreset,
+)

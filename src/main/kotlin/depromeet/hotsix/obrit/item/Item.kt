@@ -62,12 +62,7 @@ class Item(
         nextReplacementDate = LocalDate.EPOCH,
     )
 
-    fun update(
-        name: String?,
-        quantity: Int?,
-        replacementIntervalDays: Int?,
-        lastReplacedDate: LocalDate?,
-    ) {
+    fun update(name: String?, quantity: Int?, replacementIntervalDays: Int?, lastReplacedDate: LocalDate?) {
         name?.let { this.name = it.trim() }
         quantity?.let { this.quantity = it }
         replacementIntervalDays?.let { this.replacementIntervalDays = it }

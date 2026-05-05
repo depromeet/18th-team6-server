@@ -14,14 +14,11 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/categories")
-class CategoryController(
-    private val categoryService: CategoryService,
-) {
+class CategoryController(private val categoryService: CategoryService) {
 
     @GetMapping
-    fun listCategories(
-        @RequestHeader("X-User-Id") userId: Long,
-    ): List<CategoryResponse> = categoryService.listCategories(userId)
+    fun listCategories(@RequestHeader("X-User-Id") userId: Long): List<CategoryResponse> =
+        categoryService.listCategories(userId)
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
@@ -32,10 +29,7 @@ class CategoryController(
 
     @DeleteMapping("/{categoryId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteCategory(
-        @RequestHeader("X-User-Id") userId: Long,
-        @PathVariable categoryId: Long,
-    ) {
+    fun deleteCategory(@RequestHeader("X-User-Id") userId: Long, @PathVariable categoryId: Long) {
         categoryService.deleteCategory(userId, categoryId)
     }
 }

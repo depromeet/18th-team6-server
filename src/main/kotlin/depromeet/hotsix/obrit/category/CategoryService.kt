@@ -1,9 +1,9 @@
 package depromeet.hotsix.obrit.category
 
 import depromeet.hotsix.obrit.common.BusinessException
+import depromeet.hotsix.obrit.common.CategoryItemCleaner
 import depromeet.hotsix.obrit.common.DEFAULT_CATEGORY_IMAGE_URL
 import depromeet.hotsix.obrit.common.ResourceNotFoundException
-import depromeet.hotsix.obrit.item.ItemRepository
 import depromeet.hotsix.obrit.user.UserRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -12,7 +12,7 @@ import org.springframework.transaction.annotation.Transactional
 class CategoryService(
     private val categoryRepository: CategoryRepository,
     private val userRepository: UserRepository,
-    private val itemRepository: ItemRepository,
+    private val categoryItemCleaner: CategoryItemCleaner,
 ) {
 
     @Transactional(readOnly = true)
@@ -48,6 +48,6 @@ class CategoryService(
         }
 
         category.softDelete()
-        itemRepository.findActiveByCategoryIdAndUserId(categoryId, userId).forEach { it.softDelete() }
+        categoryItemCleaner.softDeleteActiveItemsByCategory(categoryId, userId)
     }
 }

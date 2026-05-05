@@ -24,9 +24,7 @@ class GlobalExceptionHandler {
     }
 }
 
-data class ErrorResponse(
-    val message: String,
-)
+data class ErrorResponse(val message: String)
 
 class BusinessException(message: String) : RuntimeException(message)
 
