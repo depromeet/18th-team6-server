@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.global.exception
 
+import io.swagger.v3.oas.annotations.media.Schema
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
@@ -24,7 +25,11 @@ class GlobalExceptionHandler {
     }
 }
 
-data class ErrorResponse(val message: String)
+@Schema(description = "Error response.")
+data class ErrorResponse(
+    @field:Schema(description = "Human-readable error message.", example = "Category not found.")
+    val message: String,
+)
 
 class BusinessException(message: String) : RuntimeException(message)
 
