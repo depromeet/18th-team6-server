@@ -24,6 +24,7 @@ import tools.jackson.databind.ObjectMapper
         "DELETE FROM categories",
         "DELETE FROM users",
         "INSERT INTO users (id, name, created_at, updated_at) VALUES (1, '지훈', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
+        "INSERT INTO users (id, name, created_at, updated_at) VALUES (2, '민지', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
         "INSERT INTO categories (id, user_id, name, image_url, default_replacement_interval_days, created_at, updated_at) VALUES (100, NULL, '면도기', '/images/default-category.png', 30, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
         "INSERT INTO categories (id, user_id, name, image_url, default_replacement_interval_days, created_at, updated_at) VALUES (200, NULL, '제로콜라', '/images/default-category.png', 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
     ],
@@ -103,6 +104,31 @@ class InventoryApiIntegrationTests {
     }
 
     @Test
+    fun `rejects item creation with another user's custom category`() {
+        val otherUserCategoryId = createCustomCategory(
+            userId = 2,
+            name = "렌즈 세척액",
+            defaultReplacementIntervalDays = 90,
+        )
+
+        mockMvc.post("/items") {
+            header("X-User-Id", "1")
+            contentType = MediaType.APPLICATION_JSON
+            content = """
+                {
+                  "categoryId": $otherUserCategoryId,
+                  "name": "욕실 렌즈 세척액",
+                  "count": 1,
+                  "lastReplacedDate": "2026-04-01"
+                }
+            """.trimIndent()
+        }.andExpect {
+            status { isNotFound() }
+            jsonPath("$.message") { value("Category not found.") }
+        }
+    }
+
+    @Test
     fun `creates sorts updates and records replacements`() {
         val officeItemId = createItem(200, "사무실 제로콜라", 12, "2026-04-20", null)
         val homeItemId = createItem(200, "집 제로콜라", 6, "2026-04-18", 10)
@@ -148,9 +174,15 @@ class InventoryApiIntegrationTests {
         }
     }
 
-    private fun createCustomCategory(name: String, defaultReplacementIntervalDays: Int): Long {
+    private fun createCustomCategory(name: String, defaultReplacementIntervalDays: Int): Long = createCustomCategory(
+        userId = 1,
+        name = name,
+        defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+    )
+
+    private fun createCustomCategory(userId: Long, name: String, defaultReplacementIntervalDays: Int): Long {
         val response = mockMvc.post("/categories") {
-            header("X-User-Id", "1")
+            header("X-User-Id", userId.toString())
             contentType = MediaType.APPLICATION_JSON
             content = """
                 {

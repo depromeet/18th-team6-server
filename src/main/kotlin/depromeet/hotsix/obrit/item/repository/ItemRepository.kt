@@ -1,5 +1,6 @@
-package depromeet.hotsix.obrit.item
+package depromeet.hotsix.obrit.item.repository
 
+import depromeet.hotsix.obrit.item.entity.Item
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -10,8 +11,7 @@ interface ItemRepository : JpaRepository<Item, Long> {
         """
         select i
         from Item i
-        join fetch i.category
-        where i.user.id = :userId
+        where i.userId = :userId
           and i.deletedAt is null
         order by i.nextReplacementDate asc, i.id asc
         """,
@@ -22,9 +22,8 @@ interface ItemRepository : JpaRepository<Item, Long> {
         """
         select i
         from Item i
-        join fetch i.category
         where i.id = :itemId
-          and i.user.id = :userId
+          and i.userId = :userId
           and i.deletedAt is null
         """,
     )
@@ -34,8 +33,8 @@ interface ItemRepository : JpaRepository<Item, Long> {
         """
         select i
         from Item i
-        where i.category.id = :categoryId
-          and i.user.id = :userId
+        where i.categoryId = :categoryId
+          and i.userId = :userId
           and i.deletedAt is null
         """,
     )

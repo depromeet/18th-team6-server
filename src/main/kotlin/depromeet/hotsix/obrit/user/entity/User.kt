@@ -1,6 +1,6 @@
-package depromeet.hotsix.obrit.user
+package depromeet.hotsix.obrit.user.entity
 
-import depromeet.hotsix.obrit.common.BaseTimeEntity
+import depromeet.hotsix.obrit.global.common.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue

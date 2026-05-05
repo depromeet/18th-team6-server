@@ -1,5 +1,8 @@
-package depromeet.hotsix.obrit.category
+package depromeet.hotsix.obrit.category.controller
 
+import depromeet.hotsix.obrit.category.dto.CategoryResponse
+import depromeet.hotsix.obrit.category.dto.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.service.CategoryService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping

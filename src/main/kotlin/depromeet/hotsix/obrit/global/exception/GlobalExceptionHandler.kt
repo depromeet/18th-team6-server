@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.common
+package depromeet.hotsix.obrit.global.exception
 
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity

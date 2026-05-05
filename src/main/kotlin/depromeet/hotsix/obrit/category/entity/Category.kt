@@ -1,16 +1,12 @@
-package depromeet.hotsix.obrit.category
+package depromeet.hotsix.obrit.category.entity
 
-import depromeet.hotsix.obrit.common.BaseTimeEntity
-import depromeet.hotsix.obrit.user.User
+import depromeet.hotsix.obrit.global.common.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Index
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 
 @Entity
@@ -25,9 +21,8 @@ class Category(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY)
-    @JoinColumn(name = "user_id")
-    var user: User? = null,
+    @Column(name = "user_id")
+    var userId: Long? = null,
 
     @Column(nullable = false)
     var name: String = "",
@@ -40,5 +35,5 @@ class Category(
 ) : BaseTimeEntity() {
 
     val isPreset: Boolean
-        get() = user == null
+        get() = userId == null
 }

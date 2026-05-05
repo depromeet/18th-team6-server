@@ -1,17 +1,21 @@
-package depromeet.hotsix.obrit.category
+package depromeet.hotsix.obrit.category.service
 
-import depromeet.hotsix.obrit.common.BusinessException
-import depromeet.hotsix.obrit.common.CategoryItemCleaner
-import depromeet.hotsix.obrit.common.DEFAULT_CATEGORY_IMAGE_URL
-import depromeet.hotsix.obrit.common.ResourceNotFoundException
-import depromeet.hotsix.obrit.user.UserRepository
+import depromeet.hotsix.obrit.category.dto.CategoryResponse
+import depromeet.hotsix.obrit.category.dto.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.entity.Category
+import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.global.common.CategoryItemCleaner
+import depromeet.hotsix.obrit.global.common.DEFAULT_CATEGORY_IMAGE_URL
+import depromeet.hotsix.obrit.global.exception.BusinessException
+import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
+import depromeet.hotsix.obrit.user.service.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
 class CategoryService(
     private val categoryRepository: CategoryRepository,
-    private val userRepository: UserRepository,
+    private val userService: UserService,
     private val categoryItemCleaner: CategoryItemCleaner,
 ) {
 
@@ -21,12 +25,11 @@ class CategoryService(
 
     @Transactional
     fun createCategory(userId: Long, request: CreateCategoryRequest): CategoryResponse {
-        val user = userRepository.findById(userId)
-            .orElseThrow { ResourceNotFoundException("User not found.") }
+        userService.requireExistingUser(userId)
         val imageUrl = request.imageUrl?.takeIf { it.isNotBlank() } ?: DEFAULT_CATEGORY_IMAGE_URL
 
         val category = Category(
-            user = user,
+            userId = userId,
             name = request.name.trim(),
             imageUrl = imageUrl,
             defaultReplacementIntervalDays = request.defaultReplacementIntervalDays,
@@ -43,11 +46,19 @@ class CategoryService(
         if (category.isPreset) {
             throw BusinessException("Preset categories cannot be deleted.")
         }
-        if (category.user?.id != userId) {
+        if (category.userId != userId) {
             throw ResourceNotFoundException("Category not found.")
         }
 
         category.softDelete()
         categoryItemCleaner.softDeleteActiveItemsByCategory(categoryId, userId)
     }
+
+    private fun Category.toResponse(): CategoryResponse = CategoryResponse(
+        id = requireNotNull(id),
+        name = name,
+        imageUrl = imageUrl,
+        defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+        preset = isPreset,
+    )
 }

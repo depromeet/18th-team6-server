@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.item
+package depromeet.hotsix.obrit.item.dto
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
@@ -45,15 +45,4 @@ data class ItemResponse(
     val replacementIntervalDays: Int,
     val lastReplacedDate: LocalDate,
     val nextReplacementDate: LocalDate,
-)
-
-fun Item.toResponse(): ItemResponse = ItemResponse(
-    id = requireNotNull(id),
-    categoryId = requireNotNull(category.id),
-    categoryName = category.name,
-    name = name,
-    count = quantity,
-    replacementIntervalDays = replacementIntervalDays,
-    lastReplacedDate = lastReplacedDate,
-    nextReplacementDate = nextReplacementDate,
 )

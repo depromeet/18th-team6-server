@@ -1,5 +1,10 @@
-package depromeet.hotsix.obrit.item
+package depromeet.hotsix.obrit.item.controller
 
+import depromeet.hotsix.obrit.item.dto.CreateItemRequest
+import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
+import depromeet.hotsix.obrit.item.dto.ItemResponse
+import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
+import depromeet.hotsix.obrit.item.service.ItemService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping

@@ -1,17 +1,12 @@
-package depromeet.hotsix.obrit.item
+package depromeet.hotsix.obrit.item.entity
 
-import depromeet.hotsix.obrit.category.Category
-import depromeet.hotsix.obrit.common.BaseTimeEntity
-import depromeet.hotsix.obrit.user.User
+import depromeet.hotsix.obrit.global.common.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
-import jakarta.persistence.FetchType
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Index
-import jakarta.persistence.JoinColumn
-import jakarta.persistence.ManyToOne
 import jakarta.persistence.Table
 import java.time.LocalDate
 
@@ -28,13 +23,11 @@ class Item(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "user_id", nullable = false)
-    var user: User,
+    @Column(name = "user_id", nullable = false)
+    var userId: Long,
 
-    @ManyToOne(fetch = FetchType.LAZY, optional = false)
-    @JoinColumn(name = "category_id", nullable = false)
-    var category: Category,
+    @Column(name = "category_id", nullable = false)
+    var categoryId: Long,
 
     @Column(nullable = false)
     var name: String,
@@ -53,8 +46,8 @@ class Item(
 ) : BaseTimeEntity() {
 
     constructor() : this(
-        user = User(),
-        category = Category(),
+        userId = 0,
+        categoryId = 0,
         name = "",
         quantity = 0,
         replacementIntervalDays = 1,

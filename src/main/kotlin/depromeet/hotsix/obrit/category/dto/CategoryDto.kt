@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.category
+package depromeet.hotsix.obrit.category.dto
 
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.Positive
@@ -19,12 +19,4 @@ data class CategoryResponse(
     val imageUrl: String,
     val defaultReplacementIntervalDays: Int,
     val preset: Boolean,
-)
-
-fun Category.toResponse(): CategoryResponse = CategoryResponse(
-    id = requireNotNull(id),
-    name = name,
-    imageUrl = imageUrl,
-    defaultReplacementIntervalDays = defaultReplacementIntervalDays,
-    preset = isPreset,
 )

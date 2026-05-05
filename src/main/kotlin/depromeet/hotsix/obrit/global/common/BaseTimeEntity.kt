@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.common
+package depromeet.hotsix.obrit.global.common
 
 import jakarta.persistence.Column
 import jakarta.persistence.MappedSuperclass
