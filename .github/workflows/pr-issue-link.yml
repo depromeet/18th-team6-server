@@ -1,0 +1,41 @@
+name: PR Issue Link Validation
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize, ready_for_review]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate branch and linked issue
+        env:
+          HEAD_BRANCH: ${{ github.event.pull_request.head.ref }}
+          PR_BODY: ${{ github.event.pull_request.body || '' }}
+        run: |
+          set -euo pipefail
+
+          branch_regex='^[a-z0-9-]+/(feat|fix|refactor|chore|docs|test)/([1-9][0-9]*)-[a-z0-9]+(-[a-z0-9]+)*$'
+
+          if [[ ! "$HEAD_BRANCH" =~ $branch_regex ]]; then
+            echo "::error::Branch name must match {worker}/{type}/{issue-number}-{kebab-case-description}."
+            echo "::error::Example: ziweek/feat/123-add-login"
+            exit 1
+          fi
+
+          branch_issue="${BASH_REMATCH[2]}"
+
+          shopt -s nocasematch
+          issue_regex='(Closes|Fixes|Resolves)[[:space:]]+#([1-9][0-9]*)'
+
+          if [[ ! "${PR_BODY:-}" =~ $issue_regex ]]; then
+            echo "::error::PR body must include Closes #<issue-number>, Fixes #<issue-number>, or Resolves #<issue-number>."
+            exit 1
+          fi
+
+          pr_issue="${BASH_REMATCH[2]}"
+
+          if [[ "$branch_issue" != "$pr_issue" ]]; then
+            echo "::error::Branch issue number ($branch_issue) must match PR linked issue number ($pr_issue)."
+            exit 1
+          fi
