@@ -17,7 +17,7 @@
 ┌─────────────────────────────────────────────────┐
 │                  FEEDFORWARD (가이드)              │
 │                                                   │
-│  CLAUDE.md ─────── AI 에이전트 자동 가이드         │
+│  claude.md ─────── AI 에이전트 자동 가이드         │
 │  docs/specs/                                      │
 │    MAP.md ──────── 아키텍처 맵                     │
 │    CONVENTIONS.md  코딩 컨벤션                     │
@@ -38,16 +38,17 @@
 │    pre-push ────── 푸시 시 전체 harness             │
 │  GitHub Actions                                   │
 │    harness.yml ─── PR 시 CI 검증                   │
+│    pr-issue-link.yml ─ PR-이슈 연결 검증           │
 │                                                   │
 └─────────────────────────────────────────────────┘
 ```
 
 ## Feedforward 구성요소
 
-### CLAUDE.md
+### claude.md
 - **위치**: 프로젝트 루트
 - **역할**: Claude Code가 자동으로 읽는 가이드 파일
-- **내용**: 프로젝트 개요, DDD 패키지 구조, 코딩 컨벤션, 브랜치/커밋 규칙, 빌드 커맨드
+- **내용**: 프로젝트 개요, DDD 패키지 구조, 코딩 컨벤션, 브랜치/커밋/PR-이슈 연동 규칙, 한국어 기본 사용 규칙, 빌드 커맨드
 
 ### docs/specs/MAP.md
 - **역할**: 아키텍처 전체 맵
@@ -55,7 +56,7 @@
 
 ### docs/specs/CONVENTIONS.md
 - **역할**: 상세 코딩 컨벤션
-- **내용**: 네이밍 규칙, 각 레이어별 코드 예제, 브랜치/커밋 컨벤션
+- **내용**: 네이밍 규칙, 각 레이어별 코드 예제, 브랜치/커밋/PR/주석 언어 컨벤션
 
 ### docs/specs/EXECUTION_PLAN.md
 - **역할**: 기능 구현 순서 템플릿
@@ -93,6 +94,20 @@
 - **트리거**: main 브랜치 대상 PR
 - **역할**: 로컬 hook을 우회하더라도 CI에서 반드시 잡히도록 이중 검증
 
+### PR-이슈 연동 검증
+- **위치**: `.github/workflows/pr-issue-link.yml`
+- **트리거**: PR 생성, 수정, 재오픈, 동기화, ready-for-review
+- **역할**: 브랜치명과 PR 본문이 같은 GitHub 이슈 번호를 참조하도록 강제
+- **검증 규칙**:
+  - 브랜치명은 `{작업자}/{목적}/{깃헙이슈번호}-{작업내용}` 형식이어야 한다
+  - PR 본문은 `Closes #<이슈번호>`, `Fixes #<이슈번호>`, `Resolves #<이슈번호>` 중 하나를 포함해야 한다
+  - 브랜치 이슈 번호와 PR 본문의 이슈 번호가 다르면 실패한다
+
+### 한국어 기본 사용 규칙
+- **위치**: `claude.md`, `docs/specs/CONVENTIONS.md`, `.github/PULL_REQUEST_TEMPLATE.md`, `.claude/commands/review.md`
+- **역할**: 주석, PR 설명, 리뷰 코멘트, 커밋 메시지, 에이전트 응답의 기본 언어를 한국어로 고정
+- **허용 예외**: 브랜치 slug, commit type/scope, 패키지명, 클래스명, 명령어 같은 식별자는 영어 사용 가능
+
 ## 검증 흐름도
 
 ```
@@ -104,7 +119,9 @@
 [git push] → pre-push hook → ./gradlew harness
     │                              ↓ 실패 시 푸시 차단
     ↓
-[PR 생성] → /review 스킬 → 코드 리뷰 코멘트
+[PR 생성] → pr-issue-link.yml → 브랜치명/PR 본문 이슈 번호 검증
+    │                              ↓ 실패 시 머지 차단
+    │       → /review 스킬 → 코드 리뷰 코멘트
     │       → harness.yml CI → ./gradlew build
     │                              ↓ 실패 시 머지 차단
     ↓
@@ -155,7 +172,7 @@
 1. `/harness-update` 스킬 사용 또는 수동으로:
 2. `src/test/.../architecture/` 에 ArchUnit 테스트 추가
 3. `docs/specs/MAP.md` 에 규칙 문서화
-4. `CLAUDE.md` 에 요약 반영
+4. `claude.md` 에 요약 반영
 
 ### 새로운 스타일 규칙 추가
 1. 루트 `.editorconfig` 에 `ktlint` 관련 설정 추가

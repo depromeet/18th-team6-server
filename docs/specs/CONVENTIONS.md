@@ -140,16 +140,30 @@ interface UserRepository : JpaRepository<User, Long> {
 
 ## 브랜치 컨벤션
 
-`{작업자이름}/{목적}/{이슈번호}-{작업내용}`
+브랜치 형식은 반드시 아래 규칙을 따른다.
+
+`{작업자}/{목적}/{깃헙이슈번호}-{작업내용}`
+
+- 이슈 번호는 실제 GitHub issue 번호를 사용한다.
+- `0001` 같은 임의 zero-padding 번호는 금지한다.
+- 작업 내용은 짧은 영어 kebab-case로 작성한다.
+- 이슈 번호가 없으면 브랜치나 PR을 만들지 말고 먼저 이슈를 확인하거나 생성한다.
 
 | 목적 | 설명 | 예시 |
 |---|---|---|
-| `feat` | 새 기능 | `ziweek/feat/0001-add-user-api` |
-| `fix` | 버그 수정 | `ziweek/fix/0023-fix-null-pointer` |
-| `refactor` | 리팩토링 | `ziweek/refactor/0015-simplify-auth` |
-| `chore` | 빌드/설정 | `ziweek/chore/0002-update-deps` |
-| `docs` | 문서 | `ziweek/docs/0010-add-api-docs` |
-| `test` | 테스트 | `ziweek/test/0005-add-unit-tests` |
+| `feat` | 새 기능 | `ziweek/feat/123-add-user-api` |
+| `fix` | 버그 수정 | `ziweek/fix/23-fix-null-pointer` |
+| `refactor` | 리팩토링 | `ziweek/refactor/15-simplify-auth` |
+| `chore` | 빌드/설정 | `ziweek/chore/2-update-deps` |
+| `docs` | 문서 | `ziweek/docs/10-add-api-docs` |
+| `test` | 테스트 | `ziweek/test/5-add-unit-tests` |
+
+## PR-이슈 연동 컨벤션
+
+- PR 본문에는 브랜치의 이슈 번호와 같은 `Closes #<이슈번호>`를 반드시 작성한다.
+- `Fixes #<이슈번호>` 또는 `Resolves #<이슈번호>`도 허용한다.
+- 브랜치 이슈 번호와 PR 본문의 이슈 번호가 다르면 CI가 실패한다.
+- PR 설명, 리뷰 요청, 리뷰 코멘트, 리뷰 요약은 한국어를 기본으로 작성한다.
 
 ## 커밋 메시지 컨벤션
 
@@ -163,3 +177,15 @@ docs: API 문서 업데이트
 test(user): 회원가입 서비스 단위 테스트 추가
 chore: Gradle 의존성 업데이트
 ```
+
+- 커밋 메시지의 내용은 한국어를 기본으로 작성한다.
+- 커밋은 논리적 단위로 나눈다.
+- 서로 다른 목적의 변경을 한 커밋에 섞지 않는다.
+- 문서 수정, 테스트 추가, 기능 구현, 리팩토링은 가능하면 별도 커밋으로 분리한다.
+
+## 언어 사용 컨벤션
+
+- 코드 주석, 문서 주석, 리뷰 코멘트, 에이전트 응답, 계획, 리뷰 요약, PR 설명, 커밋 메시지는 한국어를 기본으로 작성한다.
+- PR 본문과 리뷰 코멘트의 제목, 요약, 변경 사항, 제안 내용도 한국어로 작성한다.
+- 커밋 메시지는 type/scope를 제외한 제목과 본문을 한국어로 작성한다.
+- 브랜치 slug, commit type/scope, 패키지명, 클래스명, 명령어 같은 식별자는 영어를 허용한다.
