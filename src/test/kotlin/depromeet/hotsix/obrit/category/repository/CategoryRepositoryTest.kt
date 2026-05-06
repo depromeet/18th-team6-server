@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.category.repository
 
+import depromeet.hotsix.obrit.user.entity.UserFixture
 import org.junit.jupiter.api.AfterEach
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -19,7 +20,7 @@ class CategoryRepositoryTest {
     @Autowired
     private lateinit var categoryRepository: CategoryRepository
 
-    private val testUserId = 1L
+    private val testUserId = UserFixture.user(1L).id!!
 
     @BeforeEach
     @Transactional
