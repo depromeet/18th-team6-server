@@ -17,8 +17,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 interface CategoryControllerApi {
 
     @Operation(
-        summary = "카테고리 목록 조회",
-        description = "기본 제공 카테고리와 사용자의 커스텀 카테고리를 조회합니다.",
+        summary = "사용자 커스텀 카테고리 조회",
+        description = "사용자의 커스텀 카테고리를 조회합니다.",
     )
     @ApiResponses(
         value = [
@@ -37,6 +37,31 @@ interface CategoryControllerApi {
     fun listCategories(
         @Parameter(description = "사용자 ID", required = true, example = "1")
         userId: Long,
+        @Parameter(description = "페이지네이션 커서", example = "0")
+        cursor: Long,
+        @Parameter(description = "조회 개수", example = "20")
+        limit: Int,
+    ): ApiResponse<CategoriesListResponse>
+
+    @Operation(
+        summary = "기본 제공 카테고리 조회",
+        description = "기본 제공 카테고리를 조회합니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "조회 완료",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ApiResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun listPresetCategories(
         @Parameter(description = "페이지네이션 커서", example = "0")
         cursor: Long,
         @Parameter(description = "조회 개수", example = "20")

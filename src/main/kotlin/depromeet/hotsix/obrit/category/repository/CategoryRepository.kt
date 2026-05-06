@@ -24,6 +24,17 @@ interface CategoryRepository : JpaRepository<Category, Long> {
         pageable: Pageable,
     ): Slice<Category>
 
+    @Query(
+        """
+        select c
+        from Category c
+        where c.userId is null
+          and c.id > :cursor
+          and c.deletedAt is null
+        """,
+    )
+    fun findByUserIdIsNullWithCursor(@Param("cursor") cursor: Long, pageable: Pageable): Slice<Category>
+
     fun findByUserIdIsNullAndDeletedAtIsNull(pageable: Pageable): Slice<Category>
 
     @Query(

@@ -33,6 +33,15 @@ class CategoryController(private val categoryService: CategoryService) : Categor
         return ApiResponse.ok(result)
     }
 
+    @GetMapping("/presets")
+    override fun listPresetCategories(
+        @RequestParam(required = false, defaultValue = "0") cursor: Long,
+        @RequestParam(required = false, defaultValue = "20") limit: Int,
+    ): ApiResponse<CategoriesListResponse> {
+        val result = categoryService.listPresetCategoriesWithPagination(cursor, limit)
+        return ApiResponse.ok(result)
+    }
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     override fun createCategory(

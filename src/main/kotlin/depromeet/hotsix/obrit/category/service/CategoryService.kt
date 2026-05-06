@@ -37,6 +37,20 @@ class CategoryService(
     }
 
     @Transactional(readOnly = true)
+    fun listPresetCategoriesWithPagination(cursor: Long = 0L, limit: Int = 20): CategoriesListResponse {
+        val pageable = PageRequest.of(0, limit, Sort.by("id").ascending())
+        val result = categoryRepository.findByUserIdIsNullWithCursor(cursor, pageable)
+        val items = result.content.map { it.toResponse() }
+        val nextCursor = if (result.hasNext()) items.lastOrNull()?.id else null
+
+        return CategoriesListResponse(
+            totalCount = items.size,
+            items = items,
+            nextCursor = nextCursor,
+        )
+    }
+
+    @Transactional(readOnly = true)
     fun listAllAccessibleCategories(userId: Long): List<CategoryResponse> {
         userService.validateUserExist(userId)
         val pageable = PageRequest.of(0, 1000, Sort.by("id").ascending())
