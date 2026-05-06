@@ -15,6 +15,7 @@ import kotlin.test.assertTrue
 
 @SpringBootTest
 @ActiveProfiles("test")
+@Transactional
 class CategoryServiceTest {
 
     @Autowired
@@ -30,7 +31,6 @@ class CategoryServiceTest {
     private var user2Id: Long = 0L
 
     @BeforeEach
-    @Transactional
     fun setUp() {
         // 사용자 생성
         val users = userRepository.saveAll(
@@ -53,7 +53,6 @@ class CategoryServiceTest {
     }
 
     @Test
-    @Transactional
     fun `사용자는_본인이_등록한_종류와_기본제공_종류만_조회할_수_있다`() {
         // when
         val result = categoryService.listAllAccessibleCategories(user1Id)
@@ -71,7 +70,6 @@ class CategoryServiceTest {
     }
 
     @Test
-    @Transactional
     fun `다른_사용자가_등록한_종류는_조회되지_않는다`() {
         // when
         val result = categoryService.listAllAccessibleCategories(user1Id)
