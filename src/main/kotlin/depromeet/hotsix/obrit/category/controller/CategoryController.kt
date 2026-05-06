@@ -30,15 +30,7 @@ class CategoryController(private val categoryService: CategoryService) : Categor
         @RequestParam(required = false, defaultValue = "20") limit: Int,
     ): ApiResponse<CategoriesListResponse> {
         val result = categoryService.listUserCategoriesWithPagination(userId, cursor, limit)
-        val nextCursor = if (result.hasNext()) result.content.lastOrNull()?.id else null
-
-        return ApiResponse.ok(
-            CategoriesListResponse(
-                totalCount = result.content.size,
-                items = result.content,
-                nextCursor = nextCursor,
-            ),
-        )
+        return ApiResponse.ok(result)
     }
 
     @PostMapping

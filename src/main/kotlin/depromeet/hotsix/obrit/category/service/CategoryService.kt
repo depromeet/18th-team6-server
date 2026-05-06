@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.category.service
 
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoriesListResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
@@ -9,7 +10,6 @@ import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.user.service.UserService
 import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Slice
 import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -22,11 +22,18 @@ class CategoryService(
 ) {
 
     @Transactional(readOnly = true)
-    fun listUserCategoriesWithPagination(userId: Long, cursor: Long = 0L, limit: Int = 20): Slice<CategoryResponse> {
+    fun listUserCategoriesWithPagination(userId: Long, cursor: Long = 0L, limit: Int = 20): CategoriesListResponse {
         userService.validateUserExist(userId)
         val pageable = PageRequest.of(0, limit, Sort.by("id").ascending())
-        return categoryRepository.findByUserIdWithCursor(userId, cursor, pageable)
-            .map { it.toResponse() }
+        val result = categoryRepository.findByUserIdWithCursor(userId, cursor, pageable)
+        val items = result.content.map { it.toResponse() }
+        val nextCursor = if (result.hasNext()) items.lastOrNull()?.id else null
+
+        return CategoriesListResponse(
+            totalCount = items.size,
+            items = items,
+            nextCursor = nextCursor,
+        )
     }
 
     @Transactional(readOnly = true)
