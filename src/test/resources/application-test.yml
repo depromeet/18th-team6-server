@@ -1,0 +1,6 @@
+spring:
+  sql:
+    init:
+      mode: never
+  jpa:
+    defer-datasource-initialization: false
