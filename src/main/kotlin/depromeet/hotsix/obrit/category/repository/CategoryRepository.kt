@@ -1,6 +1,8 @@
 package depromeet.hotsix.obrit.category.repository
 
 import depromeet.hotsix.obrit.category.entity.Category
+import org.springframework.data.domain.Pageable
+import org.springframework.data.domain.Slice
 import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
@@ -11,12 +13,18 @@ interface CategoryRepository : JpaRepository<Category, Long> {
         """
         select c
         from Category c
-        where c.deletedAt is null
-          and (c.userId is null or c.userId = :userId)
-        order by case when c.userId is null then 0 else 1 end asc, c.id asc
+        where c.userId = :userId
+          and c.id > :cursor
+          and c.deletedAt is null
         """,
     )
-    fun findVisibleCategories(@Param("userId") userId: Long): List<Category>
+    fun findByUserIdWithCursor(
+        @Param("userId") userId: Long,
+        @Param("cursor") cursor: Long,
+        pageable: Pageable,
+    ): Slice<Category>
+
+    fun findByUserIdIsNullAndDeletedAtIsNull(pageable: Pageable): Slice<Category>
 
     @Query(
         """
@@ -38,9 +46,7 @@ interface CategoryRepository : JpaRepository<Category, Long> {
         """,
     )
     fun findVisibleByIds(
-        @Param("userId")
-        userId: Long,
-        @Param("categoryIds")
-        categoryIds: Collection<Long>,
+        @Param("userId") userId: Long,
+        @Param("categoryIds") categoryIds: Collection<Long>,
     ): List<Category>
 }

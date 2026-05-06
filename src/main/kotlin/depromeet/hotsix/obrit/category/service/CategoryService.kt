@@ -1,14 +1,16 @@
 package depromeet.hotsix.obrit.category.service
 
-import depromeet.hotsix.obrit.category.dto.CategoryResponse
-import depromeet.hotsix.obrit.category.dto.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.common.CategoryItemCleaner
-import depromeet.hotsix.obrit.global.common.DEFAULT_CATEGORY_IMAGE_URL
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.user.service.UserService
+import org.springframework.data.domain.PageRequest
+import org.springframework.data.domain.Slice
+import org.springframework.data.domain.Sort
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -20,13 +22,27 @@ class CategoryService(
 ) {
 
     @Transactional(readOnly = true)
-    fun listCategories(userId: Long): List<CategoryResponse> =
-        categoryRepository.findVisibleCategories(userId).map { it.toResponse() }
+    fun listUserCategoriesWithPagination(userId: Long, cursor: Long = 0L, limit: Int = 20): Slice<CategoryResponse> {
+        userService.validateUserExist(userId)
+        val pageable = PageRequest.of(0, limit, Sort.by("id").ascending())
+        return categoryRepository.findByUserIdWithCursor(userId, cursor, pageable)
+            .map { it.toResponse() }
+    }
+
+    @Transactional(readOnly = true)
+    fun listAllAccessibleCategories(userId: Long): List<CategoryResponse> {
+        userService.validateUserExist(userId)
+        val pageable = PageRequest.of(0, 1000, Sort.by("id").ascending())
+        val userCategories = categoryRepository.findByUserIdWithCursor(userId, 0L, pageable).content
+        val presetCategories = categoryRepository.findByUserIdIsNullAndDeletedAtIsNull(pageable).content
+
+        return (presetCategories + userCategories).map { it.toResponse() }
+    }
 
     @Transactional
     fun createCategory(userId: Long, request: CreateCategoryRequest): CategoryResponse {
-        userService.requireExistingUser(userId)
-        val imageUrl = request.imageUrl?.takeIf { it.isNotBlank() } ?: DEFAULT_CATEGORY_IMAGE_URL
+        userService.validateUserExist(userId)
+        val imageUrl = request.imageUrl?.takeIf { it.isNotBlank() } ?: "/images/default-category.png"
 
         val category = Category(
             userId = userId,
