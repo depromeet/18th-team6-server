@@ -28,6 +28,7 @@ class HomeStatusCalculatorService {
     private val dangerRatioWarningLimit = 0.3
     private val replacementAverageWarningMin = 1.0
     private val emptyScore = 45.0
+    private val averageScoreDefault = 45.0
     private val replacementScoreWeight = 0.6
     private val spareScoreWeight = 0.4
 
@@ -103,12 +104,13 @@ class HomeStatusCalculatorService {
         return OverallStatus.DANGER
     }
 
-    private fun calculateMyStatusSummary(today: LocalDate, items: List<ItemSnapshot>): MyStatusSummaryResponse {
+    fun calculateMyStatusSummary(today: LocalDate, items: List<ItemSnapshot>): MyStatusSummaryResponse {
         if (items.isEmpty()) {
             return MyStatusSummaryResponse(
                 totalCount = 0,
                 needReplaceCount = 0,
                 score = emptyScore,
+                averageScore = averageScoreDefault,
             )
         }
 
@@ -119,6 +121,7 @@ class HomeStatusCalculatorService {
             totalCount = items.size,
             needReplaceCount = items.count { replacementBand(today, it) == ReplacementBand.OVERDUE },
             score = replacementBar * replacementScoreWeight + spareBar * spareScoreWeight,
+            averageScore = averageScoreDefault,
         )
     }
 

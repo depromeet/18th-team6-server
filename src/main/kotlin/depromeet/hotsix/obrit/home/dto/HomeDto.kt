@@ -47,7 +47,12 @@ data class HomeResponse(
 data class OverallStatusResponse(val replacement: ItemStatus, val spare: ItemStatus, val overall: OverallStatus)
 
 @Schema(description = "My status summary.")
-data class MyStatusSummaryResponse(val totalCount: Int, val needReplaceCount: Int, val score: Double)
+data class MyStatusSummaryResponse(
+    val totalCount: Int,
+    val needReplaceCount: Int,
+    val score: Double,
+    val averageScore: Double,
+)
 
 @Schema(description = "Items grouped by spare and replacement status.")
 data class ItemBucketResponse(val bucket: ItemBucket, val count: Int, val items: List<BucketItemResponse>)
