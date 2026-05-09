@@ -65,3 +65,6 @@ data class BucketItemResponse(
     val nextReplacementDate: LocalDate,
     val status: ItemStatus,
 )
+
+@Schema(description = "Home buckets grouped by spare and replacement status.")
+data class HomeBucketsResponse(val buckets: List<ItemBucketResponse>)

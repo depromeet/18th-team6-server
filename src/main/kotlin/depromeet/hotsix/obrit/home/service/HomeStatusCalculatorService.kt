@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.home.service
 
 import depromeet.hotsix.obrit.global.readmodel.ItemSnapshot
 import depromeet.hotsix.obrit.home.dto.BucketItemResponse
+import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.HomeResponse
 import depromeet.hotsix.obrit.home.dto.ItemBucket
 import depromeet.hotsix.obrit.home.dto.ItemBucketResponse
@@ -134,6 +135,9 @@ class HomeStatusCalculatorService {
                 items = bucketItems.map { it.toBucketItemResponse(bucket.status) },
             )
         }
+
+    fun calculateBuckets(today: LocalDate, items: List<ItemSnapshot>): HomeBucketsResponse =
+        HomeBucketsResponse(buckets = bucketize(today, items))
 
     private fun bucketOf(today: LocalDate, item: ItemSnapshot): ItemBucket {
         val spare = spareBand(item)

@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.home.controller
 
+import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
 import depromeet.hotsix.obrit.home.service.HomeService
@@ -67,4 +68,28 @@ class HomeController(private val homeService: HomeService) {
         @Parameter(description = "Development user id.", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
     ): MyStatusSummaryResponse = homeService.getMyStatusSummary(userId)
+
+    @Operation(
+        summary = "홈 화면 - 버킷별 개수/목록",
+        description = "여분 보유 여부와 교체 시점으로 나눈 여섯 개 버킷별 item 개수와 목록을 반환합니다.",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "Home buckets returned.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = HomeBucketsResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    @GetMapping("/buckets")
+    fun getBuckets(
+        @Parameter(description = "Development user id.", required = true, example = "1")
+        @RequestHeader("X-User-Id") userId: Long,
+    ): HomeBucketsResponse = homeService.getBuckets(userId)
 }
