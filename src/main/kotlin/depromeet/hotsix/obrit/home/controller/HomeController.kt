@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.home.controller
 
+import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
@@ -8,13 +9,13 @@ import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
-import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
+import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 @Tag(name = "Home", description = "Home APIs")
 @RestController
@@ -27,7 +28,7 @@ class HomeController(private val homeService: HomeService) {
     )
     @ApiResponses(
         value = [
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "200",
                 description = "Home status returned.",
                 content = [
@@ -43,7 +44,7 @@ class HomeController(private val homeService: HomeService) {
     fun getOverallStatus(
         @Parameter(description = "Development user id.", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
-    ): OverallStatusResponse = homeService.getOverallStatus(userId)
+    ): ApiResponse<OverallStatusResponse> = ApiResponse.ok(homeService.getOverallStatus(userId))
 
     @Operation(
         summary = "홈 화면 - 내 상태 요약",
@@ -51,7 +52,7 @@ class HomeController(private val homeService: HomeService) {
     )
     @ApiResponses(
         value = [
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "200",
                 description = "My status summary returned.",
                 content = [
@@ -67,7 +68,7 @@ class HomeController(private val homeService: HomeService) {
     fun getMyStatusSummary(
         @Parameter(description = "Development user id.", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
-    ): MyStatusSummaryResponse = homeService.getMyStatusSummary(userId)
+    ): ApiResponse<MyStatusSummaryResponse> = ApiResponse.ok(homeService.getMyStatusSummary(userId))
 
     @Operation(
         summary = "홈 화면 - 버킷별 개수/목록",
@@ -75,7 +76,7 @@ class HomeController(private val homeService: HomeService) {
     )
     @ApiResponses(
         value = [
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "200",
                 description = "Home buckets returned.",
                 content = [
@@ -91,5 +92,5 @@ class HomeController(private val homeService: HomeService) {
     fun getBuckets(
         @Parameter(description = "Development user id.", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
-    ): HomeBucketsResponse = homeService.getBuckets(userId)
+    ): ApiResponse<HomeBucketsResponse> = ApiResponse.ok(homeService.getBuckets(userId))
 }
