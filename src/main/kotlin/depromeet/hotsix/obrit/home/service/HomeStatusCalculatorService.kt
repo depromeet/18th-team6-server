@@ -37,7 +37,7 @@ class HomeStatusCalculatorService {
         itemBuckets = bucketize(today, items),
     )
 
-    private fun calculateOverallStatus(today: LocalDate, items: List<ItemSnapshot>): OverallStatusResponse {
+    fun calculateOverallStatus(today: LocalDate, items: List<ItemSnapshot>): OverallStatusResponse {
         if (items.isEmpty()) {
             return OverallStatusResponse(
                 replacement = ItemStatus.GOOD,
