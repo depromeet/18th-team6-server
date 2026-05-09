@@ -3,12 +3,14 @@ package depromeet.hotsix.obrit.home.dto
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
+// 개별 항목 상태
 enum class ItemStatus {
     GOOD,
     WARNING,
     DANGER,
 }
 
+// 전체 종합 상태
 enum class OverallStatus {
     PERFECT,
     GOOD,
@@ -16,6 +18,7 @@ enum class OverallStatus {
     DANGER,
 }
 
+// 아이템 분류 버킷 6종류
 enum class ItemBucket(val priority: Int, val status: ItemStatus) {
     NONE_OVERDUE(1, ItemStatus.DANGER),
     NONE_WARN(2, ItemStatus.DANGER),
@@ -25,12 +28,14 @@ enum class ItemBucket(val priority: Int, val status: ItemStatus) {
     HAS_SAFE(6, ItemStatus.GOOD),
 }
 
+// 교체 시기
 enum class ReplacementBand {
     OVERDUE,
     WARN,
     SAFE,
 }
 
+// 여분 유무
 enum class SpareBand {
     NONE,
     HAS,
