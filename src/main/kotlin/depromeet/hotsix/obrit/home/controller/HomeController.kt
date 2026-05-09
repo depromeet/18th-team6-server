@@ -20,8 +20,8 @@ import org.springframework.web.bind.annotation.RestController
 class HomeController(private val homeService: HomeService) {
 
     @Operation(
-        summary = "Get home overall status",
-        description = "Returns replacement, spare, and overall status for the home screen.",
+        summary = "홈 화면 - 전체 상태",
+        description = "교체 관리 / 여분 관리 / 전체 상태를 표시 합니다.",
     )
     @ApiResponses(
         value = [
