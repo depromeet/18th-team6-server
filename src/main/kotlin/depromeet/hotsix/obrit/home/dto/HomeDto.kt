@@ -68,3 +68,12 @@ data class BucketItemResponse(
 
 @Schema(description = "Home buckets grouped by spare and replacement status.")
 data class HomeBucketsResponse(val buckets: List<ItemBucketResponse>)
+
+@Schema(description = "Item card shown in the home infinite scroll list.")
+data class HomeItemCard(
+    val id: Long,
+    val name: String,
+    val daysInUse: Int,
+    val replacementDday: String,
+    val spareQuantity: Int,
+)

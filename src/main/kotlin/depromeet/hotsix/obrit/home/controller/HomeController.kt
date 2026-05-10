@@ -1,7 +1,10 @@
 package depromeet.hotsix.obrit.home.controller
 
 import depromeet.hotsix.obrit.global.dto.ApiResponse
+import depromeet.hotsix.obrit.global.paging.CursorSliceResponse
+import depromeet.hotsix.obrit.global.readmodel.ItemOrder
 import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
+import depromeet.hotsix.obrit.home.dto.HomeItemCard
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
 import depromeet.hotsix.obrit.home.service.HomeService
@@ -14,6 +17,7 @@ import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
@@ -93,4 +97,51 @@ class HomeController(private val homeService: HomeService) {
         @Parameter(description = "Development user id.", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
     ): ApiResponse<HomeBucketsResponse> = ApiResponse.ok(homeService.getBuckets(userId))
+
+    @Operation(
+        summary = "홈 화면 - 아이템 무한 스크롤 목록",
+        description = "정렬, D-day, 여분 필터를 적용한 홈 아이템 목록을 cursor 기반으로 반환합니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "Home items returned.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = CursorSliceResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    @GetMapping("/items")
+    fun getItems(
+        @Parameter(description = "Development user id.", required = true, example = "1")
+        @RequestHeader("X-User-Id") userId: Long,
+        @Parameter(description = "Order option. Default is REPLACEMENT_URGENT.", example = "REPLACEMENT_URGENT")
+        @RequestParam(required = false, defaultValue = "REPLACEMENT_URGENT") order: ItemOrder,
+        @Parameter(
+            description = "D-day filter. Returns items whose replacement date is " +
+                "within N days from today (inclusive). 30 means items due today through 30 days later.",
+            example = "30",
+        )
+        @RequestParam(required = false) dDay: Int?,
+        @Parameter(description = "Minimum spare quantity filter.", example = "2")
+        @RequestParam(required = false) spareQuantity: Int?,
+        @Parameter(description = "Cursor item id.", example = "1001")
+        @RequestParam(required = false) cursor: Long?,
+        @Parameter(description = "Page size. Clamped to 1..50.", example = "20")
+        @RequestParam(required = false, defaultValue = "20") size: Int,
+    ): ApiResponse<CursorSliceResponse<HomeItemCard>> = ApiResponse.ok(
+        homeService.getItems(
+            userId = userId,
+            order = order,
+            dDay = dDay,
+            spareQuantity = spareQuantity,
+            cursor = cursor,
+            size = size,
+        ),
+    )
 }
