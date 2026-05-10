@@ -5,7 +5,9 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface ItemRepository : JpaRepository<Item, Long> {
+interface ItemRepository :
+    JpaRepository<Item, Long>,
+    ItemQueryRepository {
 
     @Query(
         """
