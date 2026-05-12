@@ -18,18 +18,20 @@ import java.time.temporal.ChronoUnit
 @Service
 class HomeStatusCalculatorService {
 
-    private val scoreDanger = 0
-    private val scoreWarning = 1
-    private val scoreGood = 2
-    private val maxScore = 2.0
-    private val spareWarningMin = 1
-    private val spareGoodMin = 3
-    private val replacementWarnDays = 3
-    private val dangerRatioWarningLimit = 0.3
-    private val replacementAverageWarningMin = 1.0
-    private val emptyScore = 45.0
-    private val replacementScoreWeight = 0.6
-    private val spareScoreWeight = 0.4
+    companion object {
+        private const val SCORE_DANGER = 0
+        private const val SCORE_WARNING = 1
+        private const val SCORE_GOOD = 2
+        private const val MAX_SCORE = 2.0
+        private const val SPARE_WARNING_MIN = 1
+        private const val SPARE_GOOD_MIN = 3
+        private const val REPLACEMENT_WARN_DAYS = 3
+        private const val DANGER_RATIO_WARNING_LIMIT = 0.3
+        private const val REPLACEMENT_AVERAGE_WARNING_MIN = 1.0
+        private const val EMPTY_SCORE = 45.0
+        private const val REPLACEMENT_SCORE_WEIGHT = 0.6
+        private const val SPARE_SCORE_WEIGHT = 0.4
+    }
 
     fun calculate(today: LocalDate, items: List<ItemSnapshot>): HomeResponse = HomeResponse(
         overallStatus = calculateOverallStatus(today, items),
@@ -57,13 +59,13 @@ class HomeStatusCalculatorService {
     }
 
     private fun calculateReplacementStatus(today: LocalDate, items: List<ItemSnapshot>): ItemStatus {
-        val dangerCount = items.count { replacementScore(today, it) == scoreDanger }
+        val dangerCount = items.count { replacementScore(today, it) == SCORE_DANGER }
         val dangerRatio = dangerCount.toDouble() / items.size
         val average = items.sumOf { replacementScore(today, it) }.toDouble() / items.size
 
         return when {
             dangerRatio == 0.0 -> ItemStatus.GOOD
-            dangerRatio <= dangerRatioWarningLimit && average >= replacementAverageWarningMin -> {
+            dangerRatio <= DANGER_RATIO_WARNING_LIMIT && average >= REPLACEMENT_AVERAGE_WARNING_MIN -> {
                 ItemStatus.WARNING
             }
             else -> ItemStatus.DANGER
@@ -75,7 +77,7 @@ class HomeStatusCalculatorService {
 
         return when {
             missingRatio == 0.0 -> ItemStatus.GOOD
-            missingRatio <= dangerRatioWarningLimit -> ItemStatus.WARNING
+            missingRatio <= DANGER_RATIO_WARNING_LIMIT -> ItemStatus.WARNING
             else -> ItemStatus.DANGER
         }
     }
@@ -108,17 +110,17 @@ class HomeStatusCalculatorService {
             return MyStatusSummaryResponse(
                 totalCount = 0,
                 needReplaceCount = 0,
-                score = emptyScore,
+                score = EMPTY_SCORE,
             )
         }
 
-        val replacementBar = items.sumOf { replacementScore(today, it) }.toDouble() / items.size / maxScore * 100
-        val spareBar = items.sumOf { spareScore(it) }.toDouble() / items.size / maxScore * 100
+        val replacementBar = items.sumOf { replacementScore(today, it) }.toDouble() / items.size / MAX_SCORE * 100
+        val spareBar = items.sumOf { spareScore(it) }.toDouble() / items.size / MAX_SCORE * 100
 
         return MyStatusSummaryResponse(
             totalCount = items.size,
             needReplaceCount = items.count { replacementBand(today, it) == ReplacementBand.OVERDUE },
-            score = replacementBar * replacementScoreWeight + spareBar * spareScoreWeight,
+            score = replacementBar * REPLACEMENT_SCORE_WEIGHT + spareBar * SPARE_SCORE_WEIGHT,
         )
     }
 
@@ -159,19 +161,19 @@ class HomeStatusCalculatorService {
         val band = replacementBand(today, item)
 
         if (band == ReplacementBand.OVERDUE) {
-            return scoreDanger
+            return SCORE_DANGER
         }
         if (band == ReplacementBand.WARN) {
-            return scoreWarning
+            return SCORE_WARNING
         }
 
-        return scoreGood
+        return SCORE_GOOD
     }
 
     private fun spareScore(item: ItemSnapshot): Int = when {
-        item.quantity >= spareGoodMin -> scoreGood
-        item.quantity >= spareWarningMin -> scoreWarning
-        else -> scoreDanger
+        item.quantity >= SPARE_GOOD_MIN -> SCORE_GOOD
+        item.quantity >= SPARE_WARNING_MIN -> SCORE_WARNING
+        else -> SCORE_DANGER
     }
 
     private fun replacementBand(today: LocalDate, item: ItemSnapshot): ReplacementBand {
@@ -179,7 +181,7 @@ class HomeStatusCalculatorService {
 
         return when {
             daysUntil <= 0 -> ReplacementBand.OVERDUE
-            daysUntil <= replacementWarnDays -> ReplacementBand.WARN
+            daysUntil <= REPLACEMENT_WARN_DAYS -> ReplacementBand.WARN
             else -> ReplacementBand.SAFE
         }
     }
