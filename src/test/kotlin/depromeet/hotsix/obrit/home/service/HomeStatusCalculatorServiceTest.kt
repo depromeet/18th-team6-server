@@ -1,9 +1,9 @@
 package depromeet.hotsix.obrit.home.service
 
 import depromeet.hotsix.obrit.global.readmodel.ItemSnapshot
-import depromeet.hotsix.obrit.home.dto.ItemBucket
-import depromeet.hotsix.obrit.home.dto.ItemStatus
-import depromeet.hotsix.obrit.home.dto.OverallStatus
+import depromeet.hotsix.obrit.home.entity.ItemBucket
+import depromeet.hotsix.obrit.home.entity.OverallStatus
+import depromeet.hotsix.obrit.item.entity.ItemStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
