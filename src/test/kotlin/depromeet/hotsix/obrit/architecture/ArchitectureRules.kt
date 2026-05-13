@@ -130,17 +130,14 @@ object ArchitectureRules {
         else -> location.layer in setOf(CONTROLLER_LAYER, SERVICE_LAYER, DTO_LAYER)
     }
 
-    private fun isServiceDependencyAllowed(
-        domain: String,
-        location: ProjectLocation,
-        javaClass: JavaClass,
-    ): Boolean = when {
-        location.domain == GLOBAL_DOMAIN -> true
-        isShareableDomainType(javaClass) -> true
-        location.layer == SERVICE_LAYER -> true
-        location.domain != domain -> false
-        else -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER)
-    }
+    private fun isServiceDependencyAllowed(domain: String, location: ProjectLocation, javaClass: JavaClass): Boolean =
+        when {
+            location.domain == GLOBAL_DOMAIN -> true
+            isShareableDomainType(javaClass) -> true
+            location.layer == SERVICE_LAYER -> true
+            location.domain != domain -> false
+            else -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER)
+        }
 
     private fun isShareableDomainType(javaClass: JavaClass): Boolean =
         javaClass.packageName.endsWith(".$ENTITY_LAYER") &&
@@ -150,7 +147,7 @@ object ArchitectureRules {
                     javaClass.isAnnotatedWith(JvmInline::class.java) ||
                     javaClass.simpleName.endsWith("Value") ||
                     javaClass.simpleName.endsWith("ValueObject")
-            )
+                )
 
     private fun projectLocation(packageName: String): ProjectLocation? {
         if (!packageName.startsWith("$BASE_PACKAGE.")) {
