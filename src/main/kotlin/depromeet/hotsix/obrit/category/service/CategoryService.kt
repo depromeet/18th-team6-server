@@ -39,7 +39,9 @@ class CategoryService(
         userService.validateUserExist(userId)
 
         val trimmedName = request.name.trim()
-        if (categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, trimmedName)) {
+        if (categoryRepository.existsByUserIdIsNullAndNameAndDeletedAtIsNull(trimmedName) ||
+            categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, trimmedName)
+        ) {
             throw ConflictException("이미 등록된 소모품 종류입니다.")
         }
 
