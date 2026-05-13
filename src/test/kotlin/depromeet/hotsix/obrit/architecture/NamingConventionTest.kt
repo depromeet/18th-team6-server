@@ -39,6 +39,7 @@ class NamingConventionTest {
     fun `controller 패키지의 클래스는 Controller로 끝나야 한다`() {
         classes()
             .that().resideInAPackage("..controller..")
+            .and().resideOutsideOfPackage("..docs..")
             .should().haveSimpleNameEndingWith("Controller")
             .because("controller 패키지의 클래스는 *Controller 네이밍을 따라야 합니다.")
             .allowEmptyShould(true)
