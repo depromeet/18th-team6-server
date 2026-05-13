@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.category.controller.docs
 
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.global.exception.ErrorResponse
@@ -14,6 +15,26 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 @Tag(name = "카테고리", description = "카테고리 API")
 interface CategoryControllerApi {
+
+    @Operation(
+        summary = "카테고리 아이콘 전체 조회",
+        description = "소모품 종류 등록 시 사용할 수 있는 전체 아이콘 목록을 조회합니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "조회 완료",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ApiResponse::class),
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun listCategoryIcons(): ApiResponse<List<CategoryIconResponse>>
 
     @Operation(
         summary = "카테고리 전체 조회",
