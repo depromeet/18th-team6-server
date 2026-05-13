@@ -5,8 +5,6 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
-import org.springframework.data.domain.PageRequest
-import org.springframework.data.domain.Sort
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.assertEquals
@@ -30,77 +28,41 @@ class CategoryRepositoryTest {
     }
 
     @Test
-    fun `findByUserIdWithCursor는_사용자의_카테고리를_반환한다`() {
-        // given
-        val cursor = 0L
-        val pageable = PageRequest.of(0, 20, Sort.by("id").ascending())
-
+    fun `findActiveByUserId는_해당_사용자의_카테고리만_반환한다`() {
         // when
-        val result = categoryRepository.findByUserIdWithCursor(testUserId, cursor, pageable)
+        val result = categoryRepository.findActiveByUserId(testUserId)
 
         // then
-        assertEquals(2, result.content.size)
-        assertTrue(result.content.all { it.userId == testUserId })
-        assertTrue(result.content.none { it.userId == 999L })
+        assertEquals(2, result.size)
+        assertTrue(result.all { it.userId == testUserId })
     }
 
     @Test
-    fun `findByUserIdWithCursor는_삭제된_카테고리를_제외한다`() {
-        // given
-        val cursor = 0L
-        val pageable = PageRequest.of(0, 20, Sort.by("id").ascending())
-
+    fun `findActiveByUserId는_삭제된_카테고리를_제외한다`() {
         // when
-        val result = categoryRepository.findByUserIdWithCursor(testUserId, cursor, pageable)
+        val result = categoryRepository.findActiveByUserId(testUserId)
 
-        // then: 모두 deletedAt이 null이어야 함
-        assertTrue(result.content.all { it.deletedAt == null })
+        // then
+        assertTrue(result.all { it.deletedAt == null })
     }
 
     @Test
-    fun `findByUserIdWithCursor는_커서보다_큰_id의_데이터만_반환한다`() {
-        // given
-        val allCategories = categoryRepository.findByUserIdWithCursor(
-            testUserId,
-            0L,
-            PageRequest.of(0, 20, Sort.by("id").ascending()),
-        ).content
-        val firstCategoryId = allCategories[0].id!!
-
+    fun `findActivePresets는_userId가_null이고_삭제되지_않은_카테고리만_반환한다`() {
         // when
-        val result = categoryRepository.findByUserIdWithCursor(
-            testUserId,
-            firstCategoryId,
-            PageRequest.of(0, 20, Sort.by("id").ascending()),
-        )
+        val result = categoryRepository.findActivePresets()
 
         // then
-        assertTrue(result.content.all { it.id!! > firstCategoryId })
+        assertEquals(3, result.size)
+        assertTrue(result.all { it.userId == null && it.deletedAt == null })
     }
 
     @Test
-    fun `findByUserIdIsNullAndDeletedAtIsNull은_userId가_null이고_deletedAt이_null인_데이터만_반환한다`() {
-        // given
-        val pageable = PageRequest.of(0, 20, Sort.by("id").ascending())
-
+    fun `findActivePresets는_id_오름차순으로_정렬된다`() {
         // when
-        val result = categoryRepository.findByUserIdIsNullAndDeletedAtIsNull(pageable)
+        val result = categoryRepository.findActivePresets()
 
         // then
-        assertEquals(3, result.content.size)
-        assertTrue(result.content.all { it.userId == null && it.deletedAt == null })
-    }
-
-    @Test
-    fun `findByUserIdIsNullAndDeletedAtIsNull은_페이지네이션을_지원한다`() {
-        // given
-        val pageable = PageRequest.of(0, 2, Sort.by("id").ascending())
-
-        // when
-        val result = categoryRepository.findByUserIdIsNullAndDeletedAtIsNull(pageable)
-
-        // then
-        assertEquals(2, result.content.size)
-        assertTrue(result.hasNext())
+        val ids = result.map { it.id!! }
+        assertEquals(ids.sorted(), ids)
     }
 }

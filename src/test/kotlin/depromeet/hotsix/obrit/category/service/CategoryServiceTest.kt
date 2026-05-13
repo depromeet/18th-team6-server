@@ -60,12 +60,12 @@ class CategoryServiceTest {
         // then: 기본 제공(3개) + 사용자1 등록(2개) = 5개
         assertEquals(5, result.size)
 
-        // 기본 제공 카테고리는 preset = true
-        val presetCount = result.count { it.preset }
+        // 기본 제공 카테고리는 userId가 null
+        val presetCount = result.count { it.userId == null }
         assertEquals(3, presetCount)
 
-        // 사용자1 등록 카테고리는 preset = false
-        val user1CustomCount = result.count { !it.preset }
+        // 사용자1 등록 카테고리는 userId가 user1Id
+        val user1CustomCount = result.count { it.userId == user1Id }
         assertEquals(2, user1CustomCount)
     }
 

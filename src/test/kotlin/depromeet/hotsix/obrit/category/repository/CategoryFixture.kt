@@ -4,11 +4,7 @@ import depromeet.hotsix.obrit.category.entity.Category
 
 object CategoryFixture {
 
-    fun presetCategory(
-        name: String = "기본_카테고리",
-        iconId: Long = 1,
-        defaultReplacementIntervalDays: Int = 30,
-    ) = Category(
+    fun presetCategory(name: String = "기본_카테고리", iconId: Long = 1, defaultReplacementIntervalDays: Int = 30) = Category(
         id = null,
         userId = null,
         name = name,
