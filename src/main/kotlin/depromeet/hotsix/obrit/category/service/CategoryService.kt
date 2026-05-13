@@ -3,12 +3,12 @@ package depromeet.hotsix.obrit.category.service
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
+import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.common.CategoryItemCleaner
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
-import depromeet.hotsix.obrit.icon.repository.IconRepository
 import depromeet.hotsix.obrit.user.service.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class CategoryService(
     private val categoryRepository: CategoryRepository,
-    private val iconRepository: IconRepository,
+    private val categoryIconRepository: CategoryIconRepository,
     private val userService: UserService,
     private val categoryItemCleaner: CategoryItemCleaner,
 ) {
@@ -29,7 +29,7 @@ class CategoryService(
         val allCategories = presetCategories + userCategories
 
         val iconIds = allCategories.map { it.iconId }.distinct()
-        val iconUrlMap = iconRepository.findAllById(iconIds).associate { it.id to it.url }
+        val iconUrlMap = categoryIconRepository.findAllById(iconIds).associate { it.id to it.url }
 
         return allCategories.map { it.toResponse(iconUrlMap[it.iconId].orEmpty()) }
     }
@@ -43,7 +43,7 @@ class CategoryService(
             throw ConflictException("이미 등록된 소모품 종류입니다.")
         }
 
-        val icon = iconRepository.findById(request.iconId)
+        val icon = categoryIconRepository.findById(request.iconId)
             .orElseThrow { BusinessException("유효하지 않은 아이콘입니다.") }
 
         val category = Category(
