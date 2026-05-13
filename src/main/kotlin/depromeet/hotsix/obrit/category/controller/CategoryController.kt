@@ -2,7 +2,6 @@ package depromeet.hotsix.obrit.category.controller
 
 import depromeet.hotsix.obrit.category.controller.docs.CategoryControllerApi
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
-import depromeet.hotsix.obrit.category.dto.response.CategoriesListResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.service.CategoryService
 import depromeet.hotsix.obrit.global.dto.ApiResponse
@@ -15,7 +14,6 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
-import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
@@ -24,21 +22,8 @@ import org.springframework.web.bind.annotation.RestController
 class CategoryController(private val categoryService: CategoryService) : CategoryControllerApi {
 
     @GetMapping
-    override fun listCategories(
-        @RequestHeader("X-User-Id") userId: Long,
-        @RequestParam(required = false, defaultValue = "0") cursor: Long,
-        @RequestParam(required = false, defaultValue = "20") limit: Int,
-    ): ApiResponse<CategoriesListResponse> {
-        val result = categoryService.listUserCategoriesWithPagination(userId, cursor, limit)
-        return ApiResponse.ok(result)
-    }
-
-    @GetMapping("/presets")
-    override fun listPresetCategories(
-        @RequestParam(required = false, defaultValue = "0") cursor: Long,
-        @RequestParam(required = false, defaultValue = "20") limit: Int,
-    ): ApiResponse<CategoriesListResponse> {
-        val result = categoryService.listPresetCategoriesWithPagination(cursor, limit)
+    override fun listCategories(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<CategoryResponse>> {
+        val result = categoryService.listAllAccessibleCategories(userId)
         return ApiResponse.ok(result)
     }
 
