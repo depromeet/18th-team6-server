@@ -84,6 +84,8 @@ Controller → Service → Repository
 - Entity는 어떤 레이어에도 의존하지 않는다
 - Controller는 같은 도메인의 `controller/service/dto`와 `global`만 참조한다
 - Service는 같은 도메인의 `service/entity/repository/dto`, 다른 도메인의 `service`, `global`만 참조한다
+- 도메인 간 참조는 `service`를 통해 수행하되, enum/value object는 공유 도메인 타입으로 직접 참조할 수 있다
+- DTO는 JPA Entity/일반 도메인 모델을 직접 참조하지 않는다. enum/value object는 참조할 수 있다
 - DTO ↔ Entity 변환은 Service 레이어에서 수행한다
 - Controller는 다른 도메인의 Controller를 직접 호출하지 않는다
-- 도메인 간 통신은 Service를 통해서만 한다
+- 도메인 간 통신은 Service를 통해서만 한다. 단, enum/value object 참조는 통신으로 보지 않는다
