@@ -8,6 +8,8 @@ import com.tngtech.archunit.core.importer.ImportOption
 import com.tngtech.archunit.lang.ArchRule
 import com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses
 import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition.slices
+import jakarta.persistence.Embeddable
+import kotlin.jvm.JvmInline
 
 object ArchitectureRules {
     private const val BASE_PACKAGE = "depromeet.hotsix.obrit"
@@ -47,29 +49,29 @@ object ArchitectureRules {
     fun controllerRule(domain: String, allowEmptyShould: Boolean): ArchRule = noClasses()
         .that().resideInAPackage(domainLayerPackage(domain, CONTROLLER_LAYER))
         .should().dependOnClassesThat(
-            forbiddenProjectDependencyPredicate(controllerDescription(domain)) { location ->
-                !isControllerDependencyAllowed(domain, location)
+            forbiddenProjectDependencyPredicate(controllerDescription(domain)) { javaClass, location ->
+                !isControllerDependencyAllowed(domain, location, javaClass)
             },
         )
-        .because("Controller는 같은 도메인의 controller, service, dto와 global 패키지만 참조할 수 있습니다.")
+        .because("Controller는 같은 도메인의 controller, service, dto와 global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다.")
         .allowEmptyShould(allowEmptyShould)
 
     fun serviceRule(domain: String, allowEmptyShould: Boolean): ArchRule = noClasses()
         .that().resideInAPackage(domainLayerPackage(domain, SERVICE_LAYER))
         .should().dependOnClassesThat(
-            forbiddenProjectDependencyPredicate(serviceDescription(domain)) { location ->
-                !isServiceDependencyAllowed(domain, location)
+            forbiddenProjectDependencyPredicate(serviceDescription(domain)) { javaClass, location ->
+                !isServiceDependencyAllowed(domain, location, javaClass)
             },
         )
         .because(
-            "Service는 같은 도메인의 service, entity, repository, dto와 다른 도메인의 service, global 패키지만 참조할 수 있습니다.",
+            "Service는 같은 도메인의 service, entity, repository, dto와 다른 도메인의 service, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다.",
         )
         .allowEmptyShould(allowEmptyShould)
 
     fun entityRule(allowEmptyShould: Boolean): ArchRule = noClasses()
         .that().resideInAPackage("..entity..")
         .should().dependOnClassesThat(
-            forbiddenProjectDependencyPredicate("service/controller/repository 레이어") { location ->
+            forbiddenProjectDependencyPredicate("service/controller/repository 레이어") { _, location ->
                 location.layer in setOf(SERVICE_LAYER, CONTROLLER_LAYER, REPOSITORY_LAYER)
             },
         )
@@ -79,11 +81,11 @@ object ArchitectureRules {
     fun dtoRule(allowEmptyShould: Boolean): ArchRule = noClasses()
         .that().resideInAPackage("..dto..")
         .should().dependOnClassesThat(
-            forbiddenProjectDependencyPredicate("entity 레이어") { location ->
-                location.layer == ENTITY_LAYER
+            forbiddenProjectDependencyPredicate("공유 가능한 enum/value object를 제외한 entity 레이어") { javaClass, location ->
+                location.layer == ENTITY_LAYER && !isShareableDomainType(javaClass)
             },
         )
-        .because("DTO에서 Entity를 직접 참조하면 안 됩니다. 변환은 Service 레이어에서 수행하세요.")
+        .because("DTO에서 JPA Entity/일반 도메인 모델을 직접 참조하면 안 됩니다. enum/value object는 공유 타입으로 참조할 수 있습니다.")
         .allowEmptyShould(allowEmptyShould)
 
     fun cycleRule(allowEmptyShould: Boolean): ArchRule = slices()
@@ -102,33 +104,50 @@ object ArchitectureRules {
     private fun domainLayerPackage(domain: String, layer: String): String = "$BASE_PACKAGE.$domain.$layer.."
 
     private fun controllerDescription(domain: String): String =
-        "$domain controller는 같은 도메인의 controller/service/dto와 global 패키지만 참조할 수 있습니다."
+        "$domain controller는 같은 도메인의 controller/service/dto, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다."
 
     private fun serviceDescription(domain: String): String =
-        "$domain service는 같은 도메인의 service/entity/repository/dto, 다른 도메인의 service, global 패키지만 참조할 수 있습니다."
+        "$domain service는 같은 도메인의 service/entity/repository/dto, 다른 도메인의 service, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다."
 
     private fun forbiddenProjectDependencyPredicate(
         description: String,
-        isForbidden: (ProjectLocation) -> Boolean,
+        isForbidden: (JavaClass, ProjectLocation) -> Boolean,
     ): DescribedPredicate<JavaClass> = object : DescribedPredicate<JavaClass>(description) {
         override fun test(input: JavaClass): Boolean {
             val location = projectLocation(input.packageName) ?: return false
-            return isForbidden(location)
+            return isForbidden(input, location)
         }
     }
 
-    private fun isControllerDependencyAllowed(domain: String, location: ProjectLocation): Boolean = when {
+    private fun isControllerDependencyAllowed(
+        domain: String,
+        location: ProjectLocation,
+        javaClass: JavaClass,
+    ): Boolean = when {
         location.domain == GLOBAL_DOMAIN -> true
+        isShareableDomainType(javaClass) -> true
         location.domain != domain -> false
         else -> location.layer in setOf(CONTROLLER_LAYER, SERVICE_LAYER, DTO_LAYER)
     }
 
-    private fun isServiceDependencyAllowed(domain: String, location: ProjectLocation): Boolean = when {
-        location.domain == GLOBAL_DOMAIN -> true
-        location.layer == SERVICE_LAYER -> true
-        location.domain != domain -> false
-        else -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER)
-    }
+    private fun isServiceDependencyAllowed(domain: String, location: ProjectLocation, javaClass: JavaClass): Boolean =
+        when {
+            location.domain == GLOBAL_DOMAIN -> true
+            isShareableDomainType(javaClass) -> true
+            location.layer == SERVICE_LAYER -> true
+            location.domain != domain -> false
+            else -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER)
+        }
+
+    private fun isShareableDomainType(javaClass: JavaClass): Boolean =
+        javaClass.packageName.endsWith(".$ENTITY_LAYER") &&
+            (
+                javaClass.isEnum ||
+                    javaClass.isAnnotatedWith(Embeddable::class.java) ||
+                    javaClass.isAnnotatedWith(JvmInline::class.java) ||
+                    javaClass.simpleName.endsWith("Value") ||
+                    javaClass.simpleName.endsWith("ValueObject")
+                )
 
     private fun projectLocation(packageName: String): ProjectLocation? {
         if (!packageName.startsWith("$BASE_PACKAGE.")) {
