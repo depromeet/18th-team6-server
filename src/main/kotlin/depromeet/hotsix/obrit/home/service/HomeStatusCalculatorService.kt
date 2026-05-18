@@ -6,8 +6,8 @@ import depromeet.hotsix.obrit.home.dto.ItemBucketResponse
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
 import depromeet.hotsix.obrit.home.entity.ItemBucket
-import depromeet.hotsix.obrit.home.entity.ItemSnapshot
 import depromeet.hotsix.obrit.home.entity.OverallStatus
+import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemStatus
 import org.springframework.stereotype.Service
 import java.time.LocalDate
