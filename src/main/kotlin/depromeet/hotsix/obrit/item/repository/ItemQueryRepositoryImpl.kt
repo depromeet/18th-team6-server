@@ -14,6 +14,7 @@ class ItemQueryRepositoryImpl(
     private val itemPredicateRepository: ItemPredicateRepository,
 ) : ItemQueryRepository {
 
+    // 아이템(userId 일치 + deletedAt null)을 d-day 및 여분 수량 필터와 커서로 잘라 size 만큼 가져온다.
     override fun findItemList(
         userId: Long,
         order: ItemOrder,
@@ -41,7 +42,6 @@ class ItemQueryRepositoryImpl(
             .fetch()
     }
 
-    // cursor row가 soft-delete된 경우에도 sort 키를 그대로 살려 다음 페이지가 끊기지 않도록 deletedAt 조건을 제외한다.
     private fun findCursorItem(userId: Long, cursor: Long): Item? {
         val item = QItem.item
 
@@ -54,6 +54,7 @@ class ItemQueryRepositoryImpl(
             .fetchOne()
     }
 
+    // 정렬 키가 같을 때 id로 동률을 깨, 동일 정렬 값을 가진 row가 페이지 경계에서 누락/중복되지 않도록 한다.
     private fun cursorPredicate(item: QItem, order: ItemOrder, cursor: Item): BooleanExpression {
         val cursorId = requireNotNull(cursor.id)
 

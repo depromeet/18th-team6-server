@@ -6,6 +6,7 @@ import java.time.LocalDate
 
 interface ItemQueryRepository {
 
+    // 정렬/필터/커서 기반으로 아이템 목록 한 페이지를 조회한다.
     fun findItemList(
         userId: Long,
         order: ItemOrder,

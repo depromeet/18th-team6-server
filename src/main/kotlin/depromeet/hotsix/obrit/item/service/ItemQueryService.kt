@@ -16,6 +16,7 @@ class ItemQueryService(private val itemRepository: ItemRepository) {
     fun findActiveSnapshotsByUserId(userId: Long): List<ItemSnapshot> =
         itemRepository.findActiveByUserId(userId).map { it.toSnapshot() }
 
+    // 홈 화면 및 리스트 화면의 아이템 목록 페이지를 조회한다. Item 엔티티는 service 밖으로 노출하지 않고 ItemListSnapshot으로 변환해서 돌려준다.
     fun findItemListSnapshots(
         userId: Long,
         order: ItemOrder,
