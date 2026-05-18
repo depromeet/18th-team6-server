@@ -1,52 +1,22 @@
 package depromeet.hotsix.obrit.home.dto
 
+import depromeet.hotsix.obrit.home.entity.ItemBucket
+import depromeet.hotsix.obrit.home.entity.OverallStatus
+import depromeet.hotsix.obrit.item.entity.ItemStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
-enum class ItemStatus {
-    GOOD,
-    WARNING,
-    DANGER,
-}
-
-enum class OverallStatus {
-    PERFECT,
-    GOOD,
-    WARNING,
-    DANGER,
-}
-
-enum class ItemBucket(val priority: Int, val status: ItemStatus) {
-    NONE_OVERDUE(1, ItemStatus.DANGER),
-    NONE_WARN(2, ItemStatus.DANGER),
-    HAS_OVERDUE(3, ItemStatus.DANGER),
-    HAS_WARN(4, ItemStatus.WARNING),
-    NONE_SAFE(5, ItemStatus.WARNING),
-    HAS_SAFE(6, ItemStatus.GOOD),
-}
-
-enum class ReplacementBand {
-    OVERDUE,
-    WARN,
-    SAFE,
-}
-
-enum class SpareBand {
-    NONE,
-    HAS,
-}
-
-@Schema(description = "Home screen response.")
+@Schema(description = "홈 화면, 1) 종합 상태 2) 내 상태 요약 3) 버킷 분류 ")
 data class HomeResponse(
     val overallStatus: OverallStatusResponse,
     val myStatusSummary: MyStatusSummaryResponse,
     val itemBuckets: List<ItemBucketResponse>,
 )
 
-@Schema(description = "Overall home status.")
+@Schema(description = "홈 화면 종합 상태")
 data class OverallStatusResponse(val replacement: ItemStatus, val spare: ItemStatus, val overall: OverallStatus)
 
-@Schema(description = "My status summary.")
+@Schema(description = "내 상태 요약")
 data class MyStatusSummaryResponse(
     val totalCount: Int,
     val needReplaceCount: Int,
@@ -54,10 +24,10 @@ data class MyStatusSummaryResponse(
     val averageScore: Double,
 )
 
-@Schema(description = "Items grouped by spare and replacement status.")
+@Schema(description = "여분/교체 상태 기준으로 분류된 아이템 버킷")
 data class ItemBucketResponse(val bucket: ItemBucket, val count: Int, val items: List<BucketItemResponse>)
 
-@Schema(description = "Item shown in a home bucket.")
+@Schema(description = "홈 버킷에 표시되는 아이템")
 data class BucketItemResponse(
     val id: Long,
     val name: String,
@@ -66,7 +36,7 @@ data class BucketItemResponse(
     val status: ItemStatus,
 )
 
-@Schema(description = "Home buckets grouped by spare and replacement status.")
+@Schema(description = "여분/교체 상태 기준으로 그룹화된 홈 버킷 목록")
 data class HomeBucketsResponse(val buckets: List<ItemBucketResponse>)
 
 @Schema(description = "Item card shown in the home infinite scroll list.")

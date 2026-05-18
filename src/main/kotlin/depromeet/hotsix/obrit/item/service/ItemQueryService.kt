@@ -1,9 +1,7 @@
 package depromeet.hotsix.obrit.item.service
 
-import depromeet.hotsix.obrit.global.readmodel.ItemListSnapshot
-import depromeet.hotsix.obrit.global.readmodel.ItemOrder
-import depromeet.hotsix.obrit.global.readmodel.ItemSnapshot
 import depromeet.hotsix.obrit.item.entity.Item
+import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
