@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.global.readmodel
+package depromeet.hotsix.obrit.item.entity
 
 enum class ItemOrder {
     REPLACEMENT_URGENT,

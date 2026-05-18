@@ -2,8 +2,8 @@ package depromeet.hotsix.obrit.home.service
 
 import depromeet.hotsix.obrit.global.paging.CursorSliceResponse
 import depromeet.hotsix.obrit.global.paging.normalizePageSize
-import depromeet.hotsix.obrit.global.readmodel.ItemListSnapshot
-import depromeet.hotsix.obrit.global.readmodel.ItemOrder
+import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
+import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.HomeItemCard
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse

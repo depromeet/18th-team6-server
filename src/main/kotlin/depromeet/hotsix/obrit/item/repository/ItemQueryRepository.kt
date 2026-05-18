@@ -1,6 +1,6 @@
 package depromeet.hotsix.obrit.item.repository
 
-import depromeet.hotsix.obrit.global.readmodel.ItemOrder
+import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.entity.Item
 import java.time.LocalDate
 
