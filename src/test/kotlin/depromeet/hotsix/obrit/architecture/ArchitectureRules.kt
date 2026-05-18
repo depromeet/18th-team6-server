@@ -146,7 +146,10 @@ object ArchitectureRules {
                     javaClass.isAnnotatedWith(Embeddable::class.java) ||
                     javaClass.isAnnotatedWith(JvmInline::class.java) ||
                     javaClass.simpleName.endsWith("Value") ||
-                    javaClass.simpleName.endsWith("ValueObject")
+                    javaClass.simpleName.endsWith("ValueObject") ||
+                    javaClass.simpleName.endsWith("Snapshot") ||
+                    javaClass.simpleName.endsWith("Projection") ||
+                    javaClass.simpleName.endsWith("View")
                 )
 
     private fun projectLocation(packageName: String): ProjectLocation? {
