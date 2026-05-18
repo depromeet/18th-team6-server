@@ -17,20 +17,31 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RestController
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
-@Tag(name = "Home", description = "Home APIs")
+@Tag(name = "Home", description = "홈 화면 관련 API")
 @RestController
 @RequestMapping("/home")
 class HomeController(private val homeService: HomeService) {
 
     @Operation(
-        summary = "홈 화면 - 전체 상태",
-        description = "교체 관리 / 여분 관리 / 전체 상태를 표시 합니다.",
+        summary = "홈 화면 - 전체 상태 조회",
+        description = """
+            홈 화면 상단에 표시할 사용자의 전체 상태를 반환합니다.
+
+            응답 필드:
+            - replacement: 교체 관리 상태 (GOOD / WARNING / DANGER)
+              · 교체 시기가 지난 아이템 비율과 평균 교체 점수를 기반으로 산정됩니다.
+            - spare: 여분 관리 상태 (GOOD / WARNING / DANGER)
+              · 여분 수량이 부족한 아이템 비율을 기반으로 산정됩니다.
+            - overall: 전체 종합 상태 (PERFECT / GOOD / WARNING / DANGER)
+              · replacement, spare 상태의 조합으로 결정됩니다.
+
+        """,
     )
     @ApiResponses(
         value = [
             SwaggerApiResponse(
                 responseCode = "200",
-                description = "Home status returned.",
+                description = "홈 전체 상태 조회 성공",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -42,7 +53,11 @@ class HomeController(private val homeService: HomeService) {
     )
     @GetMapping("/overall-status")
     fun getOverallStatus(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+        @Parameter(
+            description = "사용자 ID (인증 도입 전 임시 헤더, 추후 인증 토큰으로 대체 예정)",
+            required = true,
+            example = "1",
+        )
         @RequestHeader("X-User-Id") userId: Long,
     ): ApiResponse<OverallStatusResponse> = ApiResponse.ok(homeService.getOverallStatus(userId))
 
