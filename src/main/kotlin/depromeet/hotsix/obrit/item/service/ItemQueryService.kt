@@ -1,6 +1,8 @@
 package depromeet.hotsix.obrit.item.service
 
 import depromeet.hotsix.obrit.item.entity.Item
+import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
+import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import org.springframework.stereotype.Service

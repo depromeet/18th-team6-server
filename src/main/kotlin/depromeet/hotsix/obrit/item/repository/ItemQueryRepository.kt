@@ -1,7 +1,7 @@
 package depromeet.hotsix.obrit.item.repository
 
-import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.entity.Item
+import depromeet.hotsix.obrit.item.entity.ItemOrder
 import java.time.LocalDate
 
 interface ItemQueryRepository {
