@@ -1,42 +1,12 @@
 package depromeet.hotsix.obrit.home.dto
 
+import depromeet.hotsix.obrit.home.entity.ItemBucket
+import depromeet.hotsix.obrit.home.entity.OverallStatus
+import depromeet.hotsix.obrit.item.entity.ItemStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import java.time.LocalDate
 
-enum class ItemStatus {
-    GOOD,
-    WARNING,
-    DANGER,
-}
-
-enum class OverallStatus {
-    PERFECT,
-    GOOD,
-    WARNING,
-    DANGER,
-}
-
-enum class ItemBucket(val priority: Int, val status: ItemStatus) {
-    NONE_OVERDUE(1, ItemStatus.DANGER),
-    NONE_WARN(2, ItemStatus.DANGER),
-    HAS_OVERDUE(3, ItemStatus.DANGER),
-    HAS_WARN(4, ItemStatus.WARNING),
-    NONE_SAFE(5, ItemStatus.WARNING),
-    HAS_SAFE(6, ItemStatus.GOOD),
-}
-
-enum class ReplacementBand {
-    OVERDUE,
-    WARN,
-    SAFE,
-}
-
-enum class SpareBand {
-    NONE,
-    HAS,
-}
-
-@Schema(description = "Home screen response.")
+@Schema(description = "홈 화면, 1) 종합 상태 2) 내 상태 요약 3) 버킷 분류 ")
 data class HomeResponse(
     val overallStatus: OverallStatusResponse,
     val myStatusSummary: MyStatusSummaryResponse,
@@ -47,7 +17,12 @@ data class HomeResponse(
 data class OverallStatusResponse(val replacement: ItemStatus, val spare: ItemStatus, val overall: OverallStatus)
 
 @Schema(description = "My status summary.")
-data class MyStatusSummaryResponse(val totalCount: Int, val needReplaceCount: Int, val score: Double)
+data class MyStatusSummaryResponse(
+    val totalCount: Int,
+    val needReplaceCount: Int,
+    val score: Double,
+    val averageScore: Double,
+)
 
 @Schema(description = "Items grouped by spare and replacement status.")
 data class ItemBucketResponse(val bucket: ItemBucket, val count: Int, val items: List<BucketItemResponse>)

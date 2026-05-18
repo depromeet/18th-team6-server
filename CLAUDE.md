@@ -27,10 +27,17 @@ depromeet.hotsix.obrit/
 ### 의존성 규칙
 
 - `controller` → 같은 도메인의 `controller`, `service`, `dto` + `global`만 사용
-- `service` → 같은 도메인의 `service`, `entity`, `repository`, `dto` + 다른 도메인의 `service` + `global` 사용 가능
+- `service` → 같은 도메인의 `service`, `entity`, `repository`, `dto`
+  + 다른 도메인의 `service`
+  + 다른 도메인 entity의 enum/value object
+  + `global` 사용 가능
 - `entity` → 다른 도메인의 `entity`만 참조 가능. 다른 레이어 의존 금지
-- `dto` → `entity`를 직접 참조하지 않음. DTO ↔ Entity 변환은 `service` 레이어에서 수행
+- `dto` → JPA Entity 및 식별자를 가진 도메인 객체는 직접 참조하지 않음.
+  enum/value object는 참조 가능. DTO ↔ Entity 변환은 `service` 레이어에서 수행
 - `controller`는 다른 도메인의 `controller` 직접 호출 금지
+
+> **enum/value object 정의**: Kotlin `enum class`와 `value class`(inline class)만을 가리킨다.
+> 일반 `data class`는 식별자 유무와 무관하게 포함되지 않는다.
 
 ## 코딩 컨벤션
 
@@ -74,6 +81,7 @@ depromeet.hotsix.obrit/
 - `/dev-plan {기능명}` - 개발 문서 작성 → Task 분해 → 순차 실행 → 상태 추적
 - `/review` - 워크스페이스 diff를 코드 리뷰하고 코멘트 남기기 (Approve는 사람이 담당)
 - `/harness-update {작업}` - 하네스 인프라 관리/업데이트 (ADR, ktlint, ArchUnit 등)
+- `/organize-domain-model` - 도메인 enum/value class 배치 + 상태 판단 책임 위치 가이드 (DTO에 enum, Service에 판단 로직이 쌓일 때)
 
 ## 하네스 가이드
 
