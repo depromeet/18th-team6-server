@@ -1,9 +1,9 @@
 package depromeet.hotsix.obrit.home.service
 
-import depromeet.hotsix.obrit.global.readmodel.ItemSnapshot
-import depromeet.hotsix.obrit.home.dto.ItemBucket
-import depromeet.hotsix.obrit.home.dto.ItemStatus
-import depromeet.hotsix.obrit.home.dto.OverallStatus
+import depromeet.hotsix.obrit.home.entity.ItemBucket
+import depromeet.hotsix.obrit.home.entity.OverallStatus
+import depromeet.hotsix.obrit.item.entity.ItemSnapshot
+import depromeet.hotsix.obrit.item.entity.ItemStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
 import java.time.LocalDate
@@ -23,6 +23,7 @@ class HomeStatusCalculatorServiceTest {
         assertEquals(0, result.myStatusSummary.totalCount)
         assertEquals(0, result.myStatusSummary.needReplaceCount)
         assertEquals(45.0, result.myStatusSummary.score)
+        assertEquals(45.0, result.myStatusSummary.averageScore)
         assertEquals(6, result.itemBuckets.size)
         assertEquals(0, result.itemBuckets.sumOf { it.count })
     }
@@ -50,6 +51,7 @@ class HomeStatusCalculatorServiceTest {
         val result = calculator.calculate(today, items)
 
         assertEquals(1, result.myStatusSummary.needReplaceCount)
+        assertEquals(45.0, result.myStatusSummary.averageScore)
     }
 
     @Test

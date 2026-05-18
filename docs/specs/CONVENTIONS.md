@@ -114,7 +114,8 @@ data class UserResponse(
 
 - `data class` 사용
 - 요청 DTO: validation 어노테이션은 `@field:` prefix 사용
-- DTO는 Entity 타입을 직접 참조하지 않음
+- DTO는 JPA Entity/일반 도메인 모델을 직접 참조하지 않음
+- enum/value object는 공유 도메인 타입으로 참조 가능
 
 ## Repository 컨벤션
 
