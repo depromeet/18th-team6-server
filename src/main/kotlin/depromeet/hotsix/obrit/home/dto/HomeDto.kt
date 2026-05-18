@@ -39,11 +39,22 @@ data class BucketItemResponse(
 @Schema(description = "여분/교체 상태 기준으로 그룹화된 홈 버킷 목록")
 data class HomeBucketsResponse(val buckets: List<ItemBucketResponse>)
 
-@Schema(description = "Item card shown in the home infinite scroll list.")
+@Schema(description = "홈/리스트 화면의 무한 스크롤 목록에 표시되는 아이템 카드")
 data class HomeItemCard(
+    @field:Schema(description = "아이템 ID", example = "1001")
     val id: Long,
+    @field:Schema(description = "아이템 이름", example = "칫솔")
     val name: String,
+    @field:Schema(
+        description = "마지막 교체일 이후 사용한 일수. 음수가 되지 않도록 0 미만은 0으로 보정됩니다.",
+        example = "12",
+    )
     val daysInUse: Int,
+    @field:Schema(
+        description = "교체 D-day 라벨. 형식: '교체 D-day' / '교체 D-{n}' / '교체 D+{n}'",
+        example = "교체 D-3",
+    )
     val replacementDday: String,
+    @field:Schema(description = "여분 수량", example = "2")
     val spareQuantity: Int,
 )

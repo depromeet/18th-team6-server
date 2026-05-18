@@ -115,13 +115,20 @@ class HomeController(private val homeService: HomeService) {
 
     @Operation(
         summary = "홈 화면 - 아이템 무한 스크롤 목록",
-        description = "정렬, D-day, 여분 필터를 적용한 홈 아이템 목록을 cursor 기반으로 반환합니다.",
+        description = """
+            홈/리스트 화면의 아이템 카드 목록을 커서 기반 무한 스크롤로 반환합니다.
+
+            동작:
+            - 정렬(order), D-day, 최소 여분 수량 필터를 조합해 결과를 좁힙니다.
+            - 응답의 nextCursor를 다음 요청의 cursor 파라미터로 그대로 넘기면 다음 페이지를 조회할 수 있습니다.
+            - hasNext가 false이면 더 이상 페이지가 없습니다.
+        """,
     )
     @ApiResponses(
         value = [
             SwaggerApiResponse(
                 responseCode = "200",
-                description = "Home items returned.",
+                description = "홈 아이템 목록 조회 성공",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -133,21 +140,43 @@ class HomeController(private val homeService: HomeService) {
     )
     @GetMapping("/items")
     fun getItems(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+        @Parameter(
+            description = "사용자 ID (인증 도입 전 임시 헤더, 추후 인증 토큰으로 대체 예정)",
+            required = true,
+            example = "1",
+        )
         @RequestHeader("X-User-Id") userId: Long,
-        @Parameter(description = "Order option. Default is REPLACEMENT_URGENT.", example = "REPLACEMENT_URGENT")
+        @Parameter(
+            description = "정렬 기준 (기본값: REPLACEMENT_URGENT)\n" +
+                "- REPLACEMENT_URGENT: 교체가 임박한 순\n" +
+                "- SPARE_LOW: 여분 수량이 적은 순\n" +
+                "- USED_OLD: 오래 사용 중인 순",
+            example = "REPLACEMENT_URGENT",
+        )
         @RequestParam(required = false, defaultValue = "REPLACEMENT_URGENT") order: ItemOrder,
         @Parameter(
-            description = "D-day filter. Returns items whose replacement date is " +
-                "within N days from today (inclusive). 30 means items due today through 30 days later.",
+            description = "D-day 필터. 오늘부터 N일 이내(당일 포함)에 교체가 필요한 아이템만 반환합니다. " +
+                "예) 30이면 오늘부터 30일 이내에 교체 예정인 아이템만 조회됩니다. " +
+                "값이 없으면 D-day 필터를 적용하지 않습니다.",
             example = "30",
         )
         @RequestParam(required = false) dDay: Int?,
-        @Parameter(description = "Minimum spare quantity filter.", example = "2")
+        @Parameter(
+            description = "최소 여분 수량 필터. 여분 수량이 이 값 이상인 아이템만 반환합니다. " +
+                "값이 없으면 여분 수량 필터를 적용하지 않습니다.",
+            example = "2",
+        )
         @RequestParam(required = false) spareQuantity: Int?,
-        @Parameter(description = "Cursor item id.", example = "1001")
+        @Parameter(
+            description = "커서. 직전 응답의 nextCursor 값을 그대로 넘깁니다. " +
+                "첫 페이지 요청에는 비워서 보내면 됩니다.",
+            example = "1001",
+        )
         @RequestParam(required = false) cursor: Long?,
-        @Parameter(description = "Page size. Clamped to 1..50.", example = "20")
+        @Parameter(
+            description = "한 페이지 크기. 1~20 범위로 보정되며 기본값은 20입니다.",
+            example = "20",
+        )
         @RequestParam(required = false, defaultValue = "20") size: Int,
     ): ApiResponse<CursorSliceResponse<HomeItemCard>> = ApiResponse.ok(
         homeService.getItems(
