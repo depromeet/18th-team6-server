@@ -31,6 +31,9 @@ class HomeStatusCalculatorService {
         itemBuckets = bucketize(today, items),
     )
 
+    fun calculateBuckets(today: LocalDate, items: List<ItemSnapshot>): HomeBucketsResponse =
+        HomeBucketsResponse(buckets = bucketize(today, items))
+
     fun calculateOverallStatus(today: LocalDate, items: List<ItemSnapshot>): OverallStatusResponse {
         if (items.isEmpty()) {
             return OverallStatusResponse(
@@ -73,9 +76,8 @@ class HomeStatusCalculatorService {
         }
     }
 
-    private fun calculateMyStatusSummary(today: LocalDate, items: List<ItemSnapshot>): MyStatusSummaryResponse {
-
-      if (items.isEmpty()) {
+    fun calculateMyStatusSummary(today: LocalDate, items: List<ItemSnapshot>): MyStatusSummaryResponse {
+        if (items.isEmpty()) {
             return MyStatusSummaryResponse(
                 totalCount = 0,
                 needReplaceCount = 0,
@@ -89,7 +91,7 @@ class HomeStatusCalculatorService {
 
         return MyStatusSummaryResponse(
             totalCount = items.size,
-          
+
             // 교체 시기가 지난 것만 개수 측정
             needReplaceCount = items.count { it.isReplacementOverdue(today) },
             score = replacementBar * REPLACEMENT_SCORE_WEIGHT + spareBar * SPARE_SCORE_WEIGHT,
