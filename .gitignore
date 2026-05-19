@@ -36,5 +36,15 @@ out/
 ### VS Code ###
 .vscode/
 
+## Local Spring config
+src/main/resources/application-dev.yml
+
 ### Kotlin ###
 .kotlin
+
+### Docker / deployment secrets ###
+.env
+.env.*
+!.env.example
+.deploy.env
+gha-creds-*.json

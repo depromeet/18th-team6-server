@@ -1,4 +1,4 @@
-FROM eclipse-temurin:17-jdk AS build
+FROM eclipse-temurin:17-jdk AS builder
 
 WORKDIR /workspace
 
@@ -17,7 +17,7 @@ WORKDIR /app
 
 RUN useradd --system --uid 10001 --create-home appuser
 
-COPY --from=build /workspace/build/libs/*.jar /app/app.jar
+COPY --from=builder /workspace/build/libs/*.jar /app/app.jar
 
 USER appuser
 
