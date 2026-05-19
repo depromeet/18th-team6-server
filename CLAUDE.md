@@ -49,6 +49,17 @@ depromeet.hotsix.obrit/
 - Controller 관련 문서(KDoc, Swagger/OpenAPI `@Operation`·`@Parameter`·`@Schema` 등 API 설명)와 DTO 필드 설명(`@Schema(description = ...)` 등)은 **한국어**로 작성
 - 상세 컨벤션: `docs/specs/CONVENTIONS.md` 참고
 
+## 로컬 시드 데이터 (`data.sql`)
+
+`src/main/resources/data.sql`은 로컬·in-memory H2 개발용 초기 데이터다. JPA `@Entity`의 테이블·컬럼 정의와 **반드시 일치**해야 한다.
+
+- **엔티티 스키마 변경 시** (`@Table`, `@Column`, 컬럼 추가·삭제·이름 변경, FK 구조 변경) 같은 PR에서 `data.sql`도 함께 수정한다.
+- `data.sql`에는 **DDL(`CREATE TABLE`)을 넣지 않는다.** 스키마는 Hibernate `ddl-auto`가 생성하고, `data.sql`은 DML(`INSERT`)만 담는다.
+- `application.properties`에 `spring.jpa.defer-datasource-initialization=true`가 있어야 한다. 없으면 `data.sql`이 스키마 생성보다 먼저 실행되어 기동이 실패할 수 있다.
+- INSERT 순서는 FK·참조 의존성을 따른다. 현재: `users` → `icons` → `categories`.
+- 시드가 필요 없는 테이블(`items`, `item_replacement_histories` 등)은 INSERT하지 않아도 된다.
+- 로컬 Swagger 호출 예: `X-User-Id: 1` (시드 사용자), 프리셋 카테고리 ID `100`, `200`, `300`.
+
 ## 브랜치 컨벤션
 
 `{작업자이름}/{목적}/{이슈번호}-{작업내용}`

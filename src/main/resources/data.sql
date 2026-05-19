@@ -1,3 +1,7 @@
+-- 로컬/H2 개발용 시드 (DML only). 스키마는 JPA 엔티티 + ddl-auto가 생성한다.
+-- 엔티티 @Column 변경 시 이 파일도 함께 수정. INSERT 순서: users → icons → categories (FK)
+-- 상세: CLAUDE.md «로컬 시드 데이터 (data.sql)»
+
 INSERT INTO users (id, name, created_at, updated_at)
 VALUES (1, 'dev-user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
