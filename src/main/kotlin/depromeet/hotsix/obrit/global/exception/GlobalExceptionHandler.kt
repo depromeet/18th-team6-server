@@ -18,6 +18,10 @@ class GlobalExceptionHandler {
     fun handleResourceNotFoundException(exception: ResourceNotFoundException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(exception.message.orEmpty()))
 
+    @ExceptionHandler(ConflictException::class)
+    fun handleConflictException(exception: ConflictException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse(exception.message.orEmpty()))
+
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(exception: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         val message = exception.bindingResult.fieldErrors.firstOrNull()?.defaultMessage ?: "Invalid request."
@@ -34,3 +38,5 @@ data class ErrorResponse(
 class BusinessException(message: String) : RuntimeException(message)
 
 class ResourceNotFoundException(message: String) : RuntimeException(message)
+
+class ConflictException(message: String) : RuntimeException(message)

@@ -27,8 +27,8 @@ class Category(
     @Column(nullable = false)
     var name: String = "",
 
-    @Column(name = "image_url", nullable = false)
-    var imageUrl: String = "",
+    @Column(name = "icon_id", nullable = false)
+    var iconId: Long = 0,
 
     @Column(name = "default_replacement_interval_days", nullable = false)
     var defaultReplacementIntervalDays: Int = 1,
@@ -36,4 +36,6 @@ class Category(
 
     val isPreset: Boolean
         get() = userId == null
+
+    fun isUserCategoryOf(userId: Long): Boolean = this.userId == userId
 }

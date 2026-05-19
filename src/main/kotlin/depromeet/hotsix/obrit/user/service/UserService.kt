@@ -9,7 +9,7 @@ import org.springframework.transaction.annotation.Transactional
 @Transactional(readOnly = true)
 class UserService(private val userRepository: UserRepository) {
 
-    fun requireExistingUser(userId: Long) {
+    fun validateUserExist(userId: Long) {
         if (!userRepository.existsById(userId)) {
             throw ResourceNotFoundException("User not found.")
         }
