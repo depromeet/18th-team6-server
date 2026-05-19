@@ -23,9 +23,10 @@ class HomeService(
         return homeStatusCalculatorService.calculateOverallStatus(today, items)
     }
 
+    @Transactional(readOnly = true)
     fun getMyStatusSummary(userId: Long): MyStatusSummaryResponse {
         val today = LocalDate.now(clock)
-        val items = itemQueryService.findActiveSnapshotsByUserId(userId)
+        val items = itemService.findActiveSnapshotsByUserId(userId)
 
         // TODO : 현재 평균 점수는 45점으로 고정된 상황, 추후 유저 평균 점수 계산 로직을 만들어 적용하기
         return homeStatusCalculatorService.calculateMyStatusSummary(today, items)
