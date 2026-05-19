@@ -33,9 +33,10 @@ class HomeService(
         return homeStatusCalculatorService.calculateMyStatusSummary(today, items)
     }
 
+    @Transactional(readOnly = true)
     fun getBuckets(userId: Long): HomeBucketsResponse {
         val today = LocalDate.now(clock)
-        val items = itemQueryService.findActiveSnapshotsByUserId(userId)
+        val items = itemService.findActiveSnapshotsByUserId(userId)
 
         return homeStatusCalculatorService.calculateBuckets(today, items)
     }
