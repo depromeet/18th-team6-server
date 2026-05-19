@@ -8,7 +8,6 @@ import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
 import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemOrder
-import depromeet.hotsix.obrit.item.service.ItemQueryService
 import depromeet.hotsix.obrit.item.service.ItemService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -49,6 +48,7 @@ class HomeService(
         return homeStatusCalculatorService.calculateBuckets(today, items)
     }
 
+    @Transactional(readOnly = true)
     fun getItems(
         userId: Long,
         order: ItemOrder,
@@ -59,7 +59,7 @@ class HomeService(
     ): CursorSliceResponse<HomeItemCard> {
         val today = LocalDate.now(clock)
         val pageSize = normalizePageSize(size)
-        val items = itemQueryService.findItemListSnapshots(
+        val items = itemService.findItemListSnapshots(
             userId = userId,
             order = order,
             dDay = dDay,
