@@ -8,13 +8,13 @@ import java.time.Clock
 import java.time.LocalDate
 
 @Service
-@Transactional(readOnly = true)
 class HomeService(
     private val itemService: ItemService,
     private val homeStatusCalculatorService: HomeStatusCalculatorService,
     private val clock: Clock,
 ) {
 
+    @Transactional(readOnly = true)
     fun getOverallStatus(userId: Long): OverallStatusResponse {
         val today = LocalDate.now(clock)
         val items = itemService.findActiveSnapshotsByUserId(userId)
