@@ -30,11 +30,13 @@ Swagger UI와 OpenAPI 문서는 서버 실행 후 아래 경로에서 확인할 
 - OpenAPI JSON: `http://localhost:8080/v3/api-docs`
 - OpenAPI YAML: `http://localhost:8080/v3/api-docs.yaml`
 
-개발용 요청에는 아래 헤더를 사용합니다.
+인증이 연동되기 전까지 API 요청에는 아래 헤더로 사용자 ID를 전달합니다. 값은 DB에 존재하는 사용자 ID여야 합니다.
 
 ```http
-X-User-Id: 1
+X-User-Id: {userId}
 ```
+
+로컬 H2(`bootRun`)는 기동 시 빈 DB로 시작합니다. 시드 데이터는 두지 않으므로, Swagger로 호출하기 전에 사용자·아이콘·카테고리 등을 직접 준비하거나 통합 테스트 픽스처 패턴을 참고하세요.
 
 - `GET /categories`
 - `POST /categories`
