@@ -46,6 +46,7 @@ depromeet.hotsix.obrit/
 - Service는 `@Service`로 비즈니스 로직 담당
 - Controller는 `@RestController`, DTO만 반환 (Entity 직접 노출 금지)
 - 네이밍: `*Controller`, `*Service`, `*Repository`, `*Entity` 접미사 사용
+- Controller 관련 문서(KDoc, Swagger/OpenAPI `@Operation`·`@Parameter`·`@Schema` 등 API 설명)와 DTO 필드 설명(`@Schema(description = ...)` 등)은 **한국어**로 작성
 - 상세 컨벤션: `docs/specs/CONVENTIONS.md` 참고
 
 ## 브랜치 컨벤션
