@@ -1,0 +1,20 @@
+services:
+  app:
+    image: ${APP_IMAGE:-orbit-server:latest}
+    container_name: orbit-server
+    restart: unless-stopped
+    ports:
+      - "${APP_PORT:-8080}:8080"
+    environment:
+      TZ: ${TZ:-Asia/Seoul}
+      JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0}
+      SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+      DB_URL: ${DB_URL}
+      DB_USERNAME: ${DB_USERNAME}
+      DB_PWD: ${DB_PWD}
+    networks:
+      - orbit
+
+networks:
+  orbit:
+    name: orbit-network
