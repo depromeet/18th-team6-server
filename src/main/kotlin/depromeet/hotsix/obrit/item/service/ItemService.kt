@@ -9,6 +9,7 @@ import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
+import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.service.UserService
@@ -35,6 +36,10 @@ class ItemService(
             item.toResponse(categoryName = categoryNameFor(item, categoryNamesById))
         }
     }
+
+    @Transactional(readOnly = true)
+    fun findActiveSnapshotsByUserId(userId: Long): List<ItemSnapshot> =
+        itemRepository.findActiveByUserId(userId).map { it.toSnapshot() }
 
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
@@ -117,5 +122,12 @@ class ItemService(
         replacementIntervalDays = replacementIntervalDays,
         lastReplacedDate = lastReplacedDate,
         nextReplacementDate = nextReplacementDate,
+    )
+
+    private fun Item.toSnapshot(): ItemSnapshot = ItemSnapshot(
+        id = requireNotNull(id),
+        name = name,
+        nextReplacementDate = nextReplacementDate,
+        quantity = quantity,
     )
 }
