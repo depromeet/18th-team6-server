@@ -1,7 +1,5 @@
-package depromeet.hotsix.obrit.home.entity
+package depromeet.hotsix.obrit.item.entity
 
-import depromeet.hotsix.obrit.item.entity.ReplacementBand
-import depromeet.hotsix.obrit.item.entity.SpareBand
 import java.time.LocalDate
 
 data class ItemSnapshot(val id: Long, val name: String, val nextReplacementDate: LocalDate, val quantity: Int) {
