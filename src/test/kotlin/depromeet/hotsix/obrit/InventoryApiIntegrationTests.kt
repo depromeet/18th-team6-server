@@ -99,7 +99,7 @@ class InventoryApiIntegrationTests {
             header("X-User-Id", "1")
         }.andExpect {
             status { isOk() }
-            jsonPath("$.length()") { value(0) }
+            jsonPath("$.data.length()") { value(0) }
         }
     }
 
@@ -137,12 +137,12 @@ class InventoryApiIntegrationTests {
             header("X-User-Id", "1")
         }.andExpect {
             status { isOk() }
-            jsonPath("$[0].id") { value(officeItemId.toInt()) }
-            jsonPath("$[0].replacementIntervalDays") { value(7) }
-            jsonPath("$[0].nextReplacementDate") { value("2026-04-27") }
-            jsonPath("$[1].id") { value(homeItemId.toInt()) }
-            jsonPath("$[1].replacementIntervalDays") { value(10) }
-            jsonPath("$[1].nextReplacementDate") { value("2026-04-28") }
+            jsonPath("$.data[0].id") { value(officeItemId.toInt()) }
+            jsonPath("$.data[0].replacementIntervalDays") { value(7) }
+            jsonPath("$.data[0].nextReplacementDate") { value("2026-04-27") }
+            jsonPath("$.data[1].id") { value(homeItemId.toInt()) }
+            jsonPath("$.data[1].replacementIntervalDays") { value(10) }
+            jsonPath("$.data[1].nextReplacementDate") { value("2026-04-28") }
         }
 
         mockMvc.patch("/items/$homeItemId") {
@@ -155,8 +155,8 @@ class InventoryApiIntegrationTests {
             """.trimIndent()
         }.andExpect {
             status { isOk() }
-            jsonPath("$.replacementIntervalDays") { value(5) }
-            jsonPath("$.nextReplacementDate") { value("2026-04-23") }
+            jsonPath("$.data.replacementIntervalDays") { value(5) }
+            jsonPath("$.data.nextReplacementDate") { value("2026-04-23") }
         }
 
         mockMvc.post("/items/$officeItemId/replacements") {
@@ -169,8 +169,8 @@ class InventoryApiIntegrationTests {
             """.trimIndent()
         }.andExpect {
             status { isCreated() }
-            jsonPath("$.lastReplacedDate") { value("2026-04-25") }
-            jsonPath("$.nextReplacementDate") { value("2026-05-02") }
+            jsonPath("$.data.lastReplacedDate") { value("2026-04-25") }
+            jsonPath("$.data.nextReplacementDate") { value("2026-05-02") }
         }
     }
 
@@ -221,6 +221,6 @@ class InventoryApiIntegrationTests {
             status { isCreated() }
         }.andReturn().response.contentAsString
 
-        return objectMapper.readTree(response).get("id").asLong()
+        return objectMapper.readTree(response).get("data").get("id").asLong()
     }
 }
