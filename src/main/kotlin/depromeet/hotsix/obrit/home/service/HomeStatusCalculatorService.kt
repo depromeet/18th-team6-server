@@ -72,7 +72,7 @@ class HomeStatusCalculatorService {
         }
     }
 
-    private fun calculateMyStatusSummary(today: LocalDate, items: List<ItemSnapshot>): MyStatusSummaryResponse {
+    fun calculateMyStatusSummary(today: LocalDate, items: List<ItemSnapshot>): MyStatusSummaryResponse {
         if (items.isEmpty()) {
             return MyStatusSummaryResponse(
                 totalCount = 0,
