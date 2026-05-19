@@ -6,3 +6,8 @@ out
 *.iml
 .idea
 .DS_Store
+.env
+.env.*
+!.env.example
+.deploy.env
+gha-creds-*.json
