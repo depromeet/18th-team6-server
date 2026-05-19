@@ -21,19 +21,6 @@ class CategoryService(
     private val categoryItemCleaner: CategoryItemCleaner,
 ) {
 
-    @Transactional(readOnly = true)
-    fun listAllAccessibleCategories(userId: Long): List<CategoryResponse> {
-        userService.validateUserExist(userId)
-        val presetCategories = categoryRepository.findActivePresets()
-        val userCategories = categoryRepository.findActiveByUserId(userId)
-        val allCategories = presetCategories + userCategories
-
-        val iconIds = allCategories.map { it.iconId }.distinct()
-        val iconUrlMap = categoryIconRepository.findAllById(iconIds).associate { it.id to it.url }
-
-        return allCategories.map { it.toResponse(iconUrlMap[it.iconId].orEmpty()) }
-    }
-
     @Transactional
     fun createCategory(userId: Long, request: CreateCategoryRequest): CategoryResponse {
         userService.validateUserExist(userId)

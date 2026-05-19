@@ -19,7 +19,7 @@ import kotlin.test.assertTrue
 class CategoryServiceTest {
 
     @Autowired
-    private lateinit var categoryService: CategoryService
+    private lateinit var categoryQueryService: CategoryQueryService
 
     @Autowired
     private lateinit var categoryRepository: CategoryRepository
@@ -55,7 +55,7 @@ class CategoryServiceTest {
     @Test
     fun `사용자는_본인이_등록한_종류와_기본제공_종류만_조회할_수_있다`() {
         // when
-        val result = categoryService.listAllAccessibleCategories(user1Id)
+        val result = categoryQueryService.listAllAccessibleCategories(user1Id)
 
         // then: 기본 제공(3개) + 사용자1 등록(2개) = 5개
         assertEquals(5, result.size)
@@ -72,7 +72,7 @@ class CategoryServiceTest {
     @Test
     fun `다른_사용자가_등록한_종류는_조회되지_않는다`() {
         // when
-        val result = categoryService.listAllAccessibleCategories(user1Id)
+        val result = categoryQueryService.listAllAccessibleCategories(user1Id)
 
         // then: 사용자2의 카테고리는 name이 "커스텀2"와 같지 않음
         assertTrue(result.none { it.name == "다른사용자카테고리" })

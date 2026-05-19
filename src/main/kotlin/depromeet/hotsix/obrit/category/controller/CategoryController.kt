@@ -3,6 +3,7 @@ package depromeet.hotsix.obrit.category.controller
 import depromeet.hotsix.obrit.category.controller.docs.CategoryControllerApi
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
+import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.category.service.CategoryService
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import jakarta.validation.Valid
@@ -19,11 +20,14 @@ import org.springframework.web.bind.annotation.RestController
 
 @RestController
 @RequestMapping("/categories")
-class CategoryController(private val categoryService: CategoryService) : CategoryControllerApi {
+class CategoryController(
+    private val categoryService: CategoryService,
+    private val categoryQueryService: CategoryQueryService,
+) : CategoryControllerApi {
 
     @GetMapping
     override fun listCategories(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<CategoryResponse>> {
-        val result = categoryService.listAllAccessibleCategories(userId)
+        val result = categoryQueryService.listAllAccessibleCategories(userId)
         return ApiResponse.ok(result)
     }
 
