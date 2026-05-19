@@ -6,11 +6,7 @@ on:
     paths-ignore:
       - "README.md"
       - "docs/**"
-  pull_request:
-    branches: [ "main" ] # pull_request는 테스트 후 없애기
-    paths-ignore:
-      - "README.md"
-      - "docs/**"
+
   workflow_dispatch:
 
 jobs:
