@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.item.controller
 
+import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.global.exception.ErrorResponse
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
@@ -11,7 +12,6 @@ import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.ArraySchema
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
-import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import jakarta.validation.Valid
@@ -26,6 +26,7 @@ import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
+import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 @Tag(name = "Items", description = "아이템 API")
 @RestController
@@ -38,7 +39,7 @@ class ItemController(private val itemService: ItemService) {
     )
     @ApiResponses(
         value = [
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "200",
                 description = "아이템 목록 조회 성공",
                 content = [
@@ -54,7 +55,7 @@ class ItemController(private val itemService: ItemService) {
     fun listItems(
         @Parameter(description = "개발용 사용자 ID", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
-    ): List<ItemResponse> = itemService.listItems(userId)
+    ): ApiResponse<List<ItemResponse>> = ApiResponse.ok(itemService.listItems(userId))
 
     @Operation(
         summary = "아이템 생성",
@@ -62,7 +63,7 @@ class ItemController(private val itemService: ItemService) {
     )
     @ApiResponses(
         value = [
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "201",
                 description = "아이템 생성 성공",
                 content = [
@@ -72,7 +73,7 @@ class ItemController(private val itemService: ItemService) {
                     ),
                 ],
             ),
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "400",
                 description = "유효하지 않은 아이템 요청",
                 content = [
@@ -82,7 +83,7 @@ class ItemController(private val itemService: ItemService) {
                     ),
                 ],
             ),
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "404",
                 description = "카테고리를 찾을 수 없음",
                 content = [
@@ -100,7 +101,7 @@ class ItemController(private val itemService: ItemService) {
         @Parameter(description = "개발용 사용자 ID", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
         @Valid @RequestBody request: CreateItemRequest,
-    ): ItemResponse = itemService.createItem(userId, request)
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.createItem(userId, request))
 
     @Operation(
         summary = "아이템 수정",
@@ -108,7 +109,7 @@ class ItemController(private val itemService: ItemService) {
     )
     @ApiResponses(
         value = [
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "200",
                 description = "아이템 수정 성공",
                 content = [
@@ -118,7 +119,7 @@ class ItemController(private val itemService: ItemService) {
                     ),
                 ],
             ),
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "400",
                 description = "유효하지 않은 아이템 요청",
                 content = [
@@ -128,7 +129,7 @@ class ItemController(private val itemService: ItemService) {
                     ),
                 ],
             ),
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "404",
                 description = "아이템을 찾을 수 없음",
                 content = [
@@ -146,7 +147,7 @@ class ItemController(private val itemService: ItemService) {
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
         @Valid @RequestBody request: UpdateItemRequest,
-    ): ItemResponse = itemService.updateItem(userId, itemId, request)
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.updateItem(userId, itemId, request))
 
     @Operation(
         summary = "아이템 삭제",
@@ -154,8 +155,8 @@ class ItemController(private val itemService: ItemService) {
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "204", description = "아이템 삭제 성공"),
-            ApiResponse(
+            SwaggerApiResponse(responseCode = "204", description = "아이템 삭제 성공"),
+            SwaggerApiResponse(
                 responseCode = "404",
                 description = "아이템을 찾을 수 없음",
                 content = [
@@ -183,7 +184,7 @@ class ItemController(private val itemService: ItemService) {
     )
     @ApiResponses(
         value = [
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "201",
                 description = "교체 기록 성공",
                 content = [
@@ -193,7 +194,7 @@ class ItemController(private val itemService: ItemService) {
                     ),
                 ],
             ),
-            ApiResponse(
+            SwaggerApiResponse(
                 responseCode = "404",
                 description = "아이템을 찾을 수 없음",
                 content = [
@@ -212,5 +213,5 @@ class ItemController(private val itemService: ItemService) {
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
         @RequestBody request: CreateReplacementRequest,
-    ): ItemResponse = itemService.replaceItem(userId, itemId, request)
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.replaceItem(userId, itemId, request))
 }
