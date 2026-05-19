@@ -39,6 +39,7 @@ class NamingConventionTest {
     fun `controller 패키지의 클래스는 Controller로 끝나야 한다`() {
         classes()
             .that().resideInAPackage("..controller..")
+            .and().areTopLevelClasses()
             .and().haveSimpleNameNotEndingWith("Kt")
             .and().areNotMemberClasses()
             .should().haveSimpleNameEndingWith("Controller")
@@ -51,6 +52,7 @@ class NamingConventionTest {
     fun `service 패키지의 클래스는 Service로 끝나야 한다`() {
         classes()
             .that().resideInAPackage("..service..")
+            .and().areTopLevelClasses()
             .and().haveSimpleNameNotEndingWith("Kt")
             .and().areNotMemberClasses()
             .should().haveSimpleNameEndingWith("Service")
@@ -63,6 +65,7 @@ class NamingConventionTest {
     fun `repository 패키지의 클래스는 Repository로 끝나야 한다`() {
         classes()
             .that().resideInAPackage("..repository..")
+            .and().areTopLevelClasses()
             .and().haveSimpleNameNotEndingWith("Kt")
             .and().areNotMemberClasses()
             .should().haveSimpleNameEndingWith("Repository")

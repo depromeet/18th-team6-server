@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.home.service
 
 import depromeet.hotsix.obrit.home.dto.BucketItemResponse
+import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.HomeResponse
 import depromeet.hotsix.obrit.home.dto.ItemBucketResponse
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
@@ -29,6 +30,9 @@ class HomeStatusCalculatorService {
         myStatusSummary = calculateMyStatusSummary(today, items),
         itemBuckets = bucketize(today, items),
     )
+
+    fun calculateBuckets(today: LocalDate, items: List<ItemSnapshot>): HomeBucketsResponse =
+        HomeBucketsResponse(buckets = bucketize(today, items))
 
     fun calculateOverallStatus(today: LocalDate, items: List<ItemSnapshot>): OverallStatusResponse {
         if (items.isEmpty()) {
@@ -87,6 +91,7 @@ class HomeStatusCalculatorService {
 
         return MyStatusSummaryResponse(
             totalCount = items.size,
+
             // 교체 시기가 지난 것만 개수 측정
             needReplaceCount = items.count { it.isReplacementOverdue(today) },
             score = replacementBar * REPLACEMENT_SCORE_WEIGHT + spareBar * SPARE_SCORE_WEIGHT,
