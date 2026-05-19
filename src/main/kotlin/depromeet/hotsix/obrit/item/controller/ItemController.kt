@@ -27,20 +27,20 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
-@Tag(name = "Items", description = "Item APIs")
+@Tag(name = "Items", description = "아이템 API")
 @RestController
 @RequestMapping("/items")
 class ItemController(private val itemService: ItemService) {
 
     @Operation(
-        summary = "List items",
-        description = "Lists the user's items ordered by next replacement date.",
+        summary = "아이템 목록 조회",
+        description = "다음 교체일 기준으로 정렬된 사용자의 아이템 목록을 조회합니다.",
     )
     @ApiResponses(
         value = [
             ApiResponse(
                 responseCode = "200",
-                description = "Items returned.",
+                description = "아이템 목록 조회 성공",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -52,19 +52,19 @@ class ItemController(private val itemService: ItemService) {
     )
     @GetMapping
     fun listItems(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+        @Parameter(description = "개발용 사용자 ID", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
     ): List<ItemResponse> = itemService.listItems(userId)
 
     @Operation(
-        summary = "Create item",
-        description = "Creates an item in a preset or user-owned custom category.",
+        summary = "아이템 생성",
+        description = "프리셋 카테고리 또는 사용자가 보유한 커스텀 카테고리에 아이템을 생성합니다.",
     )
     @ApiResponses(
         value = [
             ApiResponse(
                 responseCode = "201",
-                description = "Item created.",
+                description = "아이템 생성 성공",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -74,7 +74,7 @@ class ItemController(private val itemService: ItemService) {
             ),
             ApiResponse(
                 responseCode = "400",
-                description = "Invalid item request.",
+                description = "유효하지 않은 아이템 요청",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -84,7 +84,7 @@ class ItemController(private val itemService: ItemService) {
             ),
             ApiResponse(
                 responseCode = "404",
-                description = "Category not found.",
+                description = "카테고리를 찾을 수 없음",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -97,20 +97,20 @@ class ItemController(private val itemService: ItemService) {
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     fun createItem(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+        @Parameter(description = "개발용 사용자 ID", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
         @Valid @RequestBody request: CreateItemRequest,
     ): ItemResponse = itemService.createItem(userId, request)
 
     @Operation(
-        summary = "Update item",
-        description = "Updates mutable fields of an item.",
+        summary = "아이템 수정",
+        description = "아이템의 변경 가능한 필드를 수정합니다.",
     )
     @ApiResponses(
         value = [
             ApiResponse(
                 responseCode = "200",
-                description = "Item updated.",
+                description = "아이템 수정 성공",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -120,7 +120,7 @@ class ItemController(private val itemService: ItemService) {
             ),
             ApiResponse(
                 responseCode = "400",
-                description = "Invalid item request.",
+                description = "유효하지 않은 아이템 요청",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -130,7 +130,7 @@ class ItemController(private val itemService: ItemService) {
             ),
             ApiResponse(
                 responseCode = "404",
-                description = "Item not found.",
+                description = "아이템을 찾을 수 없음",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -142,22 +142,22 @@ class ItemController(private val itemService: ItemService) {
     )
     @PatchMapping("/{itemId}")
     fun updateItem(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+        @Parameter(description = "개발용 사용자 ID", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
         @Valid @RequestBody request: UpdateItemRequest,
     ): ItemResponse = itemService.updateItem(userId, itemId, request)
 
     @Operation(
-        summary = "Delete item",
-        description = "Deletes an item.",
+        summary = "아이템 삭제",
+        description = "아이템을 삭제합니다.",
     )
     @ApiResponses(
         value = [
-            ApiResponse(responseCode = "204", description = "Item deleted."),
+            ApiResponse(responseCode = "204", description = "아이템 삭제 성공"),
             ApiResponse(
                 responseCode = "404",
-                description = "Item not found.",
+                description = "아이템을 찾을 수 없음",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -170,7 +170,7 @@ class ItemController(private val itemService: ItemService) {
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     fun deleteItem(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+        @Parameter(description = "개발용 사용자 ID", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
     ) {
@@ -178,14 +178,14 @@ class ItemController(private val itemService: ItemService) {
     }
 
     @Operation(
-        summary = "Record item replacement",
-        description = "Records a replacement date and updates the item's next replacement date.",
+        summary = "아이템 교체 기록",
+        description = "교체일을 기록하고 아이템의 다음 교체일을 갱신합니다.",
     )
     @ApiResponses(
         value = [
             ApiResponse(
                 responseCode = "201",
-                description = "Replacement recorded.",
+                description = "교체 기록 성공",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -195,7 +195,7 @@ class ItemController(private val itemService: ItemService) {
             ),
             ApiResponse(
                 responseCode = "404",
-                description = "Item not found.",
+                description = "아이템을 찾을 수 없음",
                 content = [
                     Content(
                         mediaType = "application/json",
@@ -208,7 +208,7 @@ class ItemController(private val itemService: ItemService) {
     @PostMapping("/{itemId}/replacements")
     @ResponseStatus(HttpStatus.CREATED)
     fun replaceItem(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+        @Parameter(description = "개발용 사용자 ID", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
         @RequestBody request: CreateReplacementRequest,
