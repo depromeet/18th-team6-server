@@ -51,7 +51,7 @@ class CategoryService(
             throw BusinessException("제공되는 소모품 카테고리는 삭제할 수 없습니다.")
         }
 
-        if (category.isUserCategoryOf(userId)) {
+        if (!category.isUserCategoryOf(userId)) {
             throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
         }
 
