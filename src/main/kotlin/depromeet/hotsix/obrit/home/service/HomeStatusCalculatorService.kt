@@ -1,13 +1,14 @@
 package depromeet.hotsix.obrit.home.service
 
 import depromeet.hotsix.obrit.home.dto.BucketItemResponse
+import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.HomeResponse
 import depromeet.hotsix.obrit.home.dto.ItemBucketResponse
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
 import depromeet.hotsix.obrit.home.entity.ItemBucket
-import depromeet.hotsix.obrit.home.entity.ItemSnapshot
 import depromeet.hotsix.obrit.home.entity.OverallStatus
+import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemStatus
 import org.springframework.stereotype.Service
 import java.time.LocalDate
@@ -30,7 +31,10 @@ class HomeStatusCalculatorService {
         itemBuckets = bucketize(today, items),
     )
 
-    private fun calculateOverallStatus(today: LocalDate, items: List<ItemSnapshot>): OverallStatusResponse {
+    fun calculateBuckets(today: LocalDate, items: List<ItemSnapshot>): HomeBucketsResponse =
+        HomeBucketsResponse(buckets = bucketize(today, items))
+
+    fun calculateOverallStatus(today: LocalDate, items: List<ItemSnapshot>): OverallStatusResponse {
         if (items.isEmpty()) {
             return OverallStatusResponse(
                 replacement = ItemStatus.GOOD,
@@ -72,7 +76,7 @@ class HomeStatusCalculatorService {
         }
     }
 
-    private fun calculateMyStatusSummary(today: LocalDate, items: List<ItemSnapshot>): MyStatusSummaryResponse {
+    fun calculateMyStatusSummary(today: LocalDate, items: List<ItemSnapshot>): MyStatusSummaryResponse {
         if (items.isEmpty()) {
             return MyStatusSummaryResponse(
                 totalCount = 0,
@@ -87,6 +91,7 @@ class HomeStatusCalculatorService {
 
         return MyStatusSummaryResponse(
             totalCount = items.size,
+
             // 교체 시기가 지난 것만 개수 측정
             needReplaceCount = items.count { it.isReplacementOverdue(today) },
             score = replacementBar * REPLACEMENT_SCORE_WEIGHT + spareBar * SPARE_SCORE_WEIGHT,

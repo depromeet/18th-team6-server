@@ -13,10 +13,10 @@ data class HomeResponse(
     val itemBuckets: List<ItemBucketResponse>,
 )
 
-@Schema(description = "Overall home status.")
+@Schema(description = "홈 화면 종합 상태")
 data class OverallStatusResponse(val replacement: ItemStatus, val spare: ItemStatus, val overall: OverallStatus)
 
-@Schema(description = "My status summary.")
+@Schema(description = "내 상태 요약")
 data class MyStatusSummaryResponse(
     val totalCount: Int,
     val needReplaceCount: Int,
@@ -24,10 +24,10 @@ data class MyStatusSummaryResponse(
     val averageScore: Double,
 )
 
-@Schema(description = "Items grouped by spare and replacement status.")
+@Schema(description = "여분/교체 상태 기준으로 분류된 아이템 버킷")
 data class ItemBucketResponse(val bucket: ItemBucket, val count: Int, val items: List<BucketItemResponse>)
 
-@Schema(description = "Item shown in a home bucket.")
+@Schema(description = "홈 버킷에 표시되는 아이템")
 data class BucketItemResponse(
     val id: Long,
     val name: String,
@@ -35,3 +35,6 @@ data class BucketItemResponse(
     val nextReplacementDate: LocalDate,
     val status: ItemStatus,
 )
+
+@Schema(description = "여분/교체 상태 기준으로 그룹화된 홈 버킷 목록")
+data class HomeBucketsResponse(val buckets: List<ItemBucketResponse>)

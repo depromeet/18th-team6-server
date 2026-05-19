@@ -1,8 +1,8 @@
 package depromeet.hotsix.obrit.home.service
 
 import depromeet.hotsix.obrit.home.entity.ItemBucket
-import depromeet.hotsix.obrit.home.entity.ItemSnapshot
 import depromeet.hotsix.obrit.home.entity.OverallStatus
+import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemStatus
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Test
