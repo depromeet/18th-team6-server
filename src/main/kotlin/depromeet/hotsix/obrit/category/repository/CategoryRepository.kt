@@ -53,4 +53,6 @@ interface CategoryRepository : JpaRepository<Category, Long> {
     ): List<Category>
 
     fun existsByUserIdAndNameAndDeletedAtIsNull(userId: Long, name: String): Boolean
+
+    fun existsByUserIdIsNullAndNameAndDeletedAtIsNull(name: String): Boolean
 }
