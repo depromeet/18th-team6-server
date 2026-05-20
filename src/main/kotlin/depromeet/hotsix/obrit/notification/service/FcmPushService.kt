@@ -7,6 +7,7 @@ import com.google.firebase.messaging.MessagingErrorCode
 import com.google.firebase.messaging.Notification
 import depromeet.hotsix.obrit.notification.repository.FcmTokenRepository
 import org.slf4j.LoggerFactory
+import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -14,6 +15,7 @@ import org.springframework.transaction.annotation.Transactional
 class FcmPushService(private val fcmTokenRepository: FcmTokenRepository) {
     private val log = LoggerFactory.getLogger(javaClass)
 
+    @Async
     fun sendToToken(token: String, title: String, body: String) {
         val message = buildMessage(token, title, body)
         try {
@@ -23,6 +25,7 @@ class FcmPushService(private val fcmTokenRepository: FcmTokenRepository) {
         }
     }
 
+    @Async
     @Transactional
     fun sendToUser(userId: Long, title: String, body: String) {
         val tokens = fcmTokenRepository.findAllByUserId(userId)
