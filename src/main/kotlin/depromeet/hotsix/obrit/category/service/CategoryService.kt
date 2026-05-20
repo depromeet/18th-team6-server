@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.category.service
 
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
@@ -20,6 +21,10 @@ class CategoryService(
     private val userService: UserService,
     private val categoryItemCleaner: CategoryItemCleaner,
 ) {
+
+    @Transactional(readOnly = true)
+    fun listCategoryIcons(): List<CategoryIconResponse> =
+        categoryIconRepository.findAllByOrderByIdDesc().map { CategoryIconResponse(id = it.id, url = it.url) }
 
     @Transactional
     fun createCategory(userId: Long, request: CreateCategoryRequest): CategoryResponse {

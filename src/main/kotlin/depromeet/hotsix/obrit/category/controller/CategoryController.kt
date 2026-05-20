@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.category.controller
 
 import depromeet.hotsix.obrit.category.controller.docs.CategoryControllerApi
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.category.service.CategoryService
@@ -24,6 +25,10 @@ class CategoryController(
     private val categoryService: CategoryService,
     private val categoryQueryService: CategoryQueryService,
 ) : CategoryControllerApi {
+
+    @GetMapping("/icons")
+    override fun listCategoryIcons(): ApiResponse<List<CategoryIconResponse>> =
+        ApiResponse.ok(categoryService.listCategoryIcons())
 
     @GetMapping
     override fun listCategories(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<CategoryResponse>> {
