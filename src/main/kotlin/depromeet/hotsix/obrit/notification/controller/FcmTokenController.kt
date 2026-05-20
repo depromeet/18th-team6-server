@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.notification.controller
 
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.notification.dto.request.RegisterFcmTokenRequest
+import depromeet.hotsix.obrit.notification.dto.response.RegisterFcmTokenResponse
 import depromeet.hotsix.obrit.notification.service.FcmTokenService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.PostMapping
@@ -17,8 +18,8 @@ class FcmTokenController(private val fcmTokenService: FcmTokenService) {
     fun registerToken(
         @RequestHeader("X-User-Id") userId: Long,
         @Valid @RequestBody request: RegisterFcmTokenRequest,
-    ): ApiResponse<Nothing?> {
-        fcmTokenService.registerToken(userId, request.token)
-        return ApiResponse.ok(null)
+    ): ApiResponse<RegisterFcmTokenResponse> {
+        val response = fcmTokenService.registerToken(userId, request.token)
+        return ApiResponse.ok(response)
     }
 }
