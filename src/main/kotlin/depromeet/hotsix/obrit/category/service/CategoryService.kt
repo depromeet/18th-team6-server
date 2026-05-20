@@ -26,25 +26,14 @@ class CategoryService(
     fun listCategoryIcons(): List<CategoryIconResponse> =
         categoryIconRepository.findAllByOrderByIdDesc().map { CategoryIconResponse(id = it.id, url = it.url) }
 
-    @Transactional(readOnly = true)
-    fun listAllAccessibleCategories(userId: Long): List<CategoryResponse> {
-        userService.validateUserExist(userId)
-        val presetCategories = categoryRepository.findActivePresets()
-        val userCategories = categoryRepository.findActiveByUserId(userId)
-        val allCategories = presetCategories + userCategories
-
-        val iconIds = allCategories.map { it.iconId }.distinct()
-        val iconUrlMap = categoryIconRepository.findAllById(iconIds).associate { it.id to it.url }
-
-        return allCategories.map { it.toResponse(iconUrlMap[it.iconId].orEmpty()) }
-    }
-
     @Transactional
     fun createCategory(userId: Long, request: CreateCategoryRequest): CategoryResponse {
         userService.validateUserExist(userId)
 
         val trimmedName = request.name.trim()
-        if (categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, trimmedName)) {
+        if (categoryRepository.existsByUserIdIsNullAndNameAndDeletedAtIsNull(trimmedName) ||
+            categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, trimmedName)
+        ) {
             throw ConflictException("이미 등록된 소모품 종류입니다.")
         }
 
@@ -69,7 +58,7 @@ class CategoryService(
             throw BusinessException("제공되는 소모품 카테고리는 삭제할 수 없습니다.")
         }
 
-        if (category.isUserCategoryOf(userId)) {
+        if (!category.isUserCategoryOf(userId)) {
             throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
         }
 

@@ -9,11 +9,13 @@ import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
+import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.service.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.LocalDate
 
 @Service
@@ -22,6 +24,7 @@ class ItemService(
     private val itemReplacementHistoryRepository: ItemReplacementHistoryRepository,
     private val categoryQueryService: CategoryQueryService,
     private val userService: UserService,
+    private val clock: Clock,
 ) {
 
     @Transactional(readOnly = true)
@@ -34,6 +37,10 @@ class ItemService(
         }
     }
 
+    @Transactional(readOnly = true)
+    fun findActiveSnapshotsByUserId(userId: Long): List<ItemSnapshot> =
+        itemRepository.findActiveByUserId(userId).map { it.toSnapshot() }
+
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
         userService.validateUserExist(userId)
@@ -41,7 +48,7 @@ class ItemService(
             categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, request.categoryId)
 
         val intervalDays = request.replacementIntervalDays ?: defaultReplacementIntervalDays
-        val lastReplacedDate = request.lastReplacedDate ?: LocalDate.now()
+        val lastReplacedDate = request.lastReplacedDate ?: LocalDate.now(clock)
         val item = Item(
             userId = userId,
             categoryId = request.categoryId,
@@ -84,7 +91,7 @@ class ItemService(
     @Transactional
     fun replaceItem(userId: Long, itemId: Long, request: CreateReplacementRequest): ItemResponse {
         val item = findActiveItem(userId, itemId)
-        val replacedDate = request.replacedDate ?: LocalDate.now()
+        val replacedDate = request.replacedDate ?: LocalDate.now(clock)
 
         item.replace(replacedDate)
         itemReplacementHistoryRepository.save(
@@ -115,5 +122,12 @@ class ItemService(
         replacementIntervalDays = replacementIntervalDays,
         lastReplacedDate = lastReplacedDate,
         nextReplacementDate = nextReplacementDate,
+    )
+
+    private fun Item.toSnapshot(): ItemSnapshot = ItemSnapshot(
+        id = requireNotNull(id),
+        name = name,
+        nextReplacementDate = nextReplacementDate,
+        quantity = quantity,
     )
 }
