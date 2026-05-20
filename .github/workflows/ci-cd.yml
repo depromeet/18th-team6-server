@@ -64,18 +64,6 @@ jobs:
             -t ${DOCKER_USERNAME}/${DOCKER_REPO}:latest \
             --push .
 
-      - name: Docker build
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
-        run: docker build --no-cache -t ${DOCKER_USERNAME}/${DOCKER_REPO}:latest .
-
-      - name: Docker Hub push
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
-        run: docker push ${DOCKER_USERNAME}/${DOCKER_REPO}:latest
-
   deploy:
     needs: build-docker-image
     runs-on: ubuntu-latest
