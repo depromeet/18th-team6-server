@@ -147,13 +147,13 @@ class HomeController(private val homeService: HomeService) {
         )
         @RequestHeader("X-User-Id") userId: Long,
         @Parameter(
-            description = "정렬 기준 (기본값: REPLACEMENT_URGENT)\n" +
+            description = "정렬 기준 (기본값: USED_OLD)\n" +
                 "- REPLACEMENT_URGENT: 교체가 임박한 순\n" +
                 "- SPARE_LOW: 여분 수량이 적은 순\n" +
                 "- USED_OLD: 오래 사용 중인 순",
-            example = "REPLACEMENT_URGENT",
+            example = "USED_OLD",
         )
-        @RequestParam(required = false, defaultValue = "REPLACEMENT_URGENT") order: ItemOrder,
+        @RequestParam(required = false, defaultValue = "USED_OLD") order: ItemOrder,
         @Parameter(
             description = "D-day 필터. 오늘부터 N일 이내(당일 포함)에 교체가 필요한 아이템만 반환합니다. " +
                 "예) 30이면 오늘부터 30일 이내에 교체 예정인 아이템만 조회됩니다. " +
