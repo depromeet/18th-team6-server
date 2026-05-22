@@ -29,9 +29,9 @@ class GlobalExceptionHandler {
     }
 }
 
-@Schema(description = "Error response.")
+@Schema(description = "에러 응답")
 data class ErrorResponse(
-    @field:Schema(description = "Human-readable error message.", example = "Category not found.")
+    @field:Schema(description = "에러 메시지", example = "존재하지 않는 소모품 카테고리입니다.")
     val message: String,
 )
 
