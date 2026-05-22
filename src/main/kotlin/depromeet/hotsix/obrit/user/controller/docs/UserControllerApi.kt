@@ -2,8 +2,8 @@ package depromeet.hotsix.obrit.user.controller.docs
 
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.global.exception.ErrorResponse
-import depromeet.hotsix.obrit.user.dto.RegisterUserRequest
-import depromeet.hotsix.obrit.user.dto.RegisterUserResponse
+import depromeet.hotsix.obrit.user.dto.request.RegisterUserRequest
+import depromeet.hotsix.obrit.user.dto.response.RegisterUserResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.ExampleObject

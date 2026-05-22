@@ -2,8 +2,8 @@ package depromeet.hotsix.obrit.user.service
 
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
-import depromeet.hotsix.obrit.user.dto.RegisterUserRequest
-import depromeet.hotsix.obrit.user.dto.RegisterUserResponse
+import depromeet.hotsix.obrit.user.dto.request.RegisterUserRequest
+import depromeet.hotsix.obrit.user.dto.response.RegisterUserResponse
 import depromeet.hotsix.obrit.user.entity.User
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.springframework.dao.DataIntegrityViolationException

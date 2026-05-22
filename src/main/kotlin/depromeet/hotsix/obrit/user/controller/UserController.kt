@@ -2,8 +2,8 @@ package depromeet.hotsix.obrit.user.controller
 
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.user.controller.docs.UserControllerApi
-import depromeet.hotsix.obrit.user.dto.RegisterUserRequest
-import depromeet.hotsix.obrit.user.dto.RegisterUserResponse
+import depromeet.hotsix.obrit.user.dto.request.RegisterUserRequest
+import depromeet.hotsix.obrit.user.dto.response.RegisterUserResponse
 import depromeet.hotsix.obrit.user.service.UserService
 import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.PostMapping

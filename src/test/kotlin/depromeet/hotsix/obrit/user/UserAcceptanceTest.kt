@@ -1,7 +1,7 @@
 package depromeet.hotsix.obrit.user
 
 import depromeet.hotsix.obrit.global.exception.BusinessException
-import depromeet.hotsix.obrit.user.dto.RegisterUserRequest
+import depromeet.hotsix.obrit.user.dto.request.RegisterUserRequest
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import depromeet.hotsix.obrit.user.service.UserService
 import org.junit.jupiter.api.Test
