@@ -50,7 +50,7 @@ interface ItemControllerApi {
     fun listItems(
         @Parameter(description = "사용자 ID", required = true, example = "1")
         userId: Long,
-    ): List<ItemResponse>
+    ): ApiResponse<List<ItemResponse>>
 
     @Operation(
         summary = "소모품 단건 등록",
@@ -104,7 +104,7 @@ interface ItemControllerApi {
         @Parameter(description = "사용자 ID", required = true, example = "1")
         userId: Long,
         request: CreateItemRequest,
-    ): ItemResponse
+    ): ApiResponse<ItemResponse>
 
     @Operation(
         summary = "소모품 다건 등록",
@@ -210,7 +210,7 @@ interface ItemControllerApi {
         @Parameter(description = "소모품 ID", required = true, example = "1")
         itemId: Long,
         request: UpdateItemRequest,
-    ): ItemResponse
+    ): ApiResponse<ItemResponse>
 
     @Operation(
         summary = "소모품 삭제",
@@ -278,5 +278,5 @@ interface ItemControllerApi {
         @Parameter(description = "소모품 ID", required = true, example = "1")
         itemId: Long,
         request: CreateReplacementRequest,
-    ): ItemResponse
+    ): ApiResponse<ItemResponse>
 }

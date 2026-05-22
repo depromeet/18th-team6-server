@@ -26,14 +26,15 @@ import org.springframework.web.bind.annotation.RestController
 class ItemController(private val itemService: ItemService) : ItemControllerApi {
 
     @GetMapping
-    override fun listItems(@RequestHeader("X-User-Id") userId: Long): List<ItemResponse> = itemService.listItems(userId)
+    override fun listItems(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<ItemResponse>> =
+        ApiResponse.ok(itemService.listItems(userId))
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
     override fun createItem(
         @RequestHeader("X-User-Id") userId: Long,
         @Valid @RequestBody request: CreateItemRequest,
-    ): ItemResponse = itemService.createItem(userId, request)
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.createItem(userId, request))
 
     @PostMapping("/bulk")
     @ResponseStatus(HttpStatus.CREATED)
@@ -47,7 +48,7 @@ class ItemController(private val itemService: ItemService) : ItemControllerApi {
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
         @Valid @RequestBody request: UpdateItemRequest,
-    ): ItemResponse = itemService.updateItem(userId, itemId, request)
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.updateItem(userId, itemId, request))
 
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
@@ -61,5 +62,5 @@ class ItemController(private val itemService: ItemService) : ItemControllerApi {
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
         @RequestBody request: CreateReplacementRequest,
-    ): ItemResponse = itemService.replaceItem(userId, itemId, request)
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.replaceItem(userId, itemId, request))
 }
