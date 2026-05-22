@@ -1,10 +1,12 @@
 package depromeet.hotsix.obrit.item.dto
 
 import io.swagger.v3.oas.annotations.media.Schema
+import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
 import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.PositiveOrZero
+import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 @Schema(description = "Item creation request.")
@@ -53,6 +55,15 @@ data class UpdateItemRequest(
 data class CreateReplacementRequest(
     @field:Schema(description = "Replacement date. Uses today when omitted.", example = "2026-04-25")
     val replacedDate: LocalDate? = null,
+)
+
+@Schema(description = "소모품 다건 등록 요청.")
+data class BulkCreateItemRequest(
+    @field:Schema(description = "등록할 소모품 목록. 최소 1개, 최대 10개.")
+    @field:NotNull(message = "소모품 목록은 필수입니다.")
+    @field:Size(min = 1, max = 10, message = "소모품 목록은 1개 이상 10개 이하여야 합니다.")
+    @field:Valid
+    val items: List<CreateItemRequest>,
 )
 
 @Schema(description = "Item response.")
