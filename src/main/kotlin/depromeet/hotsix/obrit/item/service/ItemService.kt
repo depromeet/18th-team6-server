@@ -9,6 +9,7 @@ import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
 import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
+import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
@@ -103,6 +104,21 @@ class ItemService(
             replacementIntervalDays = request.replacementIntervalDays,
             lastReplacedDate = request.lastReplacedDate,
         )
+
+        return item.toResponse(
+            categoryName = categoryQueryService.getVisibleCategoryName(userId, item.categoryId),
+        )
+    }
+
+    @Transactional
+    fun updateSpareCount(userId: Long, itemId: Long, request: UpdateSpareCountRequest): ItemResponse {
+        val count = request.count ?: throw BusinessException("여분 수량은 필수입니다.")
+        if (count < 0) {
+            throw BusinessException("여분 수량은 0 이상이어야 합니다.")
+        }
+
+        val item = findActiveItem(userId, itemId)
+        item.updateSpareCount(count)
 
         return item.toResponse(
             categoryName = categoryQueryService.getVisibleCategoryName(userId, item.categoryId),

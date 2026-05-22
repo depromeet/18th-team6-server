@@ -8,6 +8,7 @@ import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
 import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
+import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import depromeet.hotsix.obrit.item.service.ItemService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
@@ -53,6 +54,13 @@ class ItemController(private val itemService: ItemService) : ItemControllerApi {
         @PathVariable itemId: Long,
         @Valid @RequestBody request: UpdateItemRequest,
     ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.updateItem(userId, itemId, request))
+
+    @PatchMapping("/{itemId}/spare-count")
+    override fun updateSpareCount(
+        @RequestHeader("X-User-Id") userId: Long,
+        @PathVariable itemId: Long,
+        @Valid @RequestBody request: UpdateSpareCountRequest,
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.updateSpareCount(userId, itemId, request))
 
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
