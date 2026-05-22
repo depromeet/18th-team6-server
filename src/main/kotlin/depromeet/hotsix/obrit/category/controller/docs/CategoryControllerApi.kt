@@ -8,6 +8,7 @@ import depromeet.hotsix.obrit.global.exception.ErrorResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
+import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -25,12 +26,6 @@ interface CategoryControllerApi {
             SwaggerApiResponse(
                 responseCode = "200",
                 description = "조회 완료",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ApiResponse::class),
-                    ),
-                ],
             ),
         ],
     )
@@ -45,10 +40,20 @@ interface CategoryControllerApi {
             SwaggerApiResponse(
                 responseCode = "200",
                 description = "조회 완료",
+            ),
+            SwaggerApiResponse(
+                responseCode = "404",
+                description = "존재하지 않는 사용자입니다.",
                 content = [
                     Content(
                         mediaType = "application/json",
-                        schema = Schema(implementation = ApiResponse::class),
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "사용자 없음",
+                                value = """{"message": "존재하지 않는 사용자입니다."}""",
+                            ),
+                        ],
                     ),
                 ],
             ),
@@ -68,12 +73,6 @@ interface CategoryControllerApi {
             SwaggerApiResponse(
                 responseCode = "201",
                 description = "카테고리가 생성되었습니다.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = CategoryResponse::class),
-                    ),
-                ],
             ),
             SwaggerApiResponse(
                 responseCode = "400",
@@ -82,6 +81,56 @@ interface CategoryControllerApi {
                     Content(
                         mediaType = "application/json",
                         schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "유효하지 않은 아이콘",
+                                value = """{"message": "유효하지 않은 아이콘입니다."}""",
+                            ),
+                            ExampleObject(
+                                name = "종류명 누락",
+                                value = """{"message": "종류명은 필수입니다."}""",
+                            ),
+                            ExampleObject(
+                                name = "종류명 길이 초과",
+                                value = """{"message": "종류명은 최대 15자입니다."}""",
+                            ),
+                            ExampleObject(
+                                name = "종류명 형식 오류",
+                                value = """{"message": "종류명은 한글/영문만 입력 가능합니다."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            SwaggerApiResponse(
+                responseCode = "404",
+                description = "존재하지 않는 사용자입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "사용자 없음",
+                                value = """{"message": "존재하지 않는 사용자입니다."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            SwaggerApiResponse(
+                responseCode = "409",
+                description = "이미 등록된 소모품 종류입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "중복 카테고리",
+                                value = """{"message": "이미 등록된 소모품 종류입니다."}""",
+                            ),
+                        ],
                     ),
                 ],
             ),
@@ -102,21 +151,33 @@ interface CategoryControllerApi {
             SwaggerApiResponse(responseCode = "204", description = "카테고리가 삭제되었습니다."),
             SwaggerApiResponse(
                 responseCode = "400",
-                description = "기본 제공 카테고리는 삭제할 수 없습니다.",
+                description = "제공되는 소모품 카테고리는 삭제할 수 없습니다.",
                 content = [
                     Content(
                         mediaType = "application/json",
                         schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "기본 카테고리 삭제 시도",
+                                value = """{"message": "제공되는 소모품 카테고리는 삭제할 수 없습니다."}""",
+                            ),
+                        ],
                     ),
                 ],
             ),
             SwaggerApiResponse(
                 responseCode = "404",
-                description = "카테고리를 찾을 수 없습니다.",
+                description = "존재하지 않는 소모품 카테고리입니다.",
                 content = [
                     Content(
                         mediaType = "application/json",
                         schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "카테고리 없음",
+                                value = """{"message": "존재하지 않는 소모품 카테고리입니다."}""",
+                            ),
+                        ],
                     ),
                 ],
             ),

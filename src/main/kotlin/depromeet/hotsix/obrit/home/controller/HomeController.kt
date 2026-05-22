@@ -7,8 +7,6 @@ import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
 import depromeet.hotsix.obrit.home.service.HomeService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
-import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.GetMapping
@@ -42,12 +40,6 @@ class HomeController(private val homeService: HomeService) {
             SwaggerApiResponse(
                 responseCode = "200",
                 description = "홈 전체 상태 조회 성공",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = OverallStatusResponse::class),
-                    ),
-                ],
             ),
         ],
     )
@@ -70,12 +62,6 @@ class HomeController(private val homeService: HomeService) {
             SwaggerApiResponse(
                 responseCode = "200",
                 description = "My status summary returned.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = MyStatusSummaryResponse::class),
-                    ),
-                ],
             ),
         ],
     )
@@ -94,12 +80,6 @@ class HomeController(private val homeService: HomeService) {
             SwaggerApiResponse(
                 responseCode = "200",
                 description = "Home buckets returned.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = HomeBucketsResponse::class),
-                    ),
-                ],
             ),
         ],
     )
