@@ -35,8 +35,8 @@ class CategoryServiceTest {
         // 사용자 생성
         val users = userRepository.saveAll(
             listOf(
-                UserFixture.user(id = null, name = "사용자1"),
-                UserFixture.user(id = null, name = "사용자2"),
+                UserFixture.user(id = null, uuid = "00000000-0000-0000-0000-000000000001", name = "사용자1"),
+                UserFixture.user(id = null, uuid = "00000000-0000-0000-0000-000000000002", name = "사용자2"),
             ),
         )
         user1Id = users[0].id!!
