@@ -7,6 +7,7 @@ import depromeet.hotsix.obrit.item.dto.BulkCreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
 import depromeet.hotsix.obrit.item.dto.ItemResponse
+import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
@@ -14,6 +15,7 @@ import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.service.UserService
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -41,6 +43,19 @@ class ItemService(
     @Transactional(readOnly = true)
     fun findActiveSnapshotsByUserId(userId: Long): List<ItemSnapshot> =
         itemRepository.findActiveByUserId(userId).map { it.toSnapshot() }
+
+    @Transactional(readOnly = true)
+    fun listReplacementHistories(userId: Long, itemId: Long, limit: Int): List<ReplacementHistoryResponse> {
+        findActiveItem(userId, itemId)
+        return itemReplacementHistoryRepository
+            .findByItemIdOrderByReplacedDateDescIdDesc(itemId, PageRequest.ofSize(limit))
+            .map {
+                ReplacementHistoryResponse(
+                    id = requireNotNull(it.id),
+                    replacedDate = it.replacedDate,
+                )
+            }
+    }
 
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
