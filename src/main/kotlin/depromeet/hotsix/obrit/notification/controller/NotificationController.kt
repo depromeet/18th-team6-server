@@ -2,7 +2,9 @@ package depromeet.hotsix.obrit.notification.controller
 
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.notification.controller.docs.NotificationControllerApi
+import depromeet.hotsix.obrit.notification.dto.response.ListNotificationResponse
 import depromeet.hotsix.obrit.notification.service.NotificationService
+import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
 import org.springframework.web.bind.annotation.PutMapping
 import org.springframework.web.bind.annotation.RequestHeader
@@ -12,6 +14,14 @@ import org.springframework.web.bind.annotation.RestController
 @RestController
 @RequestMapping("/notifications")
 class NotificationController(private val notificationService: NotificationService) : NotificationControllerApi {
+
+    @GetMapping
+    override fun listNotification(
+        @RequestHeader("X-User-Id") userId: Long,
+    ): ApiResponse<List<ListNotificationResponse>> {
+        val result = notificationService.listAllNotification(userId)
+        return ApiResponse.ok(result)
+    }
 
     @PutMapping("/{notificationId}/read")
     override fun markAsRead(
