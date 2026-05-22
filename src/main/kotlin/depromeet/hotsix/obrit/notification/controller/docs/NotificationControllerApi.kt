@@ -5,6 +5,7 @@ import depromeet.hotsix.obrit.global.exception.ErrorResponse
 import depromeet.hotsix.obrit.notification.dto.response.ListNotificationResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.enums.ParameterIn
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
@@ -33,7 +34,7 @@ interface NotificationControllerApi {
         ],
     )
     fun listNotification(
-        @Parameter(description = "사용자 ID", required = true, example = "1")
+        @Parameter(description = "사용자 ID", required = true, example = "1", `in` = ParameterIn.HEADER)
         userId: Long,
     ): ApiResponse<List<ListNotificationResponse>>
 
@@ -67,7 +68,7 @@ interface NotificationControllerApi {
         ],
     )
     fun markAsRead(
-        @Parameter(description = "사용자 ID", required = true, example = "1")
+        @Parameter(description = "사용자 ID", required = true, example = "1", `in` = ParameterIn.HEADER)
         userId: Long,
         @Parameter(description = "알림 ID", required = true, example = "1")
         notificationId: Long,
@@ -83,7 +84,7 @@ interface NotificationControllerApi {
         ],
     )
     fun markAsReadAll(
-        @Parameter(description = "사용자 ID", required = true, example = "1")
+        @Parameter(description = "사용자 ID", required = true, example = "1", `in` = ParameterIn.HEADER)
         userId: Long,
     ): ApiResponse<Nothing?>
 }
