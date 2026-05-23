@@ -10,6 +10,8 @@ import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
 import depromeet.hotsix.obrit.item.entity.Item
+import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
+import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
@@ -56,6 +58,24 @@ class ItemService(
                 )
             }
     }
+    
+    fun findItemListSnapshots(
+        userId: Long,
+        order: ItemOrder,
+        dDay: Int?,
+        spareQuantity: Int?,
+        cursor: Long?,
+        today: LocalDate,
+        size: Int,
+    ): List<ItemListSnapshot> = itemRepository.findItemList(
+        userId = userId,
+        order = order,
+        dDay = dDay,
+        spareQuantity = spareQuantity,
+        cursor = cursor,
+        today = today,
+        size = size,
+    ).map { it.toItemListSnapshot() }
 
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
@@ -155,5 +175,13 @@ class ItemService(
         name = name,
         nextReplacementDate = nextReplacementDate,
         quantity = quantity,
+    )
+
+    private fun Item.toItemListSnapshot(): ItemListSnapshot = ItemListSnapshot(
+        id = requireNotNull(id),
+        name = name,
+        quantity = quantity,
+        lastReplacedDate = lastReplacedDate,
+        nextReplacementDate = nextReplacementDate,
     )
 }
