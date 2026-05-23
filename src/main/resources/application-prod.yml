@@ -1,6 +1,6 @@
 spring:
   application:
-    name: orbit
+    name: obrit-api
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -12,3 +12,8 @@ spring:
     hibernate:
       ddl-auto: update
     open-in-view: false
+
+obrit:
+  admin:
+    username: ${ADMIN_USERNAME}
+    password: ${ADMIN_PASSWORD}
