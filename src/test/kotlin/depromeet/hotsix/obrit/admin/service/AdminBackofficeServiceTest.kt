@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.admin.service
 
+import depromeet.hotsix.obrit.admin.dto.AdminIconForm
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
@@ -16,6 +17,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -40,6 +42,7 @@ class AdminBackofficeServiceTest {
     private lateinit var itemRepository: ItemRepository
 
     private var userId: Long = 0L
+    private var iconId: Long = 0L
     private var presetCategoryId: Long = 0L
     private var customCategoryId: Long = 0L
 
@@ -56,6 +59,7 @@ class AdminBackofficeServiceTest {
         userId = requireNotNull(user.id)
 
         val icon = categoryIconRepository.save(CategoryIcon(name = "default", url = "/icons/default.png"))
+        iconId = icon.id
         val preset = categoryRepository.save(
             Category(
                 userId = null,
@@ -137,5 +141,35 @@ class AdminBackofficeServiceTest {
 
         assertNotNull(deletedCategory.deletedAt)
         assertTrue(affectedItems.all { it.deletedAt != null })
+    }
+
+    @Test
+    fun `아이콘은 테이블로 조회하고 생성 수정 삭제할 수 있다`() {
+        adminBackofficeService.createIcon(AdminIconForm(name = "new", url = "/icons/new.png"))
+        val created = adminBackofficeService.listIcons(includeDeleted = false)
+            .first { it.name == "new" }
+
+        adminBackofficeService.updateIcon(created.id, AdminIconForm(name = "updated", url = "/icons/updated.png"))
+        val updated = adminBackofficeService.getIcon(created.id)
+
+        adminBackofficeService.deleteIcon(created.id)
+        val activeIcons = adminBackofficeService.listIcons(includeDeleted = false)
+        val allIcons = adminBackofficeService.listIcons(includeDeleted = true)
+
+        assertEquals("updated", updated.name)
+        assertEquals("/icons/updated.png", updated.url)
+        assertTrue(activeIcons.none { it.id == created.id })
+        assertTrue(allIcons.any { it.id == created.id && it.deletedAt != null })
+    }
+
+    @Test
+    fun `사용 중인 아이콘은 삭제할 수 없다`() {
+        assertFailsWith<RuntimeException> {
+            adminBackofficeService.deleteIcon(iconId)
+        }
+
+        val icon = adminBackofficeService.getIcon(iconId)
+
+        assertEquals(null, icon.deletedAt)
     }
 }

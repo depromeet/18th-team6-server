@@ -3,13 +3,16 @@ package depromeet.hotsix.obrit.admin.service
 import depromeet.hotsix.obrit.admin.dto.AdminCategoryForm
 import depromeet.hotsix.obrit.admin.dto.AdminCategoryOption
 import depromeet.hotsix.obrit.admin.dto.AdminCategoryRow
+import depromeet.hotsix.obrit.admin.dto.AdminIconForm
 import depromeet.hotsix.obrit.admin.dto.AdminIconOption
+import depromeet.hotsix.obrit.admin.dto.AdminIconRow
 import depromeet.hotsix.obrit.admin.dto.AdminItemForm
 import depromeet.hotsix.obrit.admin.dto.AdminItemRow
 import depromeet.hotsix.obrit.admin.dto.AdminReplacementForm
 import depromeet.hotsix.obrit.admin.dto.AdminUserForm
 import depromeet.hotsix.obrit.admin.dto.AdminUserRow
 import depromeet.hotsix.obrit.category.entity.Category
+import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.exception.BusinessException
@@ -107,7 +110,36 @@ class AdminBackofficeService(
         ?: throw ResourceNotFoundException("Item not found.")
 
     @Transactional(readOnly = true)
-    fun listIcons(): List<AdminIconOption> = categoryIconRepository.findAllByOrderByIdDesc()
+    fun listIcons(includeDeleted: Boolean): List<AdminIconRow> = categoryIconRepository.findAllByOrderByIdAsc()
+        .filter { includeDeleted || it.deletedAt == null }
+        .map {
+            AdminIconRow(
+                id = it.id,
+                name = it.name,
+                url = it.url,
+                createdAt = it.createdAt,
+                updatedAt = it.updatedAt,
+                deletedAt = it.deletedAt,
+            )
+        }
+
+    @Transactional(readOnly = true)
+    fun getIcon(iconId: Long): AdminIconRow = categoryIconRepository.findById(iconId)
+        .orElseThrow { ResourceNotFoundException("존재하지 않는 아이콘입니다.") }
+        .let {
+            AdminIconRow(
+                id = it.id,
+                name = it.name,
+                url = it.url,
+                createdAt = it.createdAt,
+                updatedAt = it.updatedAt,
+                deletedAt = it.deletedAt,
+            )
+        }
+
+    @Transactional(readOnly = true)
+    fun listIconOptions(): List<AdminIconOption> = categoryIconRepository.findAllByOrderByIdDesc()
+        .filter { it.deletedAt == null }
         .map { AdminIconOption(id = it.id, name = it.name, url = it.url) }
 
     @Transactional(readOnly = true)
@@ -133,6 +165,32 @@ class AdminBackofficeService(
             throw BusinessException("이미 존재하는 UUID입니다.")
         }
         userRepository.save(User(uuid = form.uuid.trim(), name = form.name.trim()))
+    }
+
+    @Transactional
+    fun createIcon(form: AdminIconForm) {
+        validateIconForm(form)
+        categoryIconRepository.save(CategoryIcon(name = form.name.trim(), url = form.url.trim()))
+    }
+
+    @Transactional
+    fun updateIcon(iconId: Long, form: AdminIconForm) {
+        validateIconForm(form)
+        val icon = categoryIconRepository.findById(iconId)
+            .orElseThrow { ResourceNotFoundException("존재하지 않는 아이콘입니다.") }
+        icon.updateForAdmin(name = form.name, url = form.url)
+    }
+
+    @Transactional
+    fun deleteIcon(iconId: Long) {
+        val icon = categoryIconRepository.findById(iconId)
+            .orElseThrow { ResourceNotFoundException("존재하지 않는 아이콘입니다.") }
+        val inUse = categoryRepository.findAll()
+            .any { it.deletedAt == null && it.iconId == iconId }
+        if (inUse) {
+            throw BusinessException("사용 중인 아이콘은 삭제할 수 없습니다.")
+        }
+        icon.softDelete()
     }
 
     @Transactional
@@ -242,13 +300,24 @@ class AdminBackofficeService(
         if (form.defaultReplacementIntervalDays <= 0) {
             throw BusinessException("Default replacement interval must be positive.")
         }
-        if (!categoryIconRepository.existsById(form.iconId)) {
+        val icon = categoryIconRepository.findById(form.iconId)
+            .orElseThrow { BusinessException("유효하지 않은 아이콘입니다.") }
+        if (icon.deletedAt != null) {
             throw BusinessException("유효하지 않은 아이콘입니다.")
         }
         form.userId?.let {
             if (!userRepository.existsById(it)) {
                 throw ResourceNotFoundException("존재하지 않는 사용자입니다.")
             }
+        }
+    }
+
+    private fun validateIconForm(form: AdminIconForm) {
+        if (form.name.isBlank()) {
+            throw BusinessException("Icon name is required.")
+        }
+        if (form.url.isBlank()) {
+            throw BusinessException("Icon URL is required.")
         }
     }
 

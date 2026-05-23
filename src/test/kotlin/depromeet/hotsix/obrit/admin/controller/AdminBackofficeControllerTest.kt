@@ -49,6 +49,7 @@ class AdminBackofficeControllerTest {
     private lateinit var itemRepository: ItemRepository
 
     private var userId: Long = 0L
+    private var iconId: Long = 0L
     private var categoryId: Long = 0L
     private var itemId: Long = 0L
 
@@ -84,6 +85,7 @@ class AdminBackofficeControllerTest {
         )
 
         userId = requireNotNull(user.id)
+        iconId = icon.id
         categoryId = requireNotNull(category.id)
         itemId = requireNotNull(item.id)
     }
@@ -121,10 +123,12 @@ class AdminBackofficeControllerTest {
     @Test
     fun `admin list pages expose Django admin style add and change navigation`() {
         val users = authenticatedGet("/admin/users")
+        val icons = authenticatedGet("/admin/icons")
         val categories = authenticatedGet("/admin/categories")
         val items = authenticatedGet("/admin/items")
 
         assertEquals(HttpStatus.OK.value(), users.statusCode())
+        assertEquals(HttpStatus.OK.value(), icons.statusCode())
         assertEquals(HttpStatus.OK.value(), categories.statusCode())
         assertEquals(HttpStatus.OK.value(), items.statusCode())
 
@@ -132,8 +136,14 @@ class AdminBackofficeControllerTest {
         assertTrue(users.body().contains("/admin/users/$userId/change"))
         assertFalse(users.body().contains("Create user"))
 
+        assertTrue(icons.body().contains("Add icon"))
+        assertTrue(icons.body().contains("/admin/icons/$iconId/change"))
+        assertTrue(icons.body().contains("""src="/icons/default.png""""))
+
         assertTrue(categories.body().contains("Add category"))
         assertTrue(categories.body().contains("/admin/categories/$categoryId/change"))
+        assertTrue(categories.body().contains("""src="/icons/default.png""""))
+        assertTrue(categories.body().contains("""alt="Controller Category icon""""))
 
         assertTrue(items.body().contains("Add item"))
         assertTrue(items.body().contains("/admin/items/$itemId/change"))
@@ -144,6 +154,8 @@ class AdminBackofficeControllerTest {
         val paths = listOf(
             "/admin/users/add" to "Add user",
             "/admin/users/$userId/change" to "Change user",
+            "/admin/icons/add" to "Add icon",
+            "/admin/icons/$iconId/change" to "Change icon",
             "/admin/categories/add" to "Add category",
             "/admin/categories/$categoryId/change" to "Change category",
             "/admin/items/add" to "Add item",
@@ -157,6 +169,17 @@ class AdminBackofficeControllerTest {
             assertTrue(response.body().contains(title), path)
             assertTrue(response.body().contains("Save"), path)
         }
+    }
+
+    @Test
+    fun `admin category forms render icon previews`() {
+        val add = authenticatedGet("/admin/categories/add")
+        val change = authenticatedGet("/admin/categories/$categoryId/change")
+
+        assertEquals(HttpStatus.OK.value(), add.statusCode())
+        assertEquals(HttpStatus.OK.value(), change.statusCode())
+        assertTrue(add.body().contains("""src="/icons/default.png""""))
+        assertTrue(change.body().contains("""src="/icons/default.png""""))
     }
 
     private fun authenticatedGet(path: String): HttpResponse<String> {

@@ -3,28 +3,28 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Obrit Admin - Users</title>
+    <title>Obrit Admin - Icons</title>
     <link rel="stylesheet" href="/admin/admin.css">
 </head>
 <body>
 <header class="admin-header">
     <a class="admin-brand" href="/admin/users">Obrit administration</a>
     <nav class="admin-nav">
-        <a href="/admin/users" class="active">Users</a>
-        <a href="/admin/icons">Icons</a>
+        <a href="/admin/users">Users</a>
+        <a href="/admin/icons" class="active">Icons</a>
         <a href="/admin/categories">Categories</a>
         <a href="/admin/items">Items</a>
     </nav>
 </header>
-<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; Users</div>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; Icons</div>
 <main class="content">
     <div th:if="${message}" class="notice" th:text="${message}"></div>
     <div th:if="${error}" class="error" th:text="${error}"></div>
 
     <div class="content-header">
-        <h1>Users</h1>
+        <h1>Icons</h1>
         <ul class="object-tools">
-            <li><a class="addlink" href="/admin/users/add">Add user</a></li>
+            <li><a class="addlink" href="/admin/icons/add">Add icon</a></li>
         </ul>
     </div>
 
@@ -34,8 +34,9 @@
                 <thead>
                 <tr>
                     <th>ID</th>
-                    <th>UUID</th>
+                    <th>Preview</th>
                     <th>Name</th>
+                    <th>URL</th>
                     <th>Created</th>
                     <th>Updated</th>
                     <th>Deleted</th>
@@ -43,22 +44,23 @@
                 </tr>
                 </thead>
                 <tbody>
-                <tr th:each="user : ${users}" th:classappend="${user.deletedAt != null} ? 'deleted'">
+                <tr th:each="icon : ${icons}" th:classappend="${icon.deletedAt != null} ? 'deleted'">
                     <td>
-                        <a th:if="${user.deletedAt == null}" th:href="@{/admin/users/{id}/change(id=${user.id})}" th:text="${user.id}"></a>
-                        <span th:if="${user.deletedAt != null}" th:text="${user.id}"></span>
+                        <a th:if="${icon.deletedAt == null}" th:href="@{/admin/icons/{id}/change(id=${icon.id})}" th:text="${icon.id}"></a>
+                        <span th:if="${icon.deletedAt != null}" th:text="${icon.id}"></span>
                     </td>
-                    <td th:text="${user.uuid}"></td>
+                    <td><img class="admin-icon" th:src="${icon.url}" alt="icon preview" th:alt="|${icon.name} icon|"></td>
                     <td>
-                        <a th:if="${user.deletedAt == null}" th:href="@{/admin/users/{id}/change(id=${user.id})}" th:text="${user.name}"></a>
-                        <span th:if="${user.deletedAt != null}" th:text="${user.name}"></span>
+                        <a th:if="${icon.deletedAt == null}" th:href="@{/admin/icons/{id}/change(id=${icon.id})}" th:text="${icon.name}"></a>
+                        <span th:if="${icon.deletedAt != null}" th:text="${icon.name}"></span>
                     </td>
-                    <td th:text="${user.createdAt}"></td>
-                    <td th:text="${user.updatedAt}"></td>
-                    <td th:text="${user.deletedAt}"></td>
+                    <td th:text="${icon.url}"></td>
+                    <td th:text="${icon.createdAt}"></td>
+                    <td th:text="${icon.updatedAt}"></td>
+                    <td th:text="${icon.deletedAt}"></td>
                     <td>
-                        <form th:if="${user.deletedAt == null}" th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post"
-                              onsubmit="return confirm('Delete this user and all user items/custom categories?')">
+                        <form th:if="${icon.deletedAt == null}" th:action="@{/admin/icons/{id}/delete(id=${icon.id})}" method="post"
+                              onsubmit="return confirm('Delete this icon? It cannot be deleted while active categories use it.')">
                             <button class="deletelink" type="submit">Delete</button>
                         </form>
                     </td>
@@ -69,10 +71,10 @@
 
         <aside class="module filters">
             <h2>Filter</h2>
-            <form class="filter-body" method="get" action="/admin/users">
+            <form class="filter-body" method="get" action="/admin/icons">
                 <label><input type="checkbox" name="includeDeleted" value="true" th:checked="${includeDeleted}"> Include deleted</label>
                 <button type="submit">Apply</button>
-                <div class="row-count" th:text="|${#lists.size(users)} rows|"></div>
+                <div class="row-count" th:text="|${#lists.size(icons)} rows|"></div>
             </form>
         </aside>
     </div>

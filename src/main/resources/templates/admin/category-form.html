@@ -11,6 +11,7 @@
     <a class="admin-brand" href="/admin/users">Obrit administration</a>
     <nav class="admin-nav">
         <a href="/admin/users">Users</a>
+        <a href="/admin/icons">Icons</a>
         <a href="/admin/categories" class="active">Categories</a>
         <a href="/admin/items">Items</a>
     </nav>
@@ -42,10 +43,13 @@
             </div>
             <div class="form-row">
                 <label for="iconId">Icon</label>
-                <select id="iconId" name="iconId" required>
-                    <option th:each="icon : ${icons}" th:value="${icon.id}" th:text="|${icon.id} - ${icon.name}|"
-                            th:selected="${isChange && icon.id == category.iconId}"></option>
-                </select>
+                <div class="icon-options">
+                    <label class="icon-option" th:each="icon : ${icons}">
+                        <input type="radio" name="iconId" required th:value="${icon.id}" th:checked="${isChange && icon.id == category.iconId}">
+                        <img class="admin-icon" th:src="${icon.url}" alt="category icon" th:alt="|${icon.name} icon|">
+                        <span th:text="|${icon.id} - ${icon.name}|"></span>
+                    </label>
+                </div>
             </div>
             <div class="form-row">
                 <label for="defaultReplacementIntervalDays">Default days</label>

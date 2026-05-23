@@ -11,6 +11,7 @@
     <a class="admin-brand" href="/admin/users">Obrit administration</a>
     <nav class="admin-nav">
         <a href="/admin/users">Users</a>
+        <a href="/admin/icons">Icons</a>
         <a href="/admin/categories" class="active">Categories</a>
         <a href="/admin/items">Items</a>
     </nav>
@@ -55,7 +56,13 @@
                         <a th:if="${category.deletedAt == null}" th:href="@{/admin/categories/{id}/change(id=${category.id})}" th:text="${category.name}"></a>
                         <span th:if="${category.deletedAt != null}" th:text="${category.name}"></span>
                     </td>
-                    <td th:text="|${category.iconId} - ${category.iconUrl ?: ''}|"></td>
+                    <td>
+                        <span class="icon-cell">
+                            <img th:if="${category.iconUrl != null}" class="admin-icon" th:src="${category.iconUrl}" alt="category icon"
+                                 th:alt="|${category.name} icon|">
+                            <span th:text="|${category.iconId} - ${category.iconUrl ?: ''}|"></span>
+                        </span>
+                    </td>
                     <td th:text="${category.defaultReplacementIntervalDays}"></td>
                     <td th:text="${category.itemCount}"></td>
                     <td th:text="${category.deletedAt}"></td>

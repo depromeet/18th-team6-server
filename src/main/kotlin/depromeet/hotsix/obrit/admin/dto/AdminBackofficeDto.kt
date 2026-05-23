@@ -45,7 +45,18 @@ data class AdminCategoryOption(val id: Long, val userId: Long?, val label: Strin
 
 data class AdminIconOption(val id: Long, val name: String, val url: String)
 
+data class AdminIconRow(
+    val id: Long,
+    val name: String,
+    val url: String,
+    val createdAt: LocalDateTime?,
+    val updatedAt: LocalDateTime?,
+    val deletedAt: LocalDateTime?,
+)
+
 data class AdminUserForm(val uuid: String = "", val name: String = "")
+
+data class AdminIconForm(val name: String = "", val url: String = "")
 
 data class AdminCategoryForm(
     val userId: Long? = null,

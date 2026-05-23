@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.admin.controller
 
 import depromeet.hotsix.obrit.admin.dto.AdminCategoryForm
+import depromeet.hotsix.obrit.admin.dto.AdminIconForm
 import depromeet.hotsix.obrit.admin.dto.AdminItemForm
 import depromeet.hotsix.obrit.admin.dto.AdminReplacementForm
 import depromeet.hotsix.obrit.admin.dto.AdminUserForm
@@ -49,6 +50,54 @@ class AdminBackofficeController(private val adminBackofficeService: AdminBackoff
         return "admin/user-form"
     }
 
+    @GetMapping("/icons")
+    fun icons(@RequestParam(defaultValue = "false") includeDeleted: Boolean, model: Model): String {
+        model.addAttribute("activeMenu", "icons")
+        model.addAttribute("includeDeleted", includeDeleted)
+        model.addAttribute("icons", adminBackofficeService.listIcons(includeDeleted))
+        return "admin/icons"
+    }
+
+    @GetMapping("/icons/add")
+    fun addIcon(model: Model): String {
+        model.addAttribute("activeMenu", "icons")
+        model.addAttribute("pageTitle", "Add icon")
+        model.addAttribute("formAction", "/admin/icons")
+        model.addAttribute("isChange", false)
+        return "admin/icon-form"
+    }
+
+    @GetMapping("/icons/{iconId}/change")
+    fun changeIcon(@PathVariable iconId: Long, model: Model): String {
+        model.addAttribute("activeMenu", "icons")
+        model.addAttribute("pageTitle", "Change icon")
+        model.addAttribute("formAction", "/admin/icons/$iconId/edit")
+        model.addAttribute("isChange", true)
+        model.addAttribute("icon", adminBackofficeService.getIcon(iconId))
+        return "admin/icon-form"
+    }
+
+    @PostMapping("/icons")
+    fun createIcon(@ModelAttribute form: AdminIconForm, redirectAttributes: RedirectAttributes): String =
+        runAdminAction(redirectAttributes, "/admin/icons") {
+            adminBackofficeService.createIcon(form)
+        }
+
+    @PostMapping("/icons/{iconId}/edit")
+    fun updateIcon(
+        @PathVariable iconId: Long,
+        @ModelAttribute form: AdminIconForm,
+        redirectAttributes: RedirectAttributes,
+    ): String = runAdminAction(redirectAttributes, "/admin/icons") {
+        adminBackofficeService.updateIcon(iconId, form)
+    }
+
+    @PostMapping("/icons/{iconId}/delete")
+    fun deleteIcon(@PathVariable iconId: Long, redirectAttributes: RedirectAttributes): String =
+        runAdminAction(redirectAttributes, "/admin/icons") {
+            adminBackofficeService.deleteIcon(iconId)
+        }
+
     @PostMapping("/users")
     fun createUser(@ModelAttribute form: AdminUserForm, redirectAttributes: RedirectAttributes): String =
         runAdminAction(redirectAttributes, "/admin/users") {
@@ -76,7 +125,6 @@ class AdminBackofficeController(private val adminBackofficeService: AdminBackoff
         model.addAttribute("includeDeleted", includeDeleted)
         model.addAttribute("categories", adminBackofficeService.listCategories(includeDeleted))
         model.addAttribute("users", adminBackofficeService.listUsers(includeDeleted = false))
-        model.addAttribute("icons", adminBackofficeService.listIcons())
         return "admin/categories"
     }
 
@@ -87,7 +135,7 @@ class AdminBackofficeController(private val adminBackofficeService: AdminBackoff
         model.addAttribute("formAction", "/admin/categories")
         model.addAttribute("isChange", false)
         model.addAttribute("users", adminBackofficeService.listUsers(includeDeleted = false))
-        model.addAttribute("icons", adminBackofficeService.listIcons())
+        model.addAttribute("icons", adminBackofficeService.listIconOptions())
         return "admin/category-form"
     }
 
@@ -99,7 +147,7 @@ class AdminBackofficeController(private val adminBackofficeService: AdminBackoff
         model.addAttribute("isChange", true)
         model.addAttribute("category", adminBackofficeService.getCategory(categoryId))
         model.addAttribute("users", adminBackofficeService.listUsers(includeDeleted = false))
-        model.addAttribute("icons", adminBackofficeService.listIcons())
+        model.addAttribute("icons", adminBackofficeService.listIconOptions())
         return "admin/category-form"
     }
 

@@ -170,6 +170,36 @@ tr.deleted {
     gap: 8px;
 }
 
+.icon-cell,
+.icon-option {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.admin-icon {
+    width: 28px;
+    height: 28px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    object-fit: contain;
+    background: #fff;
+}
+
+.icon-options {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+    gap: 8px;
+}
+
+.icon-option {
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    background: #fafafa;
+    font-weight: 400;
+}
+
 .filters {
     align-self: start;
 }
