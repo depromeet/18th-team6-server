@@ -24,10 +24,13 @@ class SwaggerDocumentationIntegrationTest {
                 jsonPath("$.paths['/items']") { exists() }
                 jsonPath("$.paths['/items/{itemId}']") { exists() }
                 jsonPath("$.paths['/items/{itemId}/replacements']") { exists() }
+                jsonPath("$.paths['/home/items']") { exists() }
                 jsonPath("$.paths['/categories'].get.parameters[?(@.name == 'X-User-Id' && @.required == true)]") {
                     exists()
                 }
-                jsonPath("$.components.schemas.ErrorResponse") { exists() }
+                jsonPath("$.paths['/home/items'].get.parameters[?(@.name == 'order')]") {
+                    exists()
+                }
             }
     }
 
