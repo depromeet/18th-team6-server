@@ -3,6 +3,7 @@ package depromeet.hotsix.obrit.item.service
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
+import depromeet.hotsix.obrit.item.dto.BulkCreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
 import depromeet.hotsix.obrit.item.dto.ItemResponse
@@ -65,6 +66,16 @@ class ItemService(
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
         userService.validateUserExist(userId)
+        return saveItem(userId, request)
+    }
+
+    @Transactional
+    fun bulkCreateItems(userId: Long, request: BulkCreateItemRequest): List<ItemResponse> {
+        userService.validateUserExist(userId)
+        return request.items.map { saveItem(userId, it) }
+    }
+
+    private fun saveItem(userId: Long, request: CreateItemRequest): ItemResponse {
         val (categoryName, defaultReplacementIntervalDays) =
             categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, request.categoryId)
 
