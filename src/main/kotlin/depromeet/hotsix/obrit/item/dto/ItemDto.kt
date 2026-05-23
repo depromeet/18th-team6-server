@@ -92,3 +92,12 @@ data class ItemResponse(
     @field:Schema(description = "Next expected replacement date.", example = "2026-04-27")
     val nextReplacementDate: LocalDate,
 )
+
+@Schema(description = "소모품 교체 이력 응답.")
+data class ReplacementHistoryResponse(
+    @field:Schema(description = "교체 이력 ID.", example = "42")
+    val id: Long,
+
+    @field:Schema(description = "교체일.", example = "2026-05-20")
+    val replacedDate: LocalDate,
+)
