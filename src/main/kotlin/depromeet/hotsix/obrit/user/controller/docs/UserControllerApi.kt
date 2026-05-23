@@ -17,7 +17,7 @@ interface UserControllerApi {
 
     @Operation(
         summary = "회원 등록",
-        description = "UUID 기반으로 회원을 등록합니다. 이미 등록된 UUID이면 기존 회원을 반환합니다.",
+        description = "인증 수단(type)과 인증 값(value)으로 회원을 등록합니다. 이미 등록된 값이면 기존 회원을 반환합니다.",
     )
     @ApiResponses(
         value = [
