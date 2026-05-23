@@ -10,6 +10,9 @@ import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+private val UUID_REGEX =
+    "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$".toRegex()
+
 @Service
 @Transactional(readOnly = true)
 class UserService(private val userRepository: UserRepository) {
@@ -26,10 +29,12 @@ class UserService(private val userRepository: UserRepository) {
             throw BusinessException("지원하지 않는 인증 수단입니다.")
         }
 
-        val uuid = requireNotNull(request.uuid) { "UUID는 필수입니다." }
+        if (!UUID_REGEX.matches(request.value)) {
+            throw BusinessException("UUID 형식이 올바르지 않습니다.")
+        }
 
-        val user = userRepository.findByUuid(uuid) ?: createUser(uuid)
-        return RegisterUserResponse(id = requireNotNull(user.id), uuid = user.uuid)
+        val user = userRepository.findByUuid(request.value) ?: createUser(request.value)
+        return RegisterUserResponse(id = requireNotNull(user.id), uuid = requireNotNull(user.uuid))
     }
 
     private fun createUser(uuid: String): User = try {

@@ -42,8 +42,8 @@ interface UserControllerApi {
                                 value = """{"message": "UUID 형식이 올바르지 않습니다."}""",
                             ),
                             ExampleObject(
-                                name = "UUID 누락",
-                                value = """{"message": "UUID는 필수입니다."}""",
+                                name = "인증 값 누락",
+                                value = """{"message": "인증 값은 필수입니다."}""",
                             ),
                         ],
                     ),

@@ -26,7 +26,7 @@ class UserAcceptanceTest {
 
     @Test
     fun `신규_UUID로_회원_등록하면_회원이_생성된다`() {
-        val request = RegisterUserRequest(type = "uuid", uuid = "550e8400-e29b-41d4-a716-446655440000")
+        val request = RegisterUserRequest(type = "uuid", value = "550e8400-e29b-41d4-a716-446655440000")
 
         val response = userService.registerOrGet(request)
 
@@ -37,7 +37,7 @@ class UserAcceptanceTest {
 
     @Test
     fun `이미_등록된_UUID로_요청하면_기존_회원을_반환한다`() {
-        val request = RegisterUserRequest(type = "uuid", uuid = "550e8400-e29b-41d4-a716-446655440000")
+        val request = RegisterUserRequest(type = "uuid", value = "550e8400-e29b-41d4-a716-446655440000")
 
         val first = userService.registerOrGet(request)
         val second = userService.registerOrGet(request)
@@ -49,8 +49,8 @@ class UserAcceptanceTest {
 
     @Test
     fun `서로_다른_UUID는_각각_별도_회원이_생성된다`() {
-        val request1 = RegisterUserRequest(type = "uuid", uuid = "00000000-0000-0000-0000-000000000001")
-        val request2 = RegisterUserRequest(type = "uuid", uuid = "00000000-0000-0000-0000-000000000002")
+        val request1 = RegisterUserRequest(type = "uuid", value = "00000000-0000-0000-0000-000000000001")
+        val request2 = RegisterUserRequest(type = "uuid", value = "00000000-0000-0000-0000-000000000002")
 
         val response1 = userService.registerOrGet(request1)
         val response2 = userService.registerOrGet(request2)
@@ -61,7 +61,7 @@ class UserAcceptanceTest {
 
     @Test
     fun `지원하지_않는_인증_수단이면_예외가_발생한다`() {
-        val request = RegisterUserRequest(type = "kakao", uuid = null)
+        val request = RegisterUserRequest(type = "kakao", value = "some-token")
 
         val exception = assertThrows<BusinessException> {
             userService.registerOrGet(request)
@@ -70,11 +70,12 @@ class UserAcceptanceTest {
     }
 
     @Test
-    fun `UUID가_null이면_예외가_발생한다`() {
-        val request = RegisterUserRequest(type = "uuid", uuid = null)
+    fun `UUID_형식이_올바르지_않으면_예외가_발생한다`() {
+        val request = RegisterUserRequest(type = "uuid", value = "not-a-uuid")
 
-        assertThrows<IllegalArgumentException> {
+        val exception = assertThrows<BusinessException> {
             userService.registerOrGet(request)
         }
+        assertEquals("UUID 형식이 올바르지 않습니다.", exception.message)
     }
 }
