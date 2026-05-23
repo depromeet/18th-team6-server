@@ -28,9 +28,9 @@ Docker Compose로 API 서버와 비즈니스 백오피스를 함께 실행할 �
 ```bash
 ADMIN_USERNAME=admin \
 ADMIN_PASSWORD=change-me \
-DB_URL=jdbc:mysql://host.docker.internal:3306/obrit \
-DB_USERNAME=obrit \
-DB_PWD=obrit \
+DB_URL=jdbc:h2:mem:obrit \
+DB_USERNAME=sa \
+DB_PWD= \
 docker compose up --build
 ```
 

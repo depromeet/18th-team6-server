@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.admin.service
 
 import depromeet.hotsix.obrit.admin.dto.AdminIconForm
+import depromeet.hotsix.obrit.admin.dto.AdminItemForm
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
@@ -171,5 +172,23 @@ class AdminBackofficeServiceTest {
         val icon = adminBackofficeService.getIcon(iconId)
 
         assertEquals(null, icon.deletedAt)
+    }
+
+    @Test
+    fun `아이템은 다른 사용자의 커스텀 카테고리에 연결할 수 없다`() {
+        val otherUser = userRepository.save(User(uuid = "550e8400-e29b-41d4-a716-446655440099", name = "other-user"))
+
+        assertFailsWith<RuntimeException> {
+            adminBackofficeService.createItem(
+                AdminItemForm(
+                    userId = requireNotNull(otherUser.id),
+                    categoryId = customCategoryId,
+                    name = "Invalid item",
+                    count = 1,
+                    lastReplacedDate = LocalDate.of(2026, 5, 1),
+                    replacementIntervalDays = 7,
+                ),
+            )
+        }
     }
 }

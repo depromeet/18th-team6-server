@@ -334,8 +334,13 @@ class AdminBackofficeService(
         if (!userRepository.existsById(form.userId)) {
             throw ResourceNotFoundException("존재하지 않는 사용자입니다.")
         }
-        if (!categoryRepository.existsById(form.categoryId)) {
+        val category = categoryRepository.findById(form.categoryId)
+            .orElseThrow { ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.") }
+        if (category.deletedAt != null) {
             throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
+        }
+        if (category.userId != null && category.userId != form.userId) {
+            throw BusinessException("사용자 카테고리 소유자가 일치하지 않습니다.")
         }
     }
 

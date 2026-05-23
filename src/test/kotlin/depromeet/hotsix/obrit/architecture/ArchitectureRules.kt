@@ -133,9 +133,9 @@ object ArchitectureRules {
 
     private fun isServiceDependencyAllowed(domain: String, location: ProjectLocation, javaClass: JavaClass): Boolean =
         when {
-            domain == ADMIN_DOMAIN -> true
             location.domain == GLOBAL_DOMAIN -> true
             isShareableDomainType(javaClass) -> true
+            domain == ADMIN_DOMAIN -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER, SERVICE_LAYER)
             location.layer == SERVICE_LAYER -> true
             location.domain != domain -> false
             else -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER)

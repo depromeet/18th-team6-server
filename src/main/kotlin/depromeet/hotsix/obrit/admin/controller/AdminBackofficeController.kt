@@ -6,6 +6,10 @@ import depromeet.hotsix.obrit.admin.dto.AdminItemForm
 import depromeet.hotsix.obrit.admin.dto.AdminReplacementForm
 import depromeet.hotsix.obrit.admin.dto.AdminUserForm
 import depromeet.hotsix.obrit.admin.service.AdminBackofficeService
+import depromeet.hotsix.obrit.global.exception.BusinessException
+import depromeet.hotsix.obrit.global.exception.ConflictException
+import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
+import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
@@ -19,6 +23,8 @@ import org.springframework.web.servlet.mvc.support.RedirectAttributes
 @Controller
 @RequestMapping("/admin")
 class AdminBackofficeController(private val adminBackofficeService: AdminBackofficeService) {
+
+    private val log = LoggerFactory.getLogger(AdminBackofficeController::class.java)
 
     @GetMapping
     fun index(): String = "redirect:/admin/users"
@@ -243,8 +249,18 @@ class AdminBackofficeController(private val adminBackofficeService: AdminBackoff
         action()
         redirectAttributes.addFlashAttribute("message", "Saved.")
         "redirect:$redirectTo"
-    } catch (e: RuntimeException) {
+    } catch (e: BusinessException) {
         redirectAttributes.addFlashAttribute("error", e.message ?: "Admin action failed.")
+        "redirect:$redirectTo"
+    } catch (e: ResourceNotFoundException) {
+        redirectAttributes.addFlashAttribute("error", e.message ?: "Admin action failed.")
+        "redirect:$redirectTo"
+    } catch (e: ConflictException) {
+        redirectAttributes.addFlashAttribute("error", e.message ?: "Admin action failed.")
+        "redirect:$redirectTo"
+    } catch (e: Exception) {
+        log.error("Admin action failed. redirectTo={}", redirectTo, e)
+        redirectAttributes.addFlashAttribute("error", "Admin action failed.")
         "redirect:$redirectTo"
     }
 }

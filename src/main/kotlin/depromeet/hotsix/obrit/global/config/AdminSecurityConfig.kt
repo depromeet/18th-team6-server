@@ -7,9 +7,10 @@ import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.core.userdetails.User
 import org.springframework.security.core.userdetails.UserDetailsService
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
+import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.servlet.util.matcher.PathPatternRequestMatcher
 
 @Configuration
 class AdminSecurityConfig {
@@ -24,23 +25,25 @@ class AdminSecurityConfig {
             }
             .httpBasic(Customizer.withDefaults())
             .formLogin(Customizer.withDefaults())
-            .csrf { csrf ->
-                csrf.ignoringRequestMatchers(PathPatternRequestMatcher.pathPattern("/admin/**"))
-            }
+            .csrf(Customizer.withDefaults())
 
         return http.build()
     }
 
     @Bean
     fun adminUserDetailsService(
-        @Value("\${obrit.admin.username:admin}") adminUsername: String,
-        @Value("\${obrit.admin.password:admin}") adminPassword: String,
+        @Value("\${obrit.admin.username}") adminUsername: String,
+        @Value("\${obrit.admin.password}") adminPassword: String,
+        passwordEncoder: PasswordEncoder,
     ): UserDetailsService {
         val adminUser = User.withUsername(adminUsername)
-            .password("{noop}$adminPassword")
+            .password(passwordEncoder.encode(adminPassword))
             .roles("ADMIN")
             .build()
 
         return InMemoryUserDetailsManager(adminUser)
     }
+
+    @Bean
+    fun passwordEncoder(): PasswordEncoder = BCryptPasswordEncoder()
 }

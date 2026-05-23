@@ -168,6 +168,7 @@ class AdminBackofficeControllerTest {
             assertEquals(HttpStatus.OK.value(), response.statusCode(), path)
             assertTrue(response.body().contains(title), path)
             assertTrue(response.body().contains("Save"), path)
+            assertTrue(response.body().contains("""name="_csrf""""))
         }
     }
 
