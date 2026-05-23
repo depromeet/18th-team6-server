@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Obrit Admin - ${pageTitle}|">Obrit Admin</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header class="admin-header">
+    <a class="admin-brand" href="/admin/users">Obrit administration</a>
+    <nav class="admin-nav">
+        <a href="/admin/users">Users</a>
+        <a href="/admin/categories" class="active">Categories</a>
+        <a href="/admin/items">Items</a>
+    </nav>
+</header>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; <a href="/admin/categories">Categories</a> &rsaquo; <span th:text="${pageTitle}"></span></div>
+<main class="content">
+    <div th:if="${message}" class="notice" th:text="${message}"></div>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div class="content-header">
+        <h1 th:text="${pageTitle}"></h1>
+    </div>
+
+    <section class="module">
+        <h2>Category</h2>
+        <form method="post" th:action="${formAction}">
+            <input th:if="${isChange}" type="hidden" name="userId" th:value="${category.userId}">
+            <div class="form-row">
+                <label for="userId">Scope</label>
+                <select id="userId" name="userId" th:disabled="${isChange}">
+                    <option value="" th:selected="${!isChange || category.userId == null}">Preset</option>
+                    <option th:each="user : ${users}" th:value="${user.id}" th:text="|User ${user.id} - ${user.name}|"
+                            th:selected="${isChange && user.id == category.userId}"></option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="name">Name</label>
+                <input id="name" name="name" required th:value="${isChange ? category.name : ''}">
+            </div>
+            <div class="form-row">
+                <label for="iconId">Icon</label>
+                <select id="iconId" name="iconId" required>
+                    <option th:each="icon : ${icons}" th:value="${icon.id}" th:text="|${icon.id} - ${icon.name}|"
+                            th:selected="${isChange && icon.id == category.iconId}"></option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="defaultReplacementIntervalDays">Default days</label>
+                <input id="defaultReplacementIntervalDays" name="defaultReplacementIntervalDays" type="number" min="1" required
+                       th:value="${isChange ? category.defaultReplacementIntervalDays : 30}">
+            </div>
+            <div class="form-row" th:if="${isChange}">
+                <label>Connected items</label>
+                <div class="readonly" th:text="${category.itemCount}"></div>
+            </div>
+            <div class="submit-row">
+                <a class="button" href="/admin/categories">Back</a>
+                <button class="default" type="submit">Save</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>
