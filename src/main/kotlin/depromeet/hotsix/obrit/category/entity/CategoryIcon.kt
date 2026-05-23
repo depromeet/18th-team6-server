@@ -14,8 +14,8 @@ class CategoryIcon(
     @Column(nullable = false)
     val name: String,
 
-    @Column(nullable = false)
-    val url: String,
+    @Column(name = "icon_key", nullable = false)
+    val key: String,
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
