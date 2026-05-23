@@ -109,12 +109,6 @@ class HomeController(private val homeService: HomeService) {
             SwaggerApiResponse(
                 responseCode = "200",
                 description = "홈 아이템 목록 조회 성공",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = CursorSliceResponse::class),
-                    ),
-                ],
             ),
         ],
     )
