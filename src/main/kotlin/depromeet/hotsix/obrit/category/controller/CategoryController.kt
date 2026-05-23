@@ -3,12 +3,8 @@ package depromeet.hotsix.obrit.category.controller
 import depromeet.hotsix.obrit.category.dto.CategoryResponse
 import depromeet.hotsix.obrit.category.dto.CreateCategoryRequest
 import depromeet.hotsix.obrit.category.service.CategoryService
-import depromeet.hotsix.obrit.global.exception.ErrorResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
-import io.swagger.v3.oas.annotations.media.ArraySchema
-import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -38,12 +34,6 @@ class CategoryController(private val categoryService: CategoryService) {
             ApiResponse(
                 responseCode = "200",
                 description = "Categories returned.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        array = ArraySchema(schema = Schema(implementation = CategoryResponse::class)),
-                    ),
-                ],
             ),
         ],
     )
@@ -62,22 +52,10 @@ class CategoryController(private val categoryService: CategoryService) {
             ApiResponse(
                 responseCode = "201",
                 description = "Category created.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = CategoryResponse::class),
-                    ),
-                ],
             ),
             ApiResponse(
                 responseCode = "400",
                 description = "Invalid category request.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
         ],
     )
@@ -99,22 +77,10 @@ class CategoryController(private val categoryService: CategoryService) {
             ApiResponse(
                 responseCode = "400",
                 description = "Preset category deletion was rejected.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
             ApiResponse(
                 responseCode = "404",
                 description = "Category not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
         ],
     )

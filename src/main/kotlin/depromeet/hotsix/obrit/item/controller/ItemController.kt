@@ -1,6 +1,5 @@
 package depromeet.hotsix.obrit.item.controller
 
-import depromeet.hotsix.obrit.global.exception.ErrorResponse
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
 import depromeet.hotsix.obrit.item.dto.ItemResponse
@@ -8,9 +7,6 @@ import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
 import depromeet.hotsix.obrit.item.service.ItemService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
-import io.swagger.v3.oas.annotations.media.ArraySchema
-import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
@@ -41,12 +37,6 @@ class ItemController(private val itemService: ItemService) {
             ApiResponse(
                 responseCode = "200",
                 description = "Items returned.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        array = ArraySchema(schema = Schema(implementation = ItemResponse::class)),
-                    ),
-                ],
             ),
         ],
     )
@@ -65,32 +55,14 @@ class ItemController(private val itemService: ItemService) {
             ApiResponse(
                 responseCode = "201",
                 description = "Item created.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ItemResponse::class),
-                    ),
-                ],
             ),
             ApiResponse(
                 responseCode = "400",
                 description = "Invalid item request.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
             ApiResponse(
                 responseCode = "404",
                 description = "Category not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
         ],
     )
@@ -111,32 +83,14 @@ class ItemController(private val itemService: ItemService) {
             ApiResponse(
                 responseCode = "200",
                 description = "Item updated.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ItemResponse::class),
-                    ),
-                ],
             ),
             ApiResponse(
                 responseCode = "400",
                 description = "Invalid item request.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
             ApiResponse(
                 responseCode = "404",
                 description = "Item not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
         ],
     )
@@ -158,12 +112,6 @@ class ItemController(private val itemService: ItemService) {
             ApiResponse(
                 responseCode = "404",
                 description = "Item not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
         ],
     )
@@ -186,22 +134,10 @@ class ItemController(private val itemService: ItemService) {
             ApiResponse(
                 responseCode = "201",
                 description = "Replacement recorded.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ItemResponse::class),
-                    ),
-                ],
             ),
             ApiResponse(
                 responseCode = "404",
                 description = "Item not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
             ),
         ],
     )
