@@ -8,6 +8,7 @@ import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
 import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
+import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
@@ -213,6 +214,62 @@ interface ItemControllerApi {
         @Parameter(description = "소모품 ID", required = true, example = "1")
         itemId: Long,
         request: UpdateItemRequest,
+    ): ApiResponse<ItemResponse>
+
+    @Operation(
+        summary = "소모품 여분 수량 수정",
+        description = "소모품의 여분 수량만 변경합니다. 수량은 0 이상이어야 하며 교체일, 다음 교체일, 교체 주기는 변경하지 않습니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "여분 수량이 수정되었습니다.",
+            ),
+            SwaggerApiResponse(
+                responseCode = "400",
+                description = "유효하지 않은 요청입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "수량 누락",
+                                value = """{"message": "여분 수량은 필수입니다."}""",
+                            ),
+                            ExampleObject(
+                                name = "음수 수량",
+                                value = """{"message": "여분 수량은 0 이상이어야 합니다."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            SwaggerApiResponse(
+                responseCode = "404",
+                description = "존재하지 않는 소모품입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "소모품 없음",
+                                value = """{"message": "Item not found."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun updateSpareCount(
+        @Parameter(description = "사용자 ID", required = true, example = "1")
+        userId: Long,
+        @Parameter(description = "소모품 ID", required = true, example = "1")
+        itemId: Long,
+        request: UpdateSpareCountRequest,
     ): ApiResponse<ItemResponse>
 
     @Operation(

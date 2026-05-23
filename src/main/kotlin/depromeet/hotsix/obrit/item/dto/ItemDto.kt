@@ -51,6 +51,14 @@ data class UpdateItemRequest(
     val replacementIntervalDays: Int? = null,
 )
 
+@Schema(description = "소모품 여분 수량 수정 요청.")
+data class UpdateSpareCountRequest(
+    @field:Schema(description = "새 여분 수량. 0 이상이어야 합니다.", example = "3")
+    @field:NotNull(message = "여분 수량은 필수입니다.")
+    @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
+    val count: Int? = null,
+)
+
 @Schema(description = "Replacement record request.")
 data class CreateReplacementRequest(
     @field:Schema(description = "Replacement date. Uses today when omitted.", example = "2026-04-25")
