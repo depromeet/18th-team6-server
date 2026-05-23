@@ -34,6 +34,8 @@ dependencies {
 	kapt 'jakarta.annotation:jakarta.annotation-api'
 	kapt 'jakarta.persistence:jakarta.persistence-api'
 	runtimeOnly 'com.h2database:h2'
+	implementation platform('software.amazon.awssdk:bom:2.31.63')
+	implementation 'software.amazon.awssdk:s3'
 	runtimeOnly 'com.mysql:mysql-connector-j'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
