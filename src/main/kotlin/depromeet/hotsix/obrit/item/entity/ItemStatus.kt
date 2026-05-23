@@ -5,4 +5,5 @@ enum class ItemStatus {
     GOOD,
     WARNING,
     DANGER,
+    LOW_STOCK,
 }

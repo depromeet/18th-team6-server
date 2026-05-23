@@ -5,6 +5,9 @@ import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
+import depromeet.hotsix.obrit.item.dto.ItemDetailResponse
+import depromeet.hotsix.obrit.item.dto.ItemKindResponse
+import depromeet.hotsix.obrit.item.dto.ItemReplacementResponse
 import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
 import depromeet.hotsix.obrit.item.entity.Item
@@ -12,6 +15,7 @@ import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
+import depromeet.hotsix.obrit.item.entity.ItemStatus
 import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.service.UserService
@@ -19,6 +23,9 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import kotlin.math.abs
+import kotlin.math.round
 
 @Service
 class ItemService(
@@ -42,6 +49,36 @@ class ItemService(
     @Transactional(readOnly = true)
     fun findActiveSnapshotsByUserId(userId: Long): List<ItemSnapshot> =
         itemRepository.findActiveByUserId(userId).map { it.toSnapshot() }
+
+    @Transactional(readOnly = true)
+    fun getItemDetail(userId: Long, itemId: Long): ItemDetailResponse {
+        val item = findActiveItem(userId, itemId)
+        val category = categoryQueryService.getVisibleCategorySnapshot(userId, item.categoryId)
+        val today = LocalDate.now(clock)
+        val dday = ChronoUnit.DAYS.between(today, item.nextReplacementDate).toInt()
+        val usedDays = ChronoUnit.DAYS.between(item.lastReplacedDate, today).toInt().coerceAtLeast(0)
+        val recentReplacements = recentReplacementResponses(item, usedDays)
+        val progressPercentage = (usedDays.toDouble() / category.defaultReplacementIntervalDays * 100)
+            .roundToOneDecimal()
+
+        return ItemDetailResponse(
+            id = requireNotNull(item.id),
+            name = item.name,
+            itemKind = ItemKindResponse(id = category.id, name = category.name),
+            iconUrl = category.iconUrl,
+            status = detailStatus(dday, item.quantity),
+            dday = dday,
+            ddayLabel = ddayLabel(dday),
+            spareCount = item.quantity,
+            lastReplacedDate = item.lastReplacedDate,
+            nextReplacementDate = item.nextReplacementDate,
+            usedDays = usedDays,
+            myAverageCycleDays = averageCycleDays(recentReplacements),
+            recommendedCycleDays = category.defaultReplacementIntervalDays,
+            progressPercentage = progressPercentage,
+            recentReplacements = recentReplacements,
+        )
+    }
 
     @Transactional(readOnly = true)
     fun findItemListSnapshots(
@@ -134,6 +171,76 @@ class ItemService(
     private fun categoryNameFor(item: Item, categoryNamesById: Map<Long, String>): String =
         categoryNamesById[item.categoryId] ?: throw ResourceNotFoundException("Category not found.")
 
+    private fun recentReplacementResponses(item: Item, usedDays: Int): List<ItemReplacementResponse> {
+        val itemId = requireNotNull(item.id)
+        val histories = itemReplacementHistoryRepository.findTop5ByItemIdOrderByReplacedDateDesc(itemId)
+            .sortedBy { it.replacedDate }
+        val historyEvents = histories.map { history ->
+            ReplacementEvent(
+                id = requireNotNull(history.id),
+                date = history.replacedDate,
+                isCurrent = false,
+            )
+        }
+        val hasCurrentHistory = historyEvents.any { it.date == item.lastReplacedDate }
+        val events = if (hasCurrentHistory) {
+            historyEvents.map { event ->
+                if (event.date == item.lastReplacedDate) {
+                    event.copy(isCurrent = true)
+                } else {
+                    event
+                }
+            }
+        } else {
+            historyEvents + ReplacementEvent(
+                id = itemId,
+                date = item.lastReplacedDate,
+                isCurrent = true,
+            )
+        }
+        val sortedEvents = events.sortedBy { it.date }
+        val cycleDaysByDate = sortedEvents.mapIndexed { index, event ->
+            val cycleDays = when {
+                event.isCurrent -> usedDays
+                index == 0 -> item.replacementIntervalDays
+                else -> ChronoUnit.DAYS.between(sortedEvents[index - 1].date, event.date).toInt()
+            }
+            event.date to cycleDays
+        }.toMap()
+
+        return sortedEvents.takeLast(5).map { event ->
+            ItemReplacementResponse(
+                id = event.id,
+                date = event.date,
+                cycleDays = cycleDaysByDate.getValue(event.date),
+                isCurrent = event.isCurrent,
+            )
+        }
+    }
+
+    private fun detailStatus(dday: Int, spareCount: Int): ItemStatus = when {
+        dday <= 0 -> ItemStatus.DANGER
+        dday <= REPLACEMENT_WARNING_DAYS -> ItemStatus.WARNING
+        spareCount == 0 -> ItemStatus.LOW_STOCK
+        else -> ItemStatus.GOOD
+    }
+
+    private fun ddayLabel(dday: Int): String = when {
+        dday == 0 -> "D-day"
+        dday > 0 -> "D-$dday"
+        else -> "D+${abs(dday)}"
+    }
+
+    private fun averageCycleDays(recentReplacements: List<ItemReplacementResponse>): Double {
+        if (recentReplacements.isEmpty()) {
+            return 0.0
+        }
+
+        return recentReplacements.map { it.cycleDays }.average().roundToOneDecimal()
+    }
+
+    private fun Double.roundToOneDecimal(): Double = round(this * 10) / 10
+
     private fun Item.toResponse(categoryName: String): ItemResponse = ItemResponse(
         id = requireNotNull(id),
         categoryId = categoryId,
@@ -159,4 +266,10 @@ class ItemService(
         lastReplacedDate = lastReplacedDate,
         nextReplacementDate = nextReplacementDate,
     )
+
+    private data class ReplacementEvent(val id: Long, val date: LocalDate, val isCurrent: Boolean)
+
+    companion object {
+        private const val REPLACEMENT_WARNING_DAYS = 3
+    }
 }

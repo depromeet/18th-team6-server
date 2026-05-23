@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.item.controller
 
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
+import depromeet.hotsix.obrit.item.dto.ItemDetailResponse
 import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
 import depromeet.hotsix.obrit.item.service.ItemService
@@ -47,6 +48,34 @@ class ItemController(private val itemService: ItemService) {
         @Parameter(description = "Development user id.", required = true, example = "1")
         @RequestHeader("X-User-Id") userId: Long,
     ): List<ItemResponse> = itemService.listItems(userId)
+
+    @Operation(
+        summary = "소모품 상세 조회",
+        description = "소모품의 종류, 대표 이미지, 교체 상태, 사용 현황, 최근 교체 기록을 반환합니다.",
+    )
+    @ApiResponses(
+        value = [
+            ApiResponse(
+                responseCode = "200",
+                description = "조회 성공",
+            ),
+            ApiResponse(
+                responseCode = "401",
+                description = "인증 실패",
+            ),
+            ApiResponse(
+                responseCode = "404",
+                description = "소모품 없음",
+            ),
+        ],
+    )
+    @GetMapping("/{itemId}")
+    fun getItemDetail(
+        @Parameter(description = "사용자 ID (인증 도입 전 임시 헤더)", required = true, example = "1")
+        @RequestHeader("X-User-Id") userId: Long,
+        @Parameter(description = "소모품 ID", required = true, example = "1")
+        @PathVariable itemId: Long,
+    ): ItemDetailResponse = itemService.getItemDetail(userId, itemId)
 
     @Operation(
         summary = "Create item",
