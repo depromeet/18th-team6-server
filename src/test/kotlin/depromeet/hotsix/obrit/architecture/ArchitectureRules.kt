@@ -14,6 +14,7 @@ import kotlin.jvm.JvmInline
 object ArchitectureRules {
     private const val BASE_PACKAGE = "depromeet.hotsix.obrit"
     private const val GLOBAL_DOMAIN = "global"
+    private const val ADMIN_DOMAIN = "admin"
 
     private const val CONTROLLER_LAYER = "controller"
     private const val SERVICE_LAYER = "service"
@@ -132,6 +133,7 @@ object ArchitectureRules {
 
     private fun isServiceDependencyAllowed(domain: String, location: ProjectLocation, javaClass: JavaClass): Boolean =
         when {
+            domain == ADMIN_DOMAIN -> true
             location.domain == GLOBAL_DOMAIN -> true
             isShareableDomainType(javaClass) -> true
             location.layer == SERVICE_LAYER -> true

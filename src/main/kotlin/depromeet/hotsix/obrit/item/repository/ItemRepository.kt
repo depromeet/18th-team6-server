@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param
 
 interface ItemRepository : JpaRepository<Item, Long> {
 
+    fun findAllByOrderByIdAsc(): List<Item>
+
     @Query(
         """
         select i
@@ -44,4 +46,8 @@ interface ItemRepository : JpaRepository<Item, Long> {
         @Param("userId")
         userId: Long,
     ): List<Item>
+
+    fun findAllByUserId(userId: Long): List<Item>
+
+    fun findAllByCategoryId(categoryId: Long): List<Item>
 }
