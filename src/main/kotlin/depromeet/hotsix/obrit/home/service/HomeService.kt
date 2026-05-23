@@ -1,13 +1,20 @@
 package depromeet.hotsix.obrit.home.service
 
+import depromeet.hotsix.obrit.global.paging.CursorSliceResponse
+import depromeet.hotsix.obrit.global.paging.normalizePageSize
 import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
+import depromeet.hotsix.obrit.home.dto.HomeItemCard
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
+import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
+import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.service.ItemService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import kotlin.math.abs
 
 @Service
 class HomeService(
@@ -39,5 +46,46 @@ class HomeService(
         val items = itemService.findActiveSnapshotsByUserId(userId)
 
         return homeStatusCalculatorService.calculateBuckets(today, items)
+    }
+
+    @Transactional(readOnly = true)
+    fun getItems(
+        userId: Long,
+        order: ItemOrder,
+        dDay: Int?,
+        spareQuantity: Int?,
+        cursor: Long?,
+        size: Int,
+    ): CursorSliceResponse<HomeItemCard> {
+        val today = LocalDate.now(clock)
+        val pageSize = normalizePageSize(size)
+        val items = itemService.findItemListSnapshots(
+            userId = userId,
+            order = order,
+            dDay = dDay,
+            spareQuantity = spareQuantity,
+            cursor = cursor,
+            today = today,
+            size = pageSize + 1,
+        )
+        return CursorSliceResponse.fromFetched(
+            fetchedContent = items.map { it.toHomeItemCard(today) },
+            size = pageSize,
+            cursorSelector = { it.id },
+        )
+    }
+
+    private fun ItemListSnapshot.toHomeItemCard(today: LocalDate): HomeItemCard = HomeItemCard(
+        id = id,
+        name = name,
+        daysInUse = ChronoUnit.DAYS.between(lastReplacedDate, today).toInt().coerceAtLeast(0),
+        replacementDday = replacementLabel(ChronoUnit.DAYS.between(today, nextReplacementDate)),
+        spareQuantity = quantity,
+    )
+
+    private fun replacementLabel(daysUntil: Long): String = when {
+        daysUntil == 0L -> "교체 D-day"
+        daysUntil > 0 -> "교체 D-$daysUntil"
+        else -> "교체 D+${abs(daysUntil)}"
     }
 }

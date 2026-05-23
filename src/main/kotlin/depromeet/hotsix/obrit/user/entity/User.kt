@@ -15,6 +15,9 @@ class User(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
+    @Column(unique = true, length = 36)
+    var uuid: String? = null,
+
     @Column(nullable = false)
     var name: String = "",
 ) : BaseTimeEntity()
