@@ -14,9 +14,6 @@ import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.validation.constraints.Max
-import jakarta.validation.constraints.Min
-import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
@@ -27,7 +24,6 @@ import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 @Tag(name = "Home", description = "홈 화면 관련 API")
 @RestController
 @RequestMapping("/home")
-@Validated
 class HomeController(private val homeService: HomeService) {
 
     @Operation(
@@ -178,13 +174,10 @@ class HomeController(private val homeService: HomeService) {
         )
         @RequestParam(required = false) cursor: Long?,
         @Parameter(
-            description = "한 페이지 크기. 1 이상 20 이하로 입력해야 하며 기본값은 20입니다.",
+            description = "한 페이지 크기. 1~20 범위로 보정되며 기본값은 20입니다.",
             example = "20",
         )
-        @RequestParam(required = false, defaultValue = "20")
-        @Min(1)
-        @Max(20)
-        size: Int,
+        @RequestParam(required = false, defaultValue = "20") size: Int,
     ): ApiResponse<CursorSliceResponse<HomeItemCard>> = ApiResponse.ok(
         homeService.getItems(
             userId = userId,
