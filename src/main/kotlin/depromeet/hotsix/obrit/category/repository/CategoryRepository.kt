@@ -11,12 +11,22 @@ interface CategoryRepository : JpaRepository<Category, Long> {
         """
         select c
         from Category c
-        where c.deletedAt is null
-          and (c.userId is null or c.userId = :userId)
-        order by case when c.userId is null then 0 else 1 end asc, c.id asc
+        where c.userId = :userId
+          and c.deletedAt is null
         """,
     )
-    fun findVisibleCategories(@Param("userId") userId: Long): List<Category>
+    fun findActiveByUserId(@Param("userId") userId: Long): List<Category>
+
+    @Query(
+        """
+        select c
+        from Category c
+        where c.userId is null
+          and c.deletedAt is null
+        order by c.id asc
+        """,
+    )
+    fun findActivePresets(): List<Category>
 
     @Query(
         """
@@ -38,9 +48,11 @@ interface CategoryRepository : JpaRepository<Category, Long> {
         """,
     )
     fun findVisibleByIds(
-        @Param("userId")
-        userId: Long,
-        @Param("categoryIds")
-        categoryIds: Collection<Long>,
+        @Param("userId") userId: Long,
+        @Param("categoryIds") categoryIds: Collection<Long>,
     ): List<Category>
+
+    fun existsByUserIdAndNameAndDeletedAtIsNull(userId: Long, name: String): Boolean
+
+    fun existsByUserIdIsNullAndNameAndDeletedAtIsNull(name: String): Boolean
 }

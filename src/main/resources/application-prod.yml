@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: orbit
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PWD}
+  sql:
+    init:
+      mode: never
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false

@@ -64,7 +64,7 @@ class ItemService(
 
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
-        userService.requireExistingUser(userId)
+        userService.validateUserExist(userId)
         val (categoryName, defaultReplacementIntervalDays) =
             categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, request.categoryId)
 

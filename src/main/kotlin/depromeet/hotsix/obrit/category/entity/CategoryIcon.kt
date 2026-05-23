@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.user.entity
+package depromeet.hotsix.obrit.category.entity
 
 import depromeet.hotsix.obrit.global.common.BaseTimeEntity
 import jakarta.persistence.Column
@@ -9,15 +9,15 @@ import jakarta.persistence.Id
 import jakarta.persistence.Table
 
 @Entity
-@Table(name = "users")
-class User(
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    var id: Long? = null,
-
-    @Column(unique = true, length = 36)
-    var uuid: String? = null,
+@Table(name = "icons")
+class CategoryIcon(
+    @Column(nullable = false)
+    val name: String,
 
     @Column(nullable = false)
-    var name: String = "",
+    val url: String,
+
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    val id: Long = 0,
 ) : BaseTimeEntity()
