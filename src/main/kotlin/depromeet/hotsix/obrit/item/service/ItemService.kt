@@ -58,7 +58,7 @@ class ItemService(
                 )
             }
     }
-    
+
     fun findItemListSnapshots(
         userId: Long,
         order: ItemOrder,
