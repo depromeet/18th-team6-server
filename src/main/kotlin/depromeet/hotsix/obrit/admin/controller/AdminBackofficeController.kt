@@ -247,20 +247,20 @@ class AdminBackofficeController(private val adminBackofficeService: AdminBackoff
         action: () -> Unit,
     ): String = try {
         action()
-        redirectAttributes.addFlashAttribute("message", "Saved.")
+        redirectAttributes.addFlashAttribute("message", "저장되었습니다.")
         "redirect:$redirectTo"
     } catch (e: BusinessException) {
-        redirectAttributes.addFlashAttribute("error", e.message ?: "Admin action failed.")
+        redirectAttributes.addFlashAttribute("error", e.message ?: "관리자 작업에 실패했습니다.")
         "redirect:$redirectTo"
     } catch (e: ResourceNotFoundException) {
-        redirectAttributes.addFlashAttribute("error", e.message ?: "Admin action failed.")
+        redirectAttributes.addFlashAttribute("error", e.message ?: "관리자 작업에 실패했습니다.")
         "redirect:$redirectTo"
     } catch (e: ConflictException) {
-        redirectAttributes.addFlashAttribute("error", e.message ?: "Admin action failed.")
+        redirectAttributes.addFlashAttribute("error", e.message ?: "관리자 작업에 실패했습니다.")
         "redirect:$redirectTo"
     } catch (e: Exception) {
         log.error("Admin action failed. redirectTo={}", redirectTo, e)
-        redirectAttributes.addFlashAttribute("error", "Admin action failed.")
+        redirectAttributes.addFlashAttribute("error", "관리자 작업에 실패했습니다.")
         "redirect:$redirectTo"
     }
 }

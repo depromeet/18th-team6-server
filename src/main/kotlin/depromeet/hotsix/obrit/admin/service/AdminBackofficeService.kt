@@ -107,7 +107,7 @@ class AdminBackofficeService(
     @Transactional(readOnly = true)
     fun getItem(itemId: Long): AdminItemRow = listItems(includeDeleted = true)
         .firstOrNull { it.id == itemId }
-        ?: throw ResourceNotFoundException("Item not found.")
+        ?: throw ResourceNotFoundException("존재하지 않는 아이템입니다.")
 
     @Transactional(readOnly = true)
     fun listIcons(includeDeleted: Boolean): List<AdminIconRow> = categoryIconRepository.findAllByOrderByIdAsc()
@@ -156,10 +156,10 @@ class AdminBackofficeService(
     @Transactional
     fun createUser(form: AdminUserForm) {
         if (form.uuid.isBlank()) {
-            throw BusinessException("UUID is required.")
+            throw BusinessException("UUID는 필수입니다.")
         }
         if (form.name.isBlank()) {
-            throw BusinessException("User name is required.")
+            throw BusinessException("사용자 이름은 필수입니다.")
         }
         if (userRepository.findByUuid(form.uuid.trim()) != null) {
             throw BusinessException("이미 존재하는 UUID입니다.")
@@ -198,7 +198,7 @@ class AdminBackofficeService(
         val user = userRepository.findById(userId)
             .orElseThrow { ResourceNotFoundException("존재하지 않는 사용자입니다.") }
         if (name.isBlank()) {
-            throw BusinessException("User name is required.")
+            throw BusinessException("사용자 이름은 필수입니다.")
         }
         user.updateName(name)
     }
@@ -266,7 +266,7 @@ class AdminBackofficeService(
     fun updateItem(itemId: Long, form: AdminItemForm) {
         validateItemForm(form)
         val item = itemRepository.findById(itemId)
-            .orElseThrow { ResourceNotFoundException("Item not found.") }
+            .orElseThrow { ResourceNotFoundException("존재하지 않는 아이템입니다.") }
         item.userId = form.userId
         item.categoryId = form.categoryId
         item.update(
@@ -280,14 +280,14 @@ class AdminBackofficeService(
     @Transactional
     fun deleteItem(itemId: Long) {
         val item = itemRepository.findById(itemId)
-            .orElseThrow { ResourceNotFoundException("Item not found.") }
+            .orElseThrow { ResourceNotFoundException("존재하지 않는 아이템입니다.") }
         item.softDelete()
     }
 
     @Transactional
     fun recordReplacement(itemId: Long, form: AdminReplacementForm) {
         val item = itemRepository.findById(itemId)
-            .orElseThrow { ResourceNotFoundException("Item not found.") }
+            .orElseThrow { ResourceNotFoundException("존재하지 않는 아이템입니다.") }
         val replacedDate = form.replacedDate ?: LocalDate.now(clock)
         item.replace(replacedDate)
         itemReplacementHistoryRepository.save(ItemReplacementHistory(item = item, replacedDate = replacedDate))
@@ -295,10 +295,10 @@ class AdminBackofficeService(
 
     private fun validateCategoryForm(form: AdminCategoryForm) {
         if (form.name.isBlank()) {
-            throw BusinessException("Category name is required.")
+            throw BusinessException("카테고리 이름은 필수입니다.")
         }
         if (form.defaultReplacementIntervalDays <= 0) {
-            throw BusinessException("Default replacement interval must be positive.")
+            throw BusinessException("기본 교체 주기는 1일 이상이어야 합니다.")
         }
         val icon = categoryIconRepository.findById(form.iconId)
             .orElseThrow { BusinessException("유효하지 않은 아이콘입니다.") }
@@ -314,22 +314,22 @@ class AdminBackofficeService(
 
     private fun validateIconForm(form: AdminIconForm) {
         if (form.name.isBlank()) {
-            throw BusinessException("Icon name is required.")
+            throw BusinessException("아이콘 이름은 필수입니다.")
         }
         if (form.url.isBlank()) {
-            throw BusinessException("Icon URL is required.")
+            throw BusinessException("아이콘 URL은 필수입니다.")
         }
     }
 
     private fun validateItemForm(form: AdminItemForm) {
         if (form.name.isBlank()) {
-            throw BusinessException("Item name is required.")
+            throw BusinessException("아이템 이름은 필수입니다.")
         }
         if (form.count < 0) {
-            throw BusinessException("Count must be zero or positive.")
+            throw BusinessException("수량은 0 이상이어야 합니다.")
         }
         if (form.replacementIntervalDays <= 0) {
-            throw BusinessException("Replacement interval must be positive.")
+            throw BusinessException("교체 주기는 1일 이상이어야 합니다.")
         }
         if (!userRepository.existsById(form.userId)) {
             throw ResourceNotFoundException("존재하지 않는 사용자입니다.")
