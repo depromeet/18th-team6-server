@@ -14,7 +14,7 @@ class CategoryIcon(
     @Column(nullable = false)
     var name: String,
 
-    @Column(nullable = false)
+    @Column(nullable = false, length = 1000)
     var url: String,
 
     @Id
