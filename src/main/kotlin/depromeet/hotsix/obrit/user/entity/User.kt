@@ -20,4 +20,9 @@ class User(
 
     @Column(nullable = false)
     var name: String = "",
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+
+    fun updateName(name: String) {
+        this.name = name.trim()
+    }
+}

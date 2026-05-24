@@ -21,6 +21,23 @@ docker build -t obrit-server .
 docker run -p 8080:8080 obrit-server
 ```
 
+## Docker Compose 실행
+
+Docker Compose로 API 서버와 비즈니스 백오피스를 함께 실행할 수 있습니다.
+
+```bash
+ADMIN_USERNAME=admin \
+ADMIN_PASSWORD=change-me \
+DB_URL=jdbc:h2:mem:obrit \
+DB_USERNAME=sa \
+DB_PWD= \
+docker compose up --build
+```
+
+- API 서버: `http://localhost:8080`
+- Backoffice: `http://localhost:8080/admin`
+- Backoffice는 `ADMIN_USERNAME` / `ADMIN_PASSWORD`로 로그인합니다.
+
 ## API
 
 Swagger UI와 OpenAPI 문서는 서버 실행 후 아래 경로에서 확인할 수 있습니다.

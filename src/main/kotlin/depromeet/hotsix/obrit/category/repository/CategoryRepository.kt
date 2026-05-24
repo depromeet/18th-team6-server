@@ -7,6 +7,8 @@ import org.springframework.data.repository.query.Param
 
 interface CategoryRepository : JpaRepository<Category, Long> {
 
+    fun findAllByOrderByIdAsc(): List<Category>
+
     @Query(
         """
         select c
@@ -55,4 +57,6 @@ interface CategoryRepository : JpaRepository<Category, Long> {
     fun existsByUserIdAndNameAndDeletedAtIsNull(userId: Long, name: String): Boolean
 
     fun existsByUserIdIsNullAndNameAndDeletedAtIsNull(name: String): Boolean
+
+    fun findAllByUserId(userId: Long): List<Category>
 }
