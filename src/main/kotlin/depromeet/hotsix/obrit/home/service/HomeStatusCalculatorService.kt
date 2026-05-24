@@ -6,6 +6,7 @@ import depromeet.hotsix.obrit.home.dto.HomeResponse
 import depromeet.hotsix.obrit.home.dto.ItemBucketResponse
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
+import depromeet.hotsix.obrit.home.entity.HomeRiskBucket
 import depromeet.hotsix.obrit.home.entity.ItemBucket
 import depromeet.hotsix.obrit.home.entity.OverallStatus
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
@@ -99,15 +100,23 @@ class HomeStatusCalculatorService {
         )
     }
 
-    private fun bucketize(today: LocalDate, items: List<ItemSnapshot>): List<ItemBucketResponse> = ItemBucket.entries
-        .map { bucket ->
-            val bucketItems = items.filter { ItemBucket.of(it.spareBand(), it.replacementBand(today)) == bucket }
+    private fun bucketize(today: LocalDate, items: List<ItemSnapshot>): List<ItemBucketResponse> {
+        val grouped = items
+            .mapNotNull { item ->
+                val status = ItemBucket.of(item.spareBand(), item.replacementBand(today)).status
+                HomeRiskBucket.from(status)?.let { it to item }
+            }
+            .groupBy({ it.first }, { it.second })
+
+        return HomeRiskBucket.entries.map { bucket ->
+            val bucketItems = grouped[bucket].orEmpty().sortedBy { it.nextReplacementDate }
             ItemBucketResponse(
                 bucket = bucket,
                 count = bucketItems.size,
                 items = bucketItems.map { it.toBucketItemResponse(bucket.status) },
             )
         }
+    }
 
     private fun ItemSnapshot.toBucketItemResponse(status: ItemStatus): BucketItemResponse = BucketItemResponse(
         id = id,
