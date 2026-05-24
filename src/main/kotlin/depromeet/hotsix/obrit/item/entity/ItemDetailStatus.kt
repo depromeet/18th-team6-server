@@ -1,8 +1,9 @@
 package depromeet.hotsix.obrit.item.entity
 
-// 개별 아이템 상태
-enum class ItemStatus {
+// 소모품 상세 화면 상태
+enum class ItemDetailStatus {
     GOOD,
     WARNING,
     DANGER,
+    LOW_STOCK,
 }

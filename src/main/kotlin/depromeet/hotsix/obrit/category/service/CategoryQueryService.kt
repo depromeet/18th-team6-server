@@ -70,12 +70,8 @@ class CategoryQueryService(
     )
 
     private fun findVisibleCategory(userId: Long, categoryId: Long): Category {
-        val category = categoryRepository.findActiveById(categoryId)
+        val category = categoryRepository.findVisibleById(userId, categoryId)
             ?: throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
-
-        if (category.userId != null && category.userId != userId) {
-            throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
-        }
 
         return category
     }

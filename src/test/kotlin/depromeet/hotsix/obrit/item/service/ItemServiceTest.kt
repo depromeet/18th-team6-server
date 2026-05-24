@@ -5,8 +5,8 @@ import depromeet.hotsix.obrit.category.repository.CategoryFixture
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.item.entity.Item
+import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
-import depromeet.hotsix.obrit.item.entity.ItemStatus
 import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
@@ -87,14 +87,14 @@ class ItemServiceTest {
     }
 
     @Test
-    fun `소모품 상세를 조회하면 종류와 교체 상태와 최근 교체 기록을 반환한다`() {
+    fun `소모품 상세를 조회하면 카테고리와 교체 상태와 최근 교체 기록을 반환한다`() {
         val result = itemService.getItemDetail(userId, itemId)
 
         assertEquals(itemId, result.id)
         assertEquals("회사용 칫솔", result.name)
-        assertEquals("칫솔", result.itemKind.name)
+        assertEquals("칫솔", result.category.name)
         assertEquals("https://cdn.obrit.app/icons/toothbrush.png", result.iconUrl)
-        assertEquals(ItemStatus.DANGER, result.status)
+        assertEquals(ItemDetailStatus.DANGER, result.status)
         assertEquals(-1, result.dday)
         assertEquals("D+1", result.ddayLabel)
         assertEquals(0, result.spareCount)

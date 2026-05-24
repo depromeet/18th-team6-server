@@ -6,20 +6,23 @@ import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.dto.BulkCreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
+import depromeet.hotsix.obrit.item.dto.ItemCategoryResponse
 import depromeet.hotsix.obrit.item.dto.ItemDetailResponse
-import depromeet.hotsix.obrit.item.dto.ItemKindResponse
 import depromeet.hotsix.obrit.item.dto.ItemReplacementResponse
 import depromeet.hotsix.obrit.item.dto.ItemResponse
+import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
+import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import depromeet.hotsix.obrit.item.entity.Item
+import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
 import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
-import depromeet.hotsix.obrit.item.entity.ItemStatus
 import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.service.UserService
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -65,7 +68,7 @@ class ItemService(
         return ItemDetailResponse(
             id = requireNotNull(item.id),
             name = item.name,
-            itemKind = ItemKindResponse(id = category.id, name = category.name),
+            category = ItemCategoryResponse(id = category.id, name = category.name),
             iconUrl = category.iconUrl,
             status = detailStatus(dday, item.quantity),
             dday = dday,
@@ -82,6 +85,18 @@ class ItemService(
     }
 
     @Transactional(readOnly = true)
+    fun listReplacementHistories(userId: Long, itemId: Long, limit: Int): List<ReplacementHistoryResponse> {
+        findActiveItem(userId, itemId)
+        return itemReplacementHistoryRepository
+            .findByItemIdOrderByReplacedDateDescIdDesc(itemId, PageRequest.ofSize(limit))
+            .map {
+                ReplacementHistoryResponse(
+                    id = requireNotNull(it.id),
+                    replacedDate = it.replacedDate,
+                )
+            }
+    }
+
     fun findItemListSnapshots(
         userId: Long,
         order: ItemOrder,
@@ -153,6 +168,21 @@ class ItemService(
     }
 
     @Transactional
+    fun updateSpareCount(userId: Long, itemId: Long, request: UpdateSpareCountRequest): ItemResponse {
+        val count = request.count ?: throw BusinessException("여분 수량은 필수입니다.")
+        if (count < 0) {
+            throw BusinessException("여분 수량은 0 이상이어야 합니다.")
+        }
+
+        val item = findActiveItem(userId, itemId)
+        item.updateSpareCount(count)
+
+        return item.toResponse(
+            categoryName = categoryQueryService.getVisibleCategoryName(userId, item.categoryId),
+        )
+    }
+
+    @Transactional
     fun deleteItem(userId: Long, itemId: Long) {
         findActiveItem(userId, itemId).softDelete()
     }
@@ -184,7 +214,8 @@ class ItemService(
 
     private fun recentReplacementResponses(item: Item, usedDays: Int): List<ItemReplacementResponse> {
         val itemId = requireNotNull(item.id)
-        val histories = itemReplacementHistoryRepository.findTop5ByItemIdOrderByReplacedDateDesc(itemId)
+        val histories = itemReplacementHistoryRepository
+            .findByItemIdOrderByReplacedDateDescIdDesc(itemId, PageRequest.ofSize(5))
             .sortedBy { it.replacedDate }
         val historyEvents = histories.map { history ->
             ReplacementEvent(
@@ -229,11 +260,11 @@ class ItemService(
         }
     }
 
-    private fun detailStatus(dday: Int, spareCount: Int): ItemStatus = when {
-        dday <= 0 -> ItemStatus.DANGER
-        dday <= REPLACEMENT_WARNING_DAYS -> ItemStatus.WARNING
-        spareCount == 0 -> ItemStatus.LOW_STOCK
-        else -> ItemStatus.GOOD
+    private fun detailStatus(dday: Int, spareCount: Int): ItemDetailStatus = when {
+        dday <= 0 -> ItemDetailStatus.DANGER
+        dday <= REPLACEMENT_WARNING_DAYS -> ItemDetailStatus.WARNING
+        spareCount == 0 -> ItemDetailStatus.LOW_STOCK
+        else -> ItemDetailStatus.GOOD
     }
 
     private fun ddayLabel(dday: Int): String = when {

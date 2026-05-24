@@ -1,6 +1,6 @@
 package depromeet.hotsix.obrit.item.dto
 
-import depromeet.hotsix.obrit.item.entity.ItemStatus
+import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -50,6 +50,14 @@ data class UpdateItemRequest(
     @field:Schema(description = "New custom replacement interval in days.", example = "10")
     @field:Positive(message = "Replacement interval days must be positive.")
     val replacementIntervalDays: Int? = null,
+)
+
+@Schema(description = "소모품 여분 수량 수정 요청.")
+data class UpdateSpareCountRequest(
+    @field:Schema(description = "새 여분 수량. 0 이상이어야 합니다.", example = "3")
+    @field:NotNull(message = "여분 수량은 필수입니다.")
+    @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
+    val count: Int? = null,
 )
 
 @Schema(description = "Replacement record request.")
@@ -102,14 +110,14 @@ data class ItemDetailResponse(
     @field:Schema(description = "소모품명", example = "회사용 칫솔")
     val name: String,
 
-    @field:Schema(description = "종류 정보")
-    val itemKind: ItemKindResponse,
+    @field:Schema(description = "카테고리 정보")
+    val category: ItemCategoryResponse,
 
     @field:Schema(description = "대표 이미지", example = "https://cdn.obrit.app/icons/toothbrush.png")
     val iconUrl: String,
 
     @field:Schema(description = "상태", example = "DANGER")
-    val status: ItemStatus,
+    val status: ItemDetailStatus,
 
     @field:Schema(description = "D-day 값", example = "-2")
     val dday: Int,
@@ -142,12 +150,12 @@ data class ItemDetailResponse(
     val recentReplacements: List<ItemReplacementResponse>,
 )
 
-@Schema(description = "소모품 종류 정보")
-data class ItemKindResponse(
-    @field:Schema(description = "종류 ID", example = "200")
+@Schema(description = "소모품 카테고리 정보")
+data class ItemCategoryResponse(
+    @field:Schema(description = "카테고리 ID", example = "200")
     val id: Long,
 
-    @field:Schema(description = "종류명", example = "칫솔")
+    @field:Schema(description = "카테고리명", example = "칫솔")
     val name: String,
 )
 
@@ -164,4 +172,13 @@ data class ItemReplacementResponse(
 
     @field:Schema(description = "현재 사용중 여부", example = "false")
     val isCurrent: Boolean,
+)
+
+@Schema(description = "소모품 교체 이력 응답.")
+data class ReplacementHistoryResponse(
+    @field:Schema(description = "교체 이력 ID.", example = "42")
+    val id: Long,
+
+    @field:Schema(description = "교체일.", example = "2026-05-20")
+    val replacedDate: LocalDate,
 )

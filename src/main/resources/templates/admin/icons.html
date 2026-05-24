@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Obrit Admin - Icons</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header class="admin-header">
+    <a class="admin-brand" href="/admin/users">Obrit administration</a>
+    <nav class="admin-nav">
+        <a href="/admin/users">Users</a>
+        <a href="/admin/icons" class="active">Icons</a>
+        <a href="/admin/categories">Categories</a>
+        <a href="/admin/items">Items</a>
+    </nav>
+</header>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; Icons</div>
+<main class="content">
+    <div th:if="${message}" class="notice" th:text="${message}"></div>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div class="content-header">
+        <h1>Icons</h1>
+        <ul class="object-tools">
+            <li><a class="addlink" href="/admin/icons/add">Add icon</a></li>
+        </ul>
+    </div>
+
+    <div class="changelist">
+        <section class="module results">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Preview</th>
+                    <th>Name</th>
+                    <th>URL</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th>Deleted</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="icon : ${icons}" th:classappend="${icon.deletedAt != null} ? 'deleted'">
+                    <td>
+                        <a th:if="${icon.deletedAt == null}" th:href="@{/admin/icons/{id}/change(id=${icon.id})}" th:text="${icon.id}"></a>
+                        <span th:if="${icon.deletedAt != null}" th:text="${icon.id}"></span>
+                    </td>
+                    <td><img class="admin-icon" th:src="${icon.url}" alt="icon preview" th:alt="|${icon.name} icon|"></td>
+                    <td>
+                        <a th:if="${icon.deletedAt == null}" th:href="@{/admin/icons/{id}/change(id=${icon.id})}" th:text="${icon.name}"></a>
+                        <span th:if="${icon.deletedAt != null}" th:text="${icon.name}"></span>
+                    </td>
+                    <td th:text="${icon.url}"></td>
+                    <td th:text="${icon.createdAt}"></td>
+                    <td th:text="${icon.updatedAt}"></td>
+                    <td th:text="${icon.deletedAt}"></td>
+                    <td>
+                        <form th:if="${icon.deletedAt == null}" th:action="@{/admin/icons/{id}/delete(id=${icon.id})}" method="post"
+                              onsubmit="return confirm('Delete this icon? It cannot be deleted while active categories use it.')">
+                            <button class="deletelink" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <aside class="module filters">
+            <h2>Filter</h2>
+            <form class="filter-body" method="get" action="/admin/icons">
+                <label><input type="checkbox" name="includeDeleted" value="true" th:checked="${includeDeleted}"> Include deleted</label>
+                <button type="submit">Apply</button>
+                <div class="row-count" th:text="|${#lists.size(icons)} rows|"></div>
+            </form>
+        </aside>
+    </div>
+</main>
+</body>
+</html>

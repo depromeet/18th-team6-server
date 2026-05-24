@@ -14,6 +14,7 @@ import kotlin.jvm.JvmInline
 object ArchitectureRules {
     private const val BASE_PACKAGE = "depromeet.hotsix.obrit"
     private const val GLOBAL_DOMAIN = "global"
+    private const val ADMIN_DOMAIN = "admin"
 
     private const val CONTROLLER_LAYER = "controller"
     private const val SERVICE_LAYER = "service"
@@ -134,6 +135,7 @@ object ArchitectureRules {
         when {
             location.domain == GLOBAL_DOMAIN -> true
             isShareableDomainType(javaClass) -> true
+            domain == ADMIN_DOMAIN -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER, SERVICE_LAYER)
             location.layer == SERVICE_LAYER -> true
             location.domain != domain -> false
             else -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER)

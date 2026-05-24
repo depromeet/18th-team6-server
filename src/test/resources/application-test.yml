@@ -4,3 +4,8 @@ spring:
       mode: never
   jpa:
     defer-datasource-initialization: false
+
+obrit:
+  admin:
+    username: admin
+    password: admin

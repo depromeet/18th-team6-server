@@ -7,7 +7,9 @@ import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
 import depromeet.hotsix.obrit.item.dto.ItemDetailResponse
 import depromeet.hotsix.obrit.item.dto.ItemResponse
+import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
+import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
@@ -15,6 +17,8 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.constraints.Max
+import jakarta.validation.constraints.Min
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 @Tag(name = "소모품", description = "소모품 API")
@@ -74,6 +78,10 @@ interface ItemControllerApi {
                             ExampleObject(
                                 name = "소모품 없음",
                                 value = """{"message": "Item not found."}""",
+                            ),
+                            ExampleObject(
+                                name = "카테고리 없음",
+                                value = """{"message": "존재하지 않는 소모품 카테고리입니다."}""",
                             ),
                         ],
                     ),
@@ -249,6 +257,62 @@ interface ItemControllerApi {
     ): ApiResponse<ItemResponse>
 
     @Operation(
+        summary = "소모품 여분 수량 수정",
+        description = "소모품의 여분 수량만 변경합니다. 수량은 0 이상이어야 하며 교체일, 다음 교체일, 교체 주기는 변경하지 않습니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "여분 수량이 수정되었습니다.",
+            ),
+            SwaggerApiResponse(
+                responseCode = "400",
+                description = "유효하지 않은 요청입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "수량 누락",
+                                value = """{"message": "여분 수량은 필수입니다."}""",
+                            ),
+                            ExampleObject(
+                                name = "음수 수량",
+                                value = """{"message": "여분 수량은 0 이상이어야 합니다."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            SwaggerApiResponse(
+                responseCode = "404",
+                description = "존재하지 않는 소모품입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "소모품 없음",
+                                value = """{"message": "Item not found."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun updateSpareCount(
+        @Parameter(description = "사용자 ID", required = true, example = "1")
+        userId: Long,
+        @Parameter(description = "소모품 ID", required = true, example = "1")
+        itemId: Long,
+        request: UpdateSpareCountRequest,
+    ): ApiResponse<ItemResponse>
+
+    @Operation(
         summary = "소모품 삭제",
         description = "소모품을 소프트 삭제합니다.",
     )
@@ -315,4 +379,59 @@ interface ItemControllerApi {
         itemId: Long,
         request: CreateReplacementRequest,
     ): ApiResponse<ItemResponse>
+
+    @Operation(
+        summary = "소모품 교체 이력 조회",
+        description = "특정 소모품의 최근 교체 이력을 최신순으로 조회합니다. limit은 1~5 사이로 지정 가능하며 생략 시 5건을 반환합니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "조회 완료. 이력이 limit보다 적으면 있는 만큼만 반환합니다.",
+            ),
+            SwaggerApiResponse(
+                responseCode = "400",
+                description = "유효하지 않은 요청입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "limit 범위 초과",
+                                value = """{"message": "limit은 1 이상 5 이하여야 합니다."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            SwaggerApiResponse(
+                responseCode = "404",
+                description = "존재하지 않는 소모품입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "소모품 없음",
+                                value = """{"message": "Item not found."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun listReplacements(
+        @Parameter(description = "사용자 ID", required = true, example = "1")
+        userId: Long,
+        @Parameter(description = "소모품 ID", required = true, example = "1")
+        itemId: Long,
+        @Parameter(description = "조회 개수(1~5). 기본 5.", example = "5")
+        @Min(value = 1, message = "limit은 1 이상 5 이하여야 합니다.")
+        @Max(value = 5, message = "limit은 1 이상 5 이하여야 합니다.")
+        limit: Int,
+    ): ApiResponse<List<ReplacementHistoryResponse>>
 }

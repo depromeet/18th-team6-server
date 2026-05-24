@@ -1,6 +1,6 @@
 package depromeet.hotsix.obrit.home.dto
 
-import depromeet.hotsix.obrit.home.entity.ItemBucket
+import depromeet.hotsix.obrit.home.entity.HomeRiskBucket
 import depromeet.hotsix.obrit.home.entity.OverallStatus
 import depromeet.hotsix.obrit.item.entity.ItemStatus
 import io.swagger.v3.oas.annotations.media.Schema
@@ -24,8 +24,8 @@ data class MyStatusSummaryResponse(
     val averageScore: Double,
 )
 
-@Schema(description = "여분/교체 상태 기준으로 분류된 아이템 버킷")
-data class ItemBucketResponse(val bucket: ItemBucket, val count: Int, val items: List<BucketItemResponse>)
+@Schema(description = "위험도(위험/경고) 기준으로 분류된 아이템 버킷")
+data class ItemBucketResponse(val bucket: HomeRiskBucket, val count: Int, val items: List<BucketItemResponse>)
 
 @Schema(description = "홈 버킷에 표시되는 아이템")
 data class BucketItemResponse(
@@ -36,7 +36,7 @@ data class BucketItemResponse(
     val status: ItemStatus,
 )
 
-@Schema(description = "여분/교체 상태 기준으로 그룹화된 홈 버킷 목록")
+@Schema(description = "위험도(위험/경고) 기준으로 그룹화된 홈 버킷 목록. 항상 [DANGER, WARNING] 두 버킷이 반환됩니다.")
 data class HomeBucketsResponse(val buckets: List<ItemBucketResponse>)
 
 @Schema(description = "홈/리스트 화면의 무한 스크롤 목록에 표시되는 아이템 카드")

@@ -23,8 +23,9 @@ class CategoryService(
 ) {
 
     @Transactional(readOnly = true)
-    fun listCategoryIcons(): List<CategoryIconResponse> =
-        categoryIconRepository.findAllByOrderByIdDesc().map { CategoryIconResponse(id = it.id, url = it.url) }
+    fun listCategoryIcons(): List<CategoryIconResponse> = categoryIconRepository.findAllByOrderByIdDesc()
+        .filter { it.deletedAt == null }
+        .map { CategoryIconResponse(id = it.id, url = it.url) }
 
     @Transactional
     fun createCategory(userId: Long, request: CreateCategoryRequest): CategoryResponse {
@@ -39,6 +40,9 @@ class CategoryService(
 
         val icon = categoryIconRepository.findById(request.iconId)
             .orElseThrow { BusinessException("유효하지 않은 아이콘입니다.") }
+        if (icon.deletedAt != null) {
+            throw BusinessException("유효하지 않은 아이콘입니다.")
+        }
 
         val category = Category(
             userId = userId,
