@@ -4,6 +4,7 @@ import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryFixture
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
@@ -17,8 +18,10 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
+import java.time.Clock
 import java.time.LocalDate
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -27,6 +30,9 @@ class ItemServiceTest {
 
     @Autowired
     private lateinit var itemService: ItemService
+
+    @Autowired
+    private lateinit var clock: Clock
 
     @Autowired
     private lateinit var userRepository: UserRepository
@@ -43,7 +49,8 @@ class ItemServiceTest {
     @Autowired
     private lateinit var itemReplacementHistoryRepository: ItemReplacementHistoryRepository
 
-    private val today = LocalDate.now()
+    private val today: LocalDate
+        get() = LocalDate.now(clock)
     private var userId: Long = 0
     private var itemId: Long = 0
 
@@ -108,5 +115,61 @@ class ItemServiceTest {
         assertEquals(listOf(30, 27, 28, 40, 31), result.recentReplacements.map { it.cycleDays })
         assertEquals(false, result.recentReplacements.first().isCurrent)
         assertEquals(true, result.recentReplacements.last().isCurrent)
+    }
+
+    @Test
+    fun `동일한 교체일 이력이 있어도 기록별 주기를 덮어쓰지 않는다`() {
+        val item = itemRepository.getReferenceById(itemId)
+        itemReplacementHistoryRepository.save(
+            ItemReplacementHistory(item = item, replacedDate = today.minusDays(88)),
+        )
+
+        val result = itemService.getItemDetail(userId, itemId)
+
+        assertEquals(listOf(27, 28, 0, 40, 31), result.recentReplacements.map { it.cycleDays })
+    }
+
+    @Test
+    fun `현재 교체일과 같은 이력이 여러 건이어도 현재 사용중 기록은 하나만 표시한다`() {
+        val item = itemRepository.getReferenceById(itemId)
+        itemReplacementHistoryRepository.saveAll(
+            listOf(
+                ItemReplacementHistory(item = item, replacedDate = today.minusDays(31)),
+                ItemReplacementHistory(item = item, replacedDate = today.minusDays(31)),
+            ),
+        )
+
+        val result = itemService.getItemDetail(userId, itemId)
+
+        assertEquals(1, result.recentReplacements.count { it.isCurrent })
+        assertEquals(true, result.recentReplacements.last().isCurrent)
+    }
+
+    @Test
+    fun `카테고리 아이콘이 없으면 빈 문자열 대신 예외를 던진다`() {
+        val category = categoryRepository.save(
+            CategoryFixture.presetCategory(
+                name = "아이콘 없는 카테고리",
+                iconId = 9999L,
+                defaultReplacementIntervalDays = 30,
+            ),
+        )
+        val item = itemRepository.save(
+            Item(
+                userId = userId,
+                categoryId = requireNotNull(category.id),
+                name = "아이콘 없는 소모품",
+                quantity = 1,
+                replacementIntervalDays = 30,
+                lastReplacedDate = today,
+                nextReplacementDate = today.plusDays(30),
+            ),
+        )
+
+        val exception = assertFailsWith<ResourceNotFoundException> {
+            itemService.getItemDetail(userId, requireNotNull(item.id))
+        }
+
+        assertEquals("존재하지 않는 카테고리 아이콘입니다.", exception.message)
     }
 }

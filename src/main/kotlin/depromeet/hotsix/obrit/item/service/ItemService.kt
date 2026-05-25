@@ -214,9 +214,9 @@ class ItemService(
 
     private fun recentReplacementResponses(item: Item, usedDays: Int): List<ItemReplacementResponse> {
         val itemId = requireNotNull(item.id)
+        val replacementEventOrder = compareBy<ReplacementEvent> { it.date }.thenBy { it.id }
         val histories = itemReplacementHistoryRepository
             .findByItemIdOrderByReplacedDateDescIdDesc(itemId, PageRequest.ofSize(5))
-            .sortedBy { it.replacedDate }
         val historyEvents = histories.map { history ->
             ReplacementEvent(
                 id = requireNotNull(history.id),
@@ -224,37 +224,34 @@ class ItemService(
                 isCurrent = false,
             )
         }
-        val hasCurrentHistory = historyEvents.any { it.date == item.lastReplacedDate }
-        val events = if (hasCurrentHistory) {
-            historyEvents.map { event ->
-                if (event.date == item.lastReplacedDate) {
-                    event.copy(isCurrent = true)
-                } else {
-                    event
-                }
+        val sortedHistoryEvents = historyEvents.sortedWith(replacementEventOrder)
+        val currentHistoryIndex = sortedHistoryEvents.indexOfLast { it.date == item.lastReplacedDate }
+        val events = if (currentHistoryIndex >= 0) {
+            sortedHistoryEvents.mapIndexed { index, event ->
+                if (index == currentHistoryIndex) event.copy(isCurrent = true) else event
             }
         } else {
-            historyEvents + ReplacementEvent(
+            sortedHistoryEvents + ReplacementEvent(
                 id = itemId,
                 date = item.lastReplacedDate,
                 isCurrent = true,
             )
         }
-        val sortedEvents = events.sortedBy { it.date }
-        val cycleDaysByDate = sortedEvents.mapIndexed { index, event ->
+        val sortedEvents = events.sortedWith(replacementEventOrder)
+        val eventsWithCycleDays = sortedEvents.mapIndexed { index, event ->
             val cycleDays = when {
                 event.isCurrent -> usedDays
                 index == 0 -> item.replacementIntervalDays
                 else -> ChronoUnit.DAYS.between(sortedEvents[index - 1].date, event.date).toInt()
             }
-            event.date to cycleDays
-        }.toMap()
+            event to cycleDays
+        }
 
-        return sortedEvents.takeLast(5).map { event ->
+        return eventsWithCycleDays.takeLast(5).map { (event, cycleDays) ->
             ItemReplacementResponse(
                 id = event.id,
                 date = event.date,
-                cycleDays = cycleDaysByDate.getValue(event.date),
+                cycleDays = cycleDays,
                 isCurrent = event.isCurrent,
             )
         }

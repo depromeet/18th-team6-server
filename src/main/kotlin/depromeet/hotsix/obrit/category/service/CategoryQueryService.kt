@@ -31,17 +31,18 @@ class CategoryQueryService(
     }
 
     fun getVisibleCategoryNameAndDefaultInterval(userId: Long, categoryId: Long): Pair<String, Int> {
-        val category = findVisibleCategory(userId, categoryId)
+        val category = getVisibleCategoryOrThrow(userId, categoryId)
         return category.name to category.defaultReplacementIntervalDays
     }
 
-    fun getVisibleCategoryName(userId: Long, categoryId: Long): String = findVisibleCategory(userId, categoryId).name
+    fun getVisibleCategoryName(userId: Long, categoryId: Long): String =
+        getVisibleCategoryOrThrow(userId, categoryId).name
 
     fun getVisibleCategorySnapshot(userId: Long, categoryId: Long): CategorySnapshot {
-        val category = findVisibleCategory(userId, categoryId)
+        val category = getVisibleCategoryOrThrow(userId, categoryId)
         val iconUrl = categoryIconRepository.findById(category.iconId)
             .map { it.url }
-            .orElse("")
+            .orElseThrow { ResourceNotFoundException("존재하지 않는 카테고리 아이콘입니다.") }
 
         return CategorySnapshot(
             id = requireNotNull(category.id),
@@ -69,7 +70,7 @@ class CategoryQueryService(
         defaultReplacementIntervalDays = defaultReplacementIntervalDays,
     )
 
-    private fun findVisibleCategory(userId: Long, categoryId: Long): Category {
+    private fun getVisibleCategoryOrThrow(userId: Long, categoryId: Long): Category {
         val category = categoryRepository.findVisibleById(userId, categoryId)
             ?: throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
 
