@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.category.service
 
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
+import depromeet.hotsix.obrit.category.entity.CategorySnapshot
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
@@ -30,11 +31,26 @@ class CategoryQueryService(
     }
 
     fun getVisibleCategoryNameAndDefaultInterval(userId: Long, categoryId: Long): Pair<String, Int> {
-        val category = findVisibleCategory(userId, categoryId)
+        val category = getVisibleCategoryOrThrow(userId, categoryId)
         return category.name to category.defaultReplacementIntervalDays
     }
 
-    fun getVisibleCategoryName(userId: Long, categoryId: Long): String = findVisibleCategory(userId, categoryId).name
+    fun getVisibleCategoryName(userId: Long, categoryId: Long): String =
+        getVisibleCategoryOrThrow(userId, categoryId).name
+
+    fun getVisibleCategorySnapshot(userId: Long, categoryId: Long): CategorySnapshot {
+        val category = getVisibleCategoryOrThrow(userId, categoryId)
+        val iconUrl = categoryIconRepository.findById(category.iconId)
+            .map { it.url }
+            .orElseThrow { ResourceNotFoundException("존재하지 않는 카테고리 아이콘입니다.") }
+
+        return CategorySnapshot(
+            id = requireNotNull(category.id),
+            name = category.name,
+            iconUrl = iconUrl,
+            defaultReplacementIntervalDays = category.defaultReplacementIntervalDays,
+        )
+    }
 
     fun findVisibleCategoryNames(userId: Long, categoryIds: Collection<Long>): Map<Long, String> {
         if (categoryIds.isEmpty()) {
@@ -54,13 +70,9 @@ class CategoryQueryService(
         defaultReplacementIntervalDays = defaultReplacementIntervalDays,
     )
 
-    private fun findVisibleCategory(userId: Long, categoryId: Long): Category {
-        val category = categoryRepository.findActiveById(categoryId)
+    private fun getVisibleCategoryOrThrow(userId: Long, categoryId: Long): Category {
+        val category = categoryRepository.findVisibleById(userId, categoryId)
             ?: throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
-
-        if (category.userId != null && category.userId != userId) {
-            throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
-        }
 
         return category
     }

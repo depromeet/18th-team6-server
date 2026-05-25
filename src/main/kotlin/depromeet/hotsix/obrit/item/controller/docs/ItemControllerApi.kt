@@ -5,6 +5,7 @@ import depromeet.hotsix.obrit.global.exception.ErrorResponse
 import depromeet.hotsix.obrit.item.dto.BulkCreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
+import depromeet.hotsix.obrit.item.dto.ItemDetailResponse
 import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
@@ -55,6 +56,45 @@ interface ItemControllerApi {
         @Parameter(description = "사용자 ID", required = true, example = "1")
         userId: Long,
     ): ApiResponse<List<ItemResponse>>
+
+    @Operation(
+        summary = "소모품 상세 조회",
+        description = "소모품의 종류, 대표 이미지, 교체 상태, 사용 현황, 최근 교체 기록을 조회합니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "조회 완료",
+            ),
+            SwaggerApiResponse(
+                responseCode = "404",
+                description = "존재하지 않는 소모품입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "소모품 없음",
+                                value = """{"message": "Item not found."}""",
+                            ),
+                            ExampleObject(
+                                name = "카테고리 없음",
+                                value = """{"message": "존재하지 않는 소모품 카테고리입니다."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+        ],
+    )
+    fun getItemDetail(
+        @Parameter(description = "사용자 ID", required = true, example = "1")
+        userId: Long,
+        @Parameter(description = "소모품 ID", required = true, example = "1")
+        itemId: Long,
+    ): ApiResponse<ItemDetailResponse>
 
     @Operation(
         summary = "소모품 단건 등록",

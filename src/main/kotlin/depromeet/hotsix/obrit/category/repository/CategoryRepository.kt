@@ -44,6 +44,17 @@ interface CategoryRepository : JpaRepository<Category, Long> {
         """
         select c
         from Category c
+        where c.id = :categoryId
+          and c.deletedAt is null
+          and (c.userId is null or c.userId = :userId)
+        """,
+    )
+    fun findVisibleById(@Param("userId") userId: Long, @Param("categoryId") categoryId: Long): Category?
+
+    @Query(
+        """
+        select c
+        from Category c
         where c.id in :categoryIds
           and c.deletedAt is null
           and (c.userId is null or c.userId = :userId)
