@@ -6,7 +6,6 @@ import depromeet.hotsix.obrit.user.dto.request.RegisterUserRequest
 import depromeet.hotsix.obrit.user.dto.response.RegisterUserResponse
 import depromeet.hotsix.obrit.user.entity.User
 import depromeet.hotsix.obrit.user.repository.UserRepository
-import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -33,14 +32,8 @@ class UserService(private val userRepository: UserRepository) {
             throw BusinessException("UUID 형식이 올바르지 않습니다.")
         }
 
-        val user = userRepository.findByUuid(request.value) ?: createUser(request.value)
+        val user = userRepository.findByUuidAndDeletedAtIsNull(request.value)
+            ?: userRepository.save(User(uuid = request.value))
         return RegisterUserResponse(id = requireNotNull(user.id), uuid = requireNotNull(user.uuid))
-    }
-
-    private fun createUser(uuid: String): User = try {
-        userRepository.save(User(uuid = uuid))
-    } catch (e: DataIntegrityViolationException) {
-        userRepository.findByUuid(uuid)
-            ?: throw e
     }
 }
