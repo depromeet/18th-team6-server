@@ -34,7 +34,7 @@ class UserService(private val userRepository: UserRepository) {
         }
 
         val user = userRepository.findByUuid(request.value) ?: createUser(request.value)
-        return RegisterUserResponse(id = requireNotNull(user.id), uuid = requireNotNull(user.uuid))
+        return RegisterUserResponse(userId = requireNotNull(user.id), uuid = requireNotNull(user.uuid))
     }
 
     private fun createUser(uuid: String): User = try {
