@@ -61,6 +61,18 @@ class CategoryQueryService(
             .associate { requireNotNull(it.id) to it.name }
     }
 
+    fun findVisibleCategoryIconUrls(userId: Long, categoryIds: Collection<Long>): Map<Long, String> {
+        if (categoryIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val categories = categoryRepository.findVisibleByIds(userId, categoryIds.toSet())
+        val iconUrlById = categoryIconRepository.findAllById(categories.map { it.iconId }.distinct())
+            .associate { it.id to it.url }
+
+        return categories.associate { requireNotNull(it.id) to iconUrlById[it.iconId].orEmpty() }
+    }
+
     private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
         id = requireNotNull(id),
         name = name,
