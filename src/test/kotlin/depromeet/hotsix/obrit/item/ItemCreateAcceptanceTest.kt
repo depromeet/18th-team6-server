@@ -41,8 +41,6 @@ class ItemCreateAcceptanceTest {
     @Autowired
     private lateinit var categoryIconRepository: CategoryIconRepository
 
-    private val today: LocalDate
-        get() = LocalDate.now(clock)
     private var userId: Long = 0
     private var categoryId: Long = 0
 
@@ -66,6 +64,7 @@ class ItemCreateAcceptanceTest {
     @ParameterizedTest
     @EnumSource(LastReplacementPeriod::class)
     fun `교체_시기_선택지는_기한의_평균치를_교체일자로_사용한다`(period: LastReplacementPeriod) {
+        val baseDate = LocalDate.now(clock)
         val expectedDaysAgo = when (period) {
             LastReplacementPeriod.WITHIN_WEEK -> 4L
             LastReplacementPeriod.WITHIN_MONTH -> 21L
@@ -83,12 +82,13 @@ class ItemCreateAcceptanceTest {
             ),
         )
 
-        assertEquals(today.minusDays(expectedDaysAgo), result.lastReplacedDate)
-        assertEquals(today.minusDays(expectedDaysAgo).plusDays(30), result.nextReplacementDate)
+        assertEquals(baseDate.minusDays(expectedDaysAgo), result.lastReplacedDate)
+        assertEquals(baseDate.minusDays(expectedDaysAgo).plusDays(30), result.nextReplacementDate)
     }
 
     @Test
     fun `교체_시기를_선택하지_않으면_오늘_날짜로_설정된다`() {
+        val baseDate = LocalDate.now(clock)
         val result = itemService.createItem(
             userId,
             CreateItemRequest(
@@ -98,7 +98,7 @@ class ItemCreateAcceptanceTest {
             ),
         )
 
-        assertEquals(today, result.lastReplacedDate)
-        assertEquals(today.plusDays(30), result.nextReplacementDate)
+        assertEquals(baseDate, result.lastReplacedDate)
+        assertEquals(baseDate.plusDays(30), result.nextReplacementDate)
     }
 }
