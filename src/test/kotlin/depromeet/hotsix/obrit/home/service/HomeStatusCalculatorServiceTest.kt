@@ -93,6 +93,7 @@ class HomeStatusCalculatorServiceTest {
     private fun item(id: Long, daysUntil: Long, quantity: Int): ItemSnapshot = ItemSnapshot(
         id = id,
         name = "item-$id",
+        categoryId = 100L,
         nextReplacementDate = today.plusDays(daysUntil),
         quantity = quantity,
     )
