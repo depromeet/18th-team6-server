@@ -30,7 +30,7 @@ class UserAcceptanceTest {
 
         val response = userService.registerOrGet(request)
 
-        assertNotNull(response.id)
+        assertNotNull(response.userId)
         assertEquals("550e8400-e29b-41d4-a716-446655440000", response.uuid)
         assertEquals(1, userRepository.count())
     }
@@ -42,7 +42,7 @@ class UserAcceptanceTest {
         val first = userService.registerOrGet(request)
         val second = userService.registerOrGet(request)
 
-        assertEquals(first.id, second.id)
+        assertEquals(first.userId, second.userId)
         assertEquals(first.uuid, second.uuid)
         assertEquals(1, userRepository.count())
     }
@@ -56,7 +56,7 @@ class UserAcceptanceTest {
         val response2 = userService.registerOrGet(request2)
 
         assertEquals(2, userRepository.count())
-        assert(response1.id != response2.id)
+        assert(response1.userId != response2.userId)
     }
 
     @Test

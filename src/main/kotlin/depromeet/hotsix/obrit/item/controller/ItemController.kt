@@ -5,6 +5,7 @@ import depromeet.hotsix.obrit.item.controller.docs.ItemControllerApi
 import depromeet.hotsix.obrit.item.dto.BulkCreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
+import depromeet.hotsix.obrit.item.dto.ItemDetailResponse
 import depromeet.hotsix.obrit.item.dto.ItemResponse
 import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
@@ -33,6 +34,12 @@ class ItemController(private val itemService: ItemService) : ItemControllerApi {
     @GetMapping
     override fun listItems(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<ItemResponse>> =
         ApiResponse.ok(itemService.listItems(userId))
+
+    @GetMapping("/{itemId}")
+    override fun getItemDetail(
+        @RequestHeader("X-User-Id") userId: Long,
+        @PathVariable itemId: Long,
+    ): ApiResponse<ItemDetailResponse> = ApiResponse.ok(itemService.getItemDetail(userId, itemId))
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
