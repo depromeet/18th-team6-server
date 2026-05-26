@@ -170,7 +170,7 @@ class AdminBackofficeService(
     @Transactional
     fun createIcon(form: AdminIconForm) {
         validateIconForm(form)
-        categoryIconRepository.save(CategoryIcon(name = form.name.trim(), url = form.url.trim()))
+        categoryIconRepository.save(CategoryIcon(name = form.name.trim(), key = "", url = form.url.trim()))
     }
 
     @Transactional
