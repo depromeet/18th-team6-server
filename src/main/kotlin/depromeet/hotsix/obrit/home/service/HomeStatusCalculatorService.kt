@@ -121,7 +121,7 @@ class HomeStatusCalculatorService {
     private fun ItemSnapshot.toBucketItemResponse(status: ItemStatus): BucketItemResponse = BucketItemResponse(
         id = id,
         name = name,
-        count = quantity,
+        spareQuantity = quantity,
         nextReplacementDate = nextReplacementDate,
         status = status,
     )

@@ -77,7 +77,7 @@ class ItemCreateAcceptanceTest {
             CreateItemRequest(
                 categoryId = categoryId,
                 name = "테스트 소모품",
-                count = 1,
+                spareQuantity = 1,
                 lastReplacementPeriod = period,
             ),
         )
@@ -94,7 +94,7 @@ class ItemCreateAcceptanceTest {
             CreateItemRequest(
                 categoryId = categoryId,
                 name = "테스트 소모품",
-                count = 1,
+                spareQuantity = 1,
             ),
         )
 

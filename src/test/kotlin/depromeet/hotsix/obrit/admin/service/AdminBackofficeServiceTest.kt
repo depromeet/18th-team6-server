@@ -184,7 +184,7 @@ class AdminBackofficeServiceTest {
                     userId = requireNotNull(otherUser.id),
                     categoryId = customCategoryId,
                     name = "Invalid item",
-                    count = 1,
+                    spareQuantity = 1,
                     lastReplacedDate = LocalDate.of(2026, 5, 1),
                     replacementIntervalDays = 7,
                 ),

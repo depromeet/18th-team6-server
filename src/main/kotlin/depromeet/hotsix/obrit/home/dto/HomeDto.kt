@@ -31,7 +31,7 @@ data class ItemBucketResponse(val bucket: HomeRiskBucket, val count: Int, val it
 data class BucketItemResponse(
     val id: Long,
     val name: String,
-    val count: Int,
+    val spareQuantity: Int,
     val nextReplacementDate: LocalDate,
     val status: ItemStatus,
 )
