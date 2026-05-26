@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.item.dto
 
 import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
+import depromeet.hotsix.obrit.item.entity.LastReplacementPeriod
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -24,8 +25,8 @@ data class CreateItemRequest(
     @field:PositiveOrZero(message = "Count must be zero or positive.")
     val count: Int,
 
-    @field:Schema(description = "Most recent replacement date.", example = "2026-04-20")
-    val lastReplacedDate: LocalDate? = null,
+    @field:Schema(description = "마지막 교체 시기. 미입력 시 오늘로 설정.", example = "WITHIN_WEEK")
+    val lastReplacementPeriod: LastReplacementPeriod? = null,
 
     @field:Schema(
         description = "Custom replacement interval in days. Uses the category default when omitted.",
