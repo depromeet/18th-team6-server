@@ -31,6 +31,8 @@ data class ItemBucketResponse(val bucket: HomeRiskBucket, val count: Int, val it
 data class BucketItemResponse(
     val id: Long,
     val name: String,
+    @field:Schema(description = "아이템 카테고리의 아이콘 URL", example = "https://cdn.example.com/icons/toothbrush.png")
+    val iconUrl: String,
     val count: Int,
     val nextReplacementDate: LocalDate,
     val status: ItemStatus,
@@ -45,6 +47,11 @@ data class HomeItemCard(
     val id: Long,
     @field:Schema(description = "아이템 이름", example = "칫솔")
     val name: String,
+    @field:Schema(
+        description = "아이템 카테고리의 아이콘 URL",
+        example = "https://cdn.example.com/icons/toothbrush.png",
+    )
+    val iconUrl: String,
     @field:Schema(
         description = "마지막 교체일 이후 사용한 일수. 음수가 되지 않도록 0 미만은 0으로 보정됩니다.",
         example = "12",
