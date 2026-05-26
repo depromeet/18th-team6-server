@@ -98,7 +98,18 @@ interface ItemControllerApi {
 
     @Operation(
         summary = "소모품 단건 등록",
-        description = "기본 제공 카테고리 또는 사용자 커스텀 카테고리에 소모품을 등록합니다.",
+        description = """기본 제공 카테고리 또는 사용자 커스텀 카테고리에 소모품을 등록합니다.
+
+### 마지막 교체 시기 (lastReplacementPeriod)
+선택지별 기간의 평균치를 교체일자로 적용합니다.
+
+| 선택지 | enum | 적용 날짜 |
+|--------|------|-----------|
+| 1주일 이내 | WITHIN_WEEK | 4일 전 |
+| 2-4주 전 | WITHIN_MONTH | 21일 전 |
+| 1-3개월 전 | WITHIN_THREE_MONTHS | 45일 전 |
+| 3개월 이전 | OVER_THREE_MONTHS | 90일 전 |
+| 미선택 | null | 오늘 |""",
     )
     @ApiResponses(
         value = [
@@ -152,7 +163,18 @@ interface ItemControllerApi {
 
     @Operation(
         summary = "소모품 다건 등록",
-        description = "한 번의 요청으로 여러 소모품을 등록합니다. 최소 1개, 최대 10개까지 등록할 수 있으며, 하나라도 실패하면 전체 롤백됩니다.",
+        description = """한 번의 요청으로 여러 소모품을 등록합니다. 최소 1개, 최대 10개까지 등록할 수 있으며, 하나라도 실패하면 전체 롤백됩니다.
+
+### 마지막 교체 시기 (lastReplacementPeriod)
+선택지별 기간의 평균치를 교체일자로 적용합니다.
+
+| 선택지 | enum | 적용 날짜 |
+|--------|------|-----------|
+| 1주일 이내 | WITHIN_WEEK | 4일 전 |
+| 2-4주 전 | WITHIN_MONTH | 21일 전 |
+| 1-3개월 전 | WITHIN_THREE_MONTHS | 45일 전 |
+| 3개월 이전 | OVER_THREE_MONTHS | 90일 전 |
+| 미선택 | null | 오늘 |""",
     )
     @ApiResponses(
         value = [
