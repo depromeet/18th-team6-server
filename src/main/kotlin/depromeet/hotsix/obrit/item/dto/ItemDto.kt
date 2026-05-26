@@ -26,9 +26,12 @@ data class CreateItemRequest(
     val count: Int,
 
     @field:Schema(
-        description = "마지막 교체 시기. 기간의 평균치를 교체일자로 사용. " +
-            "WITHIN_WEEK=4일 전, WITHIN_MONTH=21일 전, WITHIN_THREE_MONTHS=45일 전, OVER_THREE_MONTHS=90일 전. " +
-            "미입력 시 오늘로 설정.",
+        description = "마지막 교체 시기. 기간의 평균치를 교체일자로 적용. " +
+            "1주일 이내(WITHIN_WEEK)=4일 전, " +
+            "2-4주 전(WITHIN_MONTH)=21일 전, " +
+            "1-3개월 전(WITHIN_THREE_MONTHS)=45일 전, " +
+            "3개월 이전(OVER_THREE_MONTHS)=90일 전, " +
+            "미선택(null)=오늘.",
         example = "WITHIN_WEEK",
     )
     val lastReplacementPeriod: LastReplacementPeriod? = null,
