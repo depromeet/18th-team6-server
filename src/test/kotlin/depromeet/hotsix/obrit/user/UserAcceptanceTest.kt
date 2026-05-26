@@ -84,13 +84,13 @@ class UserAcceptanceTest {
         val request = RegisterUserRequest(type = "uuid", value = "550e8400-e29b-41d4-a716-446655440000")
 
         val first = userService.registerOrGet(request)
-        val deleted = userRepository.findById(first.id).orElseThrow()
+        val deleted = userRepository.findById(first.userId).orElseThrow()
         deleted.softDelete()
         userRepository.save(deleted)
 
         val second = userService.registerOrGet(request)
 
-        assert(first.id != second.id)
+        assert(first.userId != second.userId)
         assertEquals(2, userRepository.count())
     }
 }
