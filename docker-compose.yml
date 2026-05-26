@@ -1,6 +1,9 @@
 services:
   app:
     image: ${APP_IMAGE:-orbit-server:latest}
+    build:
+      context: .
+      dockerfile: Dockerfile
     container_name: orbit-server
     restart: unless-stopped
     ports:
@@ -12,6 +15,8 @@ services:
       DB_URL: ${DB_URL}
       DB_USERNAME: ${DB_USERNAME}
       DB_PWD: ${DB_PWD}
+      ADMIN_USERNAME: ${ADMIN_USERNAME}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
     networks:
       - orbit
 

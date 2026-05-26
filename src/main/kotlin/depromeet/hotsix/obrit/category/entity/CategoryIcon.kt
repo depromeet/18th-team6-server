@@ -12,12 +12,21 @@ import jakarta.persistence.Table
 @Table(name = "icons")
 class CategoryIcon(
     @Column(nullable = false)
-    val name: String,
+    var name: String,
 
     @Column(name = "icon_key", nullable = false)
     val key: String,
 
+    @Column(nullable = false, length = 1000)
+    var url: String,
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     val id: Long = 0,
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+
+    fun updateForAdmin(name: String, url: String) {
+        this.name = name.trim()
+        this.url = url.trim()
+    }
+}

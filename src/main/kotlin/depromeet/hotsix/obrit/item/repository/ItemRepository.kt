@@ -9,6 +9,8 @@ interface ItemRepository :
     JpaRepository<Item, Long>,
     ItemQueryRepository {
 
+    fun findAllByOrderByIdAsc(): List<Item>
+
     @Query(
         """
         select i
@@ -46,4 +48,8 @@ interface ItemRepository :
         @Param("userId")
         userId: Long,
     ): List<Item>
+
+    fun findAllByUserId(userId: Long): List<Item>
+
+    fun findAllByCategoryId(categoryId: Long): List<Item>
 }

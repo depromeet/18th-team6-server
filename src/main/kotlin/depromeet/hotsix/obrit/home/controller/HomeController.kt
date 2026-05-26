@@ -77,7 +77,20 @@ class HomeController(private val homeService: HomeService) {
 
     @Operation(
         summary = "홈 화면 - 버킷별 개수/목록",
-        description = "여분 보유 여부와 교체 시점으로 나눈 여섯 개 버킷별 item 개수와 목록을 반환합니다.",
+        description = """
+            위험도 기준 두 개 버킷(위험/경고)별 item 개수와 목록을 반환합니다.
+
+            분류 기준:
+            - DANGER(위험): 여분 없음 + 교체 지남/임박, 또는 여분 있음 + 교체 지남
+            - WARNING(경고): 여분 있음 + 교체 임박, 또는 여분 없음 + 교체 여유
+
+            동작:
+            - 응답의 buckets는 항상 [DANGER, WARNING] 순서로 두 버킷 모두 반환됩니다.
+              해당 버킷에 속한 아이템이 없으면 count=0, items=[] 로 반환됩니다.
+            - 양호(GOOD) 상태의 아이템은 어느 버킷에도 포함되지 않습니다.
+            - 각 버킷의 items는 교체 D-day 순으로 정렬됩니다.
+              교체일이 가장 많이 지난 아이템(D+N이 큰 순)이 먼저 노출됩니다.
+        """,
     )
     @ApiResponses(
         value = [

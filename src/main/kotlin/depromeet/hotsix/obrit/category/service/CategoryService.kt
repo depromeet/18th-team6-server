@@ -42,6 +42,9 @@ class CategoryService(
 
         val icon = categoryIconRepository.findById(request.iconId)
             .orElseThrow { BusinessException("유효하지 않은 아이콘입니다.") }
+        if (icon.deletedAt != null) {
+            throw BusinessException("유효하지 않은 아이콘입니다.")
+        }
 
         val category = Category(
             userId = userId,

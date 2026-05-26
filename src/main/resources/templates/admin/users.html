@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Obrit Admin - Users</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header class="admin-header">
+    <a class="admin-brand" href="/admin/users">Obrit administration</a>
+    <nav class="admin-nav">
+        <a href="/admin/users" class="active">Users</a>
+        <a href="/admin/icons">Icons</a>
+        <a href="/admin/categories">Categories</a>
+        <a href="/admin/items">Items</a>
+    </nav>
+</header>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; Users</div>
+<main class="content">
+    <div th:if="${message}" class="notice" th:text="${message}"></div>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div class="content-header">
+        <h1>Users</h1>
+        <ul class="object-tools">
+            <li><a class="addlink" href="/admin/users/add">Add user</a></li>
+        </ul>
+    </div>
+
+    <div class="changelist">
+        <section class="module results">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>UUID</th>
+                    <th>Name</th>
+                    <th>Created</th>
+                    <th>Updated</th>
+                    <th>Deleted</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="user : ${users}" th:classappend="${user.deletedAt != null} ? 'deleted'">
+                    <td>
+                        <a th:if="${user.deletedAt == null}" th:href="@{/admin/users/{id}/change(id=${user.id})}" th:text="${user.id}"></a>
+                        <span th:if="${user.deletedAt != null}" th:text="${user.id}"></span>
+                    </td>
+                    <td th:text="${user.uuid}"></td>
+                    <td>
+                        <a th:if="${user.deletedAt == null}" th:href="@{/admin/users/{id}/change(id=${user.id})}" th:text="${user.name}"></a>
+                        <span th:if="${user.deletedAt != null}" th:text="${user.name}"></span>
+                    </td>
+                    <td th:text="${user.createdAt}"></td>
+                    <td th:text="${user.updatedAt}"></td>
+                    <td th:text="${user.deletedAt}"></td>
+                    <td>
+                        <form th:if="${user.deletedAt == null}" th:action="@{/admin/users/{id}/delete(id=${user.id})}" method="post"
+                              onsubmit="return confirm('Delete this user and all user items/custom categories?')">
+                            <button class="deletelink" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <aside class="module filters">
+            <h2>Filter</h2>
+            <form class="filter-body" method="get" action="/admin/users">
+                <label><input type="checkbox" name="includeDeleted" value="true" th:checked="${includeDeleted}"> Include deleted</label>
+                <button type="submit">Apply</button>
+                <div class="row-count" th:text="|${#lists.size(users)} rows|"></div>
+            </form>
+        </aside>
+    </div>
+</main>
+</body>
+</html>

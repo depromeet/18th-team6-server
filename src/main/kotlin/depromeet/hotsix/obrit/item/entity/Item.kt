@@ -66,6 +66,10 @@ class Item(
         }
     }
 
+    fun updateSpareCount(quantity: Int) {
+        this.quantity = quantity
+    }
+
     fun replace(replacedDate: LocalDate) {
         lastReplacedDate = replacedDate
         recalculateNextReplacementDate()

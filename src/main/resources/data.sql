@@ -2,8 +2,8 @@
 -- 엔티티 @Column 변경 시 이 파일도 함께 수정. INSERT 순서: users → icons → categories (FK)
 -- 상세: CLAUDE.md «로컬 시드 데이터 (data.sql)»
 
-INSERT INTO users (id, name, created_at, updated_at)
-VALUES (1, 'dev-user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
+INSERT INTO users (name, created_at, updated_at)
+VALUES ('dev-user', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 INSERT INTO icons (id, name, icon_key, created_at, updated_at)
 VALUES (1, 'default', 'icons/default-category.png', CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
