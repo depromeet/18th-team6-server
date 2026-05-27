@@ -17,6 +17,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import jakarta.validation.constraints.Max
 import jakarta.validation.constraints.Min
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
@@ -158,7 +159,7 @@ interface ItemControllerApi {
     fun createItem(
         @Parameter(description = "사용자 ID", required = true, example = "1")
         userId: Long,
-        request: CreateItemRequest,
+        @Valid request: CreateItemRequest,
     ): ApiResponse<ItemResponse>
 
     @Operation(
@@ -223,7 +224,7 @@ interface ItemControllerApi {
     fun bulkCreateItems(
         @Parameter(description = "사용자 ID", required = true, example = "1")
         userId: Long,
-        request: BulkCreateItemRequest,
+        @Valid request: BulkCreateItemRequest,
     ): ApiResponse<List<ItemResponse>>
 
     @Operation(
@@ -275,7 +276,7 @@ interface ItemControllerApi {
         userId: Long,
         @Parameter(description = "소모품 ID", required = true, example = "1")
         itemId: Long,
-        request: UpdateItemRequest,
+        @Valid request: UpdateItemRequest,
     ): ApiResponse<ItemResponse>
 
     @Operation(
@@ -331,7 +332,7 @@ interface ItemControllerApi {
         userId: Long,
         @Parameter(description = "소모품 ID", required = true, example = "1")
         itemId: Long,
-        request: UpdateSpareCountRequest,
+        @Valid request: UpdateSpareCountRequest,
     ): ApiResponse<ItemResponse>
 
     @Operation(
