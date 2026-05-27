@@ -14,6 +14,9 @@ class CategoryIcon(
     @Column(nullable = false)
     var name: String,
 
+    @Column(name = "icon_key", nullable = false)
+    val key: String,
+
     @Column(nullable = false, length = 1000)
     var url: String,
 

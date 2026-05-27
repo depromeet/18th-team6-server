@@ -7,6 +7,7 @@ import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.common.CategoryItemCleaner
+import depromeet.hotsix.obrit.global.common.IconUrlResolver
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
@@ -20,12 +21,13 @@ class CategoryService(
     private val categoryIconRepository: CategoryIconRepository,
     private val userService: UserService,
     private val categoryItemCleaner: CategoryItemCleaner,
+    private val iconUrlResolver: IconUrlResolver,
 ) {
 
     @Transactional(readOnly = true)
-    fun listCategoryIcons(): List<CategoryIconResponse> = categoryIconRepository.findAllByOrderByIdDesc()
-        .filter { it.deletedAt == null }
-        .map { CategoryIconResponse(id = it.id, url = it.url) }
+    fun listCategoryIcons(): List<CategoryIconResponse> = categoryIconRepository.findAllByOrderByIdDesc().map {
+        CategoryIconResponse(id = it.id, url = iconUrlResolver.resolve(it.key))
+    }
 
     @Transactional
     fun createCategory(userId: Long, request: CreateCategoryRequest): CategoryResponse {
@@ -50,7 +52,7 @@ class CategoryService(
             iconId = icon.id,
         )
 
-        return categoryRepository.save(category).toResponse(icon.url)
+        return categoryRepository.save(category).toResponse(iconUrlResolver.resolve(icon.key))
     }
 
     @Transactional

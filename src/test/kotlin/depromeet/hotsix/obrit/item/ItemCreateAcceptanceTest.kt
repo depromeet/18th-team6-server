@@ -49,7 +49,7 @@ class ItemCreateAcceptanceTest {
         val user = userRepository.save(UserFixture.user(id = null))
         userId = requireNotNull(user.id)
         val icon = categoryIconRepository.save(
-            CategoryIcon(name = "칫솔", url = "https://cdn.obrit.app/icons/toothbrush.png"),
+            CategoryIcon(name = "칫솔", key = "", url = "https://cdn.obrit.app/icons/toothbrush.png"),
         )
         val category = categoryRepository.save(
             CategoryFixture.presetCategory(
