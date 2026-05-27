@@ -5,7 +5,7 @@
 
 CREATE TABLE users (
     id BIGINT NOT NULL AUTO_INCREMENT,
-    uuid VARCHAR(36) UNIQUE,
+    uuid VARCHAR(36),
     name VARCHAR(255) NOT NULL,
     created_at DATETIME(6) NOT NULL,
     updated_at DATETIME(6) NOT NULL,
