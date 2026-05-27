@@ -73,9 +73,9 @@ class ItemService(
             .roundToOneDecimal()
 
         return ItemDetailResponse(
-            id = requireNotNull(item.id),
+            itemId = requireNotNull(item.id),
             name = item.name,
-            category = ItemCategoryResponse(id = category.id, name = category.name),
+            category = ItemCategoryResponse(categoryId = category.id, name = category.name),
             iconUrl = category.iconUrl,
             status = detailStatus(dday, item.quantity),
             dday = dday,
@@ -98,7 +98,7 @@ class ItemService(
             .findByItemIdOrderByReplacedDateDescIdDesc(itemId, PageRequest.ofSize(limit))
             .map {
                 ReplacementHistoryResponse(
-                    id = requireNotNull(it.id),
+                    replacementId = requireNotNull(it.id),
                     replacedDate = it.replacedDate,
                 )
             }
@@ -257,7 +257,7 @@ class ItemService(
 
         return eventsWithCycleDays.takeLast(5).map { (event, cycleDays) ->
             ItemReplacementResponse(
-                id = event.id,
+                replacementId = event.id,
                 date = event.date,
                 cycleDays = cycleDays,
                 isCurrent = event.isCurrent,
@@ -289,7 +289,7 @@ class ItemService(
     private fun Double.roundToOneDecimal(): Double = round(this * 10) / 10
 
     private fun Item.toResponse(categoryName: String): ItemResponse = ItemResponse(
-        id = requireNotNull(id),
+        itemId = requireNotNull(id),
         categoryId = categoryId,
         categoryName = categoryName,
         name = name,

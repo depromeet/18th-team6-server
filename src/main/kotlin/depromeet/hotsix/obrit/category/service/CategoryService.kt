@@ -26,7 +26,7 @@ class CategoryService(
 
     @Transactional(readOnly = true)
     fun listCategoryIcons(): List<CategoryIconResponse> = categoryIconRepository.findAllByOrderByIdDesc().map {
-        CategoryIconResponse(id = it.id, url = iconUrlResolver.resolve(it.key))
+        CategoryIconResponse(iconId = it.id, url = iconUrlResolver.resolve(it.key))
     }
 
     @Transactional
@@ -73,7 +73,7 @@ class CategoryService(
     }
 
     private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
-        id = requireNotNull(id),
+        categoryId = requireNotNull(id),
         name = name,
         iconUrl = iconUrl,
         userId = userId,
