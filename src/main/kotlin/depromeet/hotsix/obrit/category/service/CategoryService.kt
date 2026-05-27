@@ -7,11 +7,12 @@ import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.common.CategoryItemCleaner
-import depromeet.hotsix.obrit.global.common.IconUrlResolver
+import depromeet.hotsix.obrit.global.common.storage.UrlResolver
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.user.service.UserService
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -21,7 +22,7 @@ class CategoryService(
     private val categoryIconRepository: CategoryIconRepository,
     private val userService: UserService,
     private val categoryItemCleaner: CategoryItemCleaner,
-    private val iconUrlResolver: IconUrlResolver,
+    @Qualifier("s3PublicUrlResolver") private val iconUrlResolver: UrlResolver,
 ) {
 
     @Transactional(readOnly = true)
