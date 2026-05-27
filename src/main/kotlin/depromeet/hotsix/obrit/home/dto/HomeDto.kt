@@ -34,7 +34,6 @@ data class BucketItemResponse(
     val spareQuantity: Int,
     @field:Schema(description = "아이템 카테고리의 아이콘 URL", example = "https://cdn.example.com/icons/toothbrush.png")
     val iconUrl: String,
-    val spareQuantity: Int,
     val nextReplacementDate: LocalDate,
     val status: ItemStatus,
 )
