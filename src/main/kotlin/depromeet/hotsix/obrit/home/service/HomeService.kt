@@ -81,12 +81,12 @@ class HomeService(
         return CursorSliceResponse.fromFetched(
             fetchedContent = items.map { it.toHomeItemCard(today, iconUrlMapByCategoryId[it.categoryId].orEmpty()) },
             size = pageSize,
-            cursorSelector = { it.id },
+            cursorSelector = { it.itemId },
         )
     }
 
     private fun ItemListSnapshot.toHomeItemCard(today: LocalDate, iconUrl: String): HomeItemCard = HomeItemCard(
-        id = id,
+        itemId = id,
         name = name,
         iconUrl = iconUrl,
         daysInUse = ChronoUnit.DAYS.between(lastReplacedDate, today).toInt().coerceAtLeast(0),

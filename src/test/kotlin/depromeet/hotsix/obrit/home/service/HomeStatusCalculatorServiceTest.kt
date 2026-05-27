@@ -70,8 +70,8 @@ class HomeStatusCalculatorServiceTest {
         assertEquals(listOf(HomeRiskBucket.DANGER, HomeRiskBucket.WARNING), result.itemBuckets.map { it.bucket })
         assertEquals(listOf(3, 2), result.itemBuckets.map { it.count })
 
-        val dangerIds = result.itemBuckets[0].items.map { it.id }
-        val warningIds = result.itemBuckets[1].items.map { it.id }
+        val dangerIds = result.itemBuckets[0].items.map { it.itemId }
+        val warningIds = result.itemBuckets[1].items.map { it.itemId }
         assertEquals(listOf(1L, 3L, 2L), dangerIds)
         assertEquals(listOf(4L, 5L), warningIds)
     }
@@ -87,7 +87,7 @@ class HomeStatusCalculatorServiceTest {
         val result = calculator.calculate(today, items)
 
         val dangerItems = result.itemBuckets.first { it.bucket == HomeRiskBucket.DANGER }.items
-        assertEquals(listOf(2L, 3L, 1L), dangerItems.map { it.id })
+        assertEquals(listOf(2L, 3L, 1L), dangerItems.map { it.itemId })
     }
 
     private fun item(id: Long, daysUntil: Long, quantity: Int): ItemSnapshot = ItemSnapshot(
