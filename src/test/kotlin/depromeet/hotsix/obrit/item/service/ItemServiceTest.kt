@@ -105,7 +105,7 @@ class ItemServiceTest {
         assertEquals(ItemDetailStatus.DANGER, result.status)
         assertEquals(-1, result.dday)
         assertEquals("D+1", result.ddayLabel)
-        assertEquals(0, result.spareCount)
+        assertEquals(0, result.spareQuantity)
         assertEquals(today.minusDays(31), result.lastReplacedDate)
         assertEquals(today.minusDays(1), result.nextReplacementDate)
         assertEquals(31, result.usedDays)

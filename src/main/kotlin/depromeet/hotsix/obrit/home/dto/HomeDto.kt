@@ -31,9 +31,9 @@ data class ItemBucketResponse(val bucket: HomeRiskBucket, val count: Int, val it
 data class BucketItemResponse(
     val itemId: Long,
     val name: String,
+    val spareQuantity: Int,
     @field:Schema(description = "아이템 카테고리의 아이콘 URL", example = "https://cdn.example.com/icons/toothbrush.png")
     val iconUrl: String,
-    val count: Int,
     val nextReplacementDate: LocalDate,
     val status: ItemStatus,
 )

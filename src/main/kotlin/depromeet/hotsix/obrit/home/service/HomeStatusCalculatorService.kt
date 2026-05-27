@@ -136,7 +136,7 @@ class HomeStatusCalculatorService {
             itemId = id,
             name = name,
             iconUrl = iconUrl,
-            count = quantity,
+            spareQuantity = quantity,
             nextReplacementDate = nextReplacementDate,
             status = status,
         )

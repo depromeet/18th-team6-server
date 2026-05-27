@@ -21,9 +21,9 @@ data class CreateItemRequest(
     @field:NotBlank(message = "소모품 이름은 필수입니다.")
     val name: String,
 
-    @field:Schema(description = "소모품 수량", example = "12")
-    @field:PositiveOrZero(message = "수량은 0 이상이어야 합니다.")
-    val count: Int,
+    @field:Schema(description = "여분 수량", example = "12")
+    @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
+    val spareQuantity: Int,
 
     @field:Schema(
         description = "마지막 교체 시기. 기간의 평균치를 교체일자로 적용. " +
@@ -46,9 +46,9 @@ data class UpdateItemRequest(
     @field:Schema(description = "소모품 이름", example = "집 제로콜라")
     val name: String? = null,
 
-    @field:Schema(description = "소모품 수량", example = "6")
-    @field:PositiveOrZero(message = "수량은 0 이상이어야 합니다.")
-    val count: Int? = null,
+    @field:Schema(description = "여분 수량", example = "6")
+    @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
+    val spareQuantity: Int? = null,
 
     @field:Schema(description = "최근 교체일", example = "2026-04-18")
     val lastReplacedDate: LocalDate? = null,
@@ -63,7 +63,7 @@ data class UpdateSpareCountRequest(
     @field:Schema(description = "새 여분 수량. 0 이상이어야 합니다.", example = "3")
     @field:NotNull(message = "여분 수량은 필수입니다.")
     @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
-    val count: Int? = null,
+    val spareQuantity: Int? = null,
 )
 
 @Schema(description = "소모품 교체 등록 요청")
@@ -95,8 +95,8 @@ data class ItemResponse(
     @field:Schema(description = "소모품 이름", example = "사무실 제로콜라")
     val name: String,
 
-    @field:Schema(description = "소모품 수량", example = "12")
-    val count: Int,
+    @field:Schema(description = "여분 수량", example = "12")
+    val spareQuantity: Int,
 
     @field:Schema(description = "교체 주기(일)", example = "7")
     val replacementIntervalDays: Int,
@@ -132,7 +132,7 @@ data class ItemDetailResponse(
     val ddayLabel: String,
 
     @field:Schema(description = "여분 수량", example = "0")
-    val spareCount: Int,
+    val spareQuantity: Int,
 
     @field:Schema(description = "최근 교체일", example = "2026-03-03")
     val lastReplacedDate: LocalDate,

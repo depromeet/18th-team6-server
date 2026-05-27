@@ -57,7 +57,7 @@
                         <a th:if="${item.deletedAt == null}" th:href="@{/admin/items/{id}/change(id=${item.id})}" th:text="${item.name}"></a>
                         <span th:if="${item.deletedAt != null}" th:text="${item.name}"></span>
                     </td>
-                    <td th:text="${item.count}"></td>
+                    <td th:text="${item.spareQuantity}"></td>
                     <td th:text="${item.lastReplacedDate}"></td>
                     <td th:text="${item.nextReplacementDate}"></td>
                     <td th:text="${item.replacementIntervalDays}"></td>

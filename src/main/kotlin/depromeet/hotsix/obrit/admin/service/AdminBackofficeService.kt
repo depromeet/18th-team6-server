@@ -93,7 +93,7 @@ class AdminBackofficeService(
                     categoryId = item.categoryId,
                     categoryName = categoriesById[item.categoryId]?.name ?: "(deleted category)",
                     name = item.name,
-                    count = item.quantity,
+                    spareQuantity = item.quantity,
                     replacementIntervalDays = item.replacementIntervalDays,
                     lastReplacedDate = item.lastReplacedDate,
                     nextReplacementDate = item.nextReplacementDate,
@@ -254,7 +254,7 @@ class AdminBackofficeService(
                 userId = form.userId,
                 categoryId = form.categoryId,
                 name = form.name.trim(),
-                quantity = form.count,
+                quantity = form.spareQuantity,
                 replacementIntervalDays = form.replacementIntervalDays,
                 lastReplacedDate = lastReplacedDate,
                 nextReplacementDate = lastReplacedDate.plusDays(form.replacementIntervalDays.toLong()),
@@ -271,7 +271,7 @@ class AdminBackofficeService(
         item.categoryId = form.categoryId
         item.update(
             name = form.name,
-            quantity = form.count,
+            quantity = form.spareQuantity,
             replacementIntervalDays = form.replacementIntervalDays,
             lastReplacedDate = form.lastReplacedDate,
         )
@@ -325,7 +325,7 @@ class AdminBackofficeService(
         if (form.name.isBlank()) {
             throw BusinessException("아이템 이름은 필수입니다.")
         }
-        if (form.count < 0) {
+        if (form.spareQuantity < 0) {
             throw BusinessException("수량은 0 이상이어야 합니다.")
         }
         if (form.replacementIntervalDays <= 0) {

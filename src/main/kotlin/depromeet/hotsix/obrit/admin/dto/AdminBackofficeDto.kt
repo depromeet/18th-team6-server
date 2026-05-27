@@ -32,7 +32,7 @@ data class AdminItemRow(
     val categoryId: Long,
     val categoryName: String,
     val name: String,
-    val count: Int,
+    val spareQuantity: Int,
     val replacementIntervalDays: Int,
     val lastReplacedDate: LocalDate,
     val nextReplacementDate: LocalDate,
@@ -69,7 +69,7 @@ data class AdminItemForm(
     val userId: Long = 0,
     val categoryId: Long = 0,
     val name: String = "",
-    val count: Int = 0,
+    val spareQuantity: Int = 0,
     val lastReplacedDate: LocalDate? = null,
     val replacementIntervalDays: Int = 1,
 )

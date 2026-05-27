@@ -80,7 +80,7 @@ class ItemService(
             status = detailStatus(dday, item.quantity),
             dday = dday,
             ddayLabel = ddayLabel(dday),
-            spareCount = item.quantity,
+            spareQuantity = item.quantity,
             lastReplacedDate = item.lastReplacedDate,
             nextReplacementDate = item.nextReplacementDate,
             usedDays = usedDays,
@@ -145,7 +145,7 @@ class ItemService(
             userId = userId,
             categoryId = request.categoryId,
             name = request.name.trim(),
-            quantity = request.count,
+            quantity = request.spareQuantity,
             replacementIntervalDays = intervalDays,
             lastReplacedDate = lastReplacedDate,
             nextReplacementDate = lastReplacedDate.plusDays(intervalDays.toLong()),
@@ -165,7 +165,7 @@ class ItemService(
 
         item.update(
             name = name,
-            quantity = request.count,
+            quantity = request.spareQuantity,
             replacementIntervalDays = request.replacementIntervalDays,
             lastReplacedDate = request.lastReplacedDate,
         )
@@ -177,13 +177,13 @@ class ItemService(
 
     @Transactional
     fun updateSpareCount(userId: Long, itemId: Long, request: UpdateSpareCountRequest): ItemResponse {
-        val count = request.count ?: throw BusinessException("여분 수량은 필수입니다.")
-        if (count < 0) {
+        val spareQuantity = request.spareQuantity ?: throw BusinessException("여분 수량은 필수입니다.")
+        if (spareQuantity < 0) {
             throw BusinessException("여분 수량은 0 이상이어야 합니다.")
         }
 
         val item = findActiveItem(userId, itemId)
-        item.updateSpareCount(count)
+        item.updateSpareCount(spareQuantity)
 
         return item.toResponse(
             categoryName = categoryQueryService.getVisibleCategoryName(userId, item.categoryId),
@@ -293,7 +293,7 @@ class ItemService(
         categoryId = categoryId,
         categoryName = categoryName,
         name = name,
-        count = quantity,
+        spareQuantity = quantity,
         replacementIntervalDays = replacementIntervalDays,
         lastReplacedDate = lastReplacedDate,
         nextReplacementDate = nextReplacementDate,
