@@ -36,6 +36,14 @@ class GlobalExceptionHandler {
         val message = exception.allErrors.firstOrNull()?.defaultMessage ?: "Invalid request."
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(message))
     }
+
+    @ExceptionHandler(IllegalArgumentException::class)
+    fun handleIllegalArgumentException(exception: IllegalArgumentException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(exception.message ?: "잘못된 요청입니다."))
+
+    @ExceptionHandler(Exception::class)
+    fun handleGenericException(exception: Exception): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(ErrorResponse("예상치 못한 오류가 발생했습니다."))
 }
 
 @Schema(description = "에러 응답")
