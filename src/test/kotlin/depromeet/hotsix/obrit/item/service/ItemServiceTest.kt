@@ -61,6 +61,7 @@ class ItemServiceTest {
         val icon = categoryIconRepository.save(
             CategoryIcon(
                 name = "칫솔",
+                key = "",
                 url = "https://cdn.obrit.app/icons/toothbrush.png",
             ),
         )

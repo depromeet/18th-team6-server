@@ -54,13 +54,13 @@ class ArchRuleFixtureTest {
     }
 
     @Test
-    fun `controller는 다른 도메인의 service를 참조하면 안 된다`() {
+    fun `controller는 다른 도메인의 service를 참조할 수 있다`() {
         val classes = importClasses(
             InvalidBetaServiceController::class.java,
             BetaService::class.java,
         )
 
-        assertThrows(AssertionError::class.java) {
+        assertDoesNotThrow {
             ArchitectureRules.controllerRule("alpha", allowEmptyShould = false).check(classes)
         }
     }

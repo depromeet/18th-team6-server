@@ -52,4 +52,19 @@ interface ItemRepository :
     fun findAllByUserId(userId: Long): List<Item>
 
     fun findAllByCategoryId(categoryId: Long): List<Item>
+
+    @Query(
+        """
+        select i.categoryId, count(i)
+        from Item i
+        where i.userId = :userId
+          and i.categoryId in :categoryIds
+          and i.deletedAt is null
+        group by i.categoryId
+        """,
+    )
+    fun countByCategoryIdsAndUserId(
+        @Param("categoryIds") categoryIds: Collection<Long>,
+        @Param("userId") userId: Long,
+    ): List<Array<Any>>
 }

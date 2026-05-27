@@ -22,4 +22,7 @@ data class CategoryResponse(
 
     @field:Schema(description = "기본 교체 주기 (일)", example = "90")
     val defaultReplacementIntervalDays: Int,
+
+    @field:Schema(description = "카테고리에 등록된 소모품 수", example = "3")
+    val itemCount: Int = 0,
 )

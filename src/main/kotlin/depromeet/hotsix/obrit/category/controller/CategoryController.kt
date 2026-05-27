@@ -7,6 +7,7 @@ import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.category.service.CategoryService
 import depromeet.hotsix.obrit.global.dto.ApiResponse
+import depromeet.hotsix.obrit.item.service.ItemService
 import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -24,6 +25,7 @@ import org.springframework.web.bind.annotation.RestController
 class CategoryController(
     private val categoryService: CategoryService,
     private val categoryQueryService: CategoryQueryService,
+    private val itemService: ItemService,
 ) : CategoryControllerApi {
 
     @GetMapping("/icons")
@@ -32,7 +34,9 @@ class CategoryController(
 
     @GetMapping
     override fun listCategories(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<CategoryResponse>> {
-        val result = categoryQueryService.listAllAccessibleCategories(userId)
+        val categories = categoryQueryService.listAllAccessibleCategories(userId)
+        val itemCountMap = itemService.countByCategoryIds(userId, categories.map { it.id })
+        val result = categories.map { it.copy(itemCount = itemCountMap[it.id] ?: 0) }
         return ApiResponse.ok(result)
     }
 

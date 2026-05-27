@@ -63,7 +63,7 @@ class AdminBackofficeControllerTest {
         val user = userRepository.save(
             User(uuid = "admin-controller-user", name = "Admin Controller User"),
         )
-        val icon = categoryIconRepository.save(CategoryIcon(name = "default", url = "/icons/default.png"))
+        val icon = categoryIconRepository.save(CategoryIcon(name = "default", key = "", url = "/icons/default.png"))
         val category = categoryRepository.save(
             Category(
                 userId = null,

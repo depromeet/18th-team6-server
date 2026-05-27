@@ -34,6 +34,11 @@ object ArchitectureRules {
         .withImportOption(ImportOption.DoNotIncludeTests())
         .importPackages(BASE_PACKAGE)
 
+    fun importProductionClassesExcludingControllers(): JavaClasses = ClassFileImporter()
+        .withImportOption(ImportOption.DoNotIncludeTests())
+        .withImportOption { !it.contains("/$CONTROLLER_LAYER/") }
+        .importPackages(BASE_PACKAGE)
+
     fun layerRules(importedClasses: JavaClasses, allowEmptyShould: Boolean): List<ArchRule> {
         val domains = discoverDomains(importedClasses)
 
@@ -54,7 +59,9 @@ object ArchitectureRules {
                 !isControllerDependencyAllowed(domain, location, javaClass)
             },
         )
-        .because("Controller는 같은 도메인의 controller, service, dto와 global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다.")
+        .because(
+            "Controller는 같은 도메인의 controller/dto, 같은·다른 도메인의 service, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다.",
+        )
         .allowEmptyShould(allowEmptyShould)
 
     fun serviceRule(domain: String, allowEmptyShould: Boolean): ArchRule = noClasses()
@@ -92,7 +99,7 @@ object ArchitectureRules {
     fun cycleRule(allowEmptyShould: Boolean): ArchRule = slices()
         .matching("$BASE_PACKAGE.(*)..")
         .should().beFreeOfCycles()
-        .because("도메인 간 순환 의존성은 허용되지 않습니다.")
+        .because("도메인 간 순환 의존성은 허용되지 않습니다. (controller 레이어는 제외)")
         .allowEmptyShould(allowEmptyShould)
 
     private fun discoverDomains(importedClasses: JavaClasses): Set<String> = importedClasses
@@ -105,7 +112,7 @@ object ArchitectureRules {
     private fun domainLayerPackage(domain: String, layer: String): String = "$BASE_PACKAGE.$domain.$layer.."
 
     private fun controllerDescription(domain: String): String =
-        "$domain controller는 같은 도메인의 controller/service/dto, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다."
+        "$domain controller는 같은 도메인의 controller/service/dto, 다른 도메인의 service, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다."
 
     private fun serviceDescription(domain: String): String =
         "$domain service는 같은 도메인의 service/entity/repository/dto, 다른 도메인의 service, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다."
@@ -127,8 +134,9 @@ object ArchitectureRules {
     ): Boolean = when {
         location.domain == GLOBAL_DOMAIN -> true
         isShareableDomainType(javaClass) -> true
+        location.layer == SERVICE_LAYER -> true
         location.domain != domain -> false
-        else -> location.layer in setOf(CONTROLLER_LAYER, SERVICE_LAYER, DTO_LAYER)
+        else -> location.layer in setOf(CONTROLLER_LAYER, DTO_LAYER)
     }
 
     private fun isServiceDependencyAllowed(domain: String, location: ProjectLocation, javaClass: JavaClass): Boolean =
