@@ -302,6 +302,7 @@ class ItemService(
     private fun Item.toSnapshot(): ItemSnapshot = ItemSnapshot(
         id = requireNotNull(id),
         name = name,
+        categoryId = categoryId,
         nextReplacementDate = nextReplacementDate,
         quantity = quantity,
     )
@@ -309,6 +310,7 @@ class ItemService(
     private fun Item.toItemListSnapshot(): ItemListSnapshot = ItemListSnapshot(
         id = requireNotNull(id),
         name = name,
+        categoryId = categoryId,
         quantity = quantity,
         lastReplacedDate = lastReplacedDate,
         nextReplacementDate = nextReplacementDate,
