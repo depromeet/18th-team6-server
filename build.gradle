@@ -39,6 +39,8 @@ dependencies {
 	implementation platform('software.amazon.awssdk:bom:2.31.63')
 	implementation 'software.amazon.awssdk:s3'
 	runtimeOnly 'com.mysql:mysql-connector-j'
+	implementation 'org.flywaydb:flyway-core'
+	implementation 'org.flywaydb:flyway-mysql'
 	testImplementation 'org.springframework.boot:spring-boot-starter-test'
 	testImplementation 'org.jetbrains.kotlin:kotlin-test-junit5'
 	testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
