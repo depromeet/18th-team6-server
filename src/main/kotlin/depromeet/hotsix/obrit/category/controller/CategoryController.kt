@@ -8,7 +8,6 @@ import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.category.service.CategoryService
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.item.service.ItemService
-import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -44,7 +43,7 @@ class CategoryController(
     @ResponseStatus(HttpStatus.CREATED)
     override fun createCategory(
         @RequestHeader("X-User-Id") userId: Long,
-        @Valid @RequestBody request: CreateCategoryRequest,
+        @RequestBody request: CreateCategoryRequest,
     ): ApiResponse<CategoryResponse> = ApiResponse.ok(categoryService.createCategory(userId, request))
 
     @DeleteMapping("/{categoryId}")

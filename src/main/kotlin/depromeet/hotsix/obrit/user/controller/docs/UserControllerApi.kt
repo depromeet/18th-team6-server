@@ -10,6 +10,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 @Tag(name = "회원", description = "회원 API")
@@ -51,5 +52,5 @@ interface UserControllerApi {
             ),
         ],
     )
-    fun register(request: RegisterUserRequest): ApiResponse<RegisterUserResponse>
+    fun register(@Valid request: RegisterUserRequest): ApiResponse<RegisterUserResponse>
 }

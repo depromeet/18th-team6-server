@@ -12,6 +12,7 @@ import io.swagger.v3.oas.annotations.media.ExampleObject
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponses
 import io.swagger.v3.oas.annotations.tags.Tag
+import jakarta.validation.Valid
 import io.swagger.v3.oas.annotations.responses.ApiResponse as SwaggerApiResponse
 
 @Tag(name = "카테고리", description = "카테고리 API")
@@ -139,7 +140,7 @@ interface CategoryControllerApi {
     fun createCategory(
         @Parameter(description = "사용자 ID", required = true, example = "1")
         userId: Long,
-        request: CreateCategoryRequest,
+        @Valid request: CreateCategoryRequest,
     ): ApiResponse<CategoryResponse>
 
     @Operation(

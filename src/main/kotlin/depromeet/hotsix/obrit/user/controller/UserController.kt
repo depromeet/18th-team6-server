@@ -5,7 +5,6 @@ import depromeet.hotsix.obrit.user.controller.docs.UserControllerApi
 import depromeet.hotsix.obrit.user.dto.request.RegisterUserRequest
 import depromeet.hotsix.obrit.user.dto.response.RegisterUserResponse
 import depromeet.hotsix.obrit.user.service.UserService
-import jakarta.validation.Valid
 import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestMapping
@@ -16,6 +15,6 @@ import org.springframework.web.bind.annotation.RestController
 class UserController(private val userService: UserService) : UserControllerApi {
 
     @PostMapping
-    override fun register(@Valid @RequestBody request: RegisterUserRequest): ApiResponse<RegisterUserResponse> =
+    override fun register(@RequestBody request: RegisterUserRequest): ApiResponse<RegisterUserResponse> =
         ApiResponse.ok(userService.registerOrGet(request))
 }
