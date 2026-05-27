@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 @Schema(description = "카테고리 응답")
 data class CategoryResponse(
     @field:Schema(description = "카테고리 ID", example = "100")
-    val id: Long,
+    val categoryId: Long,
 
     @field:Schema(description = "카테고리 이름", example = "칫솔")
     val name: String,
@@ -22,4 +22,7 @@ data class CategoryResponse(
 
     @field:Schema(description = "기본 교체 주기 (일)", example = "90")
     val defaultReplacementIntervalDays: Int,
+
+    @field:Schema(description = "카테고리에 등록된 소모품 수", example = "3")
+    val itemCount: Int = 0,
 )

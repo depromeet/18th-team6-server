@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.home.service
 
+import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.global.paging.CursorSliceResponse
 import depromeet.hotsix.obrit.global.paging.normalizePageSize
 import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
@@ -20,6 +21,7 @@ import kotlin.math.abs
 class HomeService(
     private val itemService: ItemService,
     private val homeStatusCalculatorService: HomeStatusCalculatorService,
+    private val categoryQueryService: CategoryQueryService,
     private val clock: Clock,
 ) {
 
@@ -44,8 +46,12 @@ class HomeService(
     fun getBuckets(userId: Long): HomeBucketsResponse {
         val today = LocalDate.now(clock)
         val items = itemService.findActiveSnapshotsByUserId(userId)
+        val iconUrlMapByCategoryId = categoryQueryService.findVisibleCategoryIconUrls(
+            userId,
+            items.map { it.categoryId },
+        )
 
-        return homeStatusCalculatorService.calculateBuckets(today, items)
+        return homeStatusCalculatorService.calculateBuckets(today, items, iconUrlMapByCategoryId)
     }
 
     @Transactional(readOnly = true)
@@ -68,16 +74,21 @@ class HomeService(
             today = today,
             size = pageSize + 1,
         )
+        val iconUrlMapByCategoryId = categoryQueryService.findVisibleCategoryIconUrls(
+            userId,
+            items.map { it.categoryId },
+        )
         return CursorSliceResponse.fromFetched(
-            fetchedContent = items.map { it.toHomeItemCard(today) },
+            fetchedContent = items.map { it.toHomeItemCard(today, iconUrlMapByCategoryId[it.categoryId].orEmpty()) },
             size = pageSize,
-            cursorSelector = { it.id },
+            cursorSelector = { it.itemId },
         )
     }
 
-    private fun ItemListSnapshot.toHomeItemCard(today: LocalDate): HomeItemCard = HomeItemCard(
-        id = id,
+    private fun ItemListSnapshot.toHomeItemCard(today: LocalDate, iconUrl: String): HomeItemCard = HomeItemCard(
+        itemId = id,
         name = name,
+        iconUrl = iconUrl,
         daysInUse = ChronoUnit.DAYS.between(lastReplacedDate, today).toInt().coerceAtLeast(0),
         replacementDday = replacementLabel(ChronoUnit.DAYS.between(today, nextReplacementDate)),
         spareQuantity = quantity,

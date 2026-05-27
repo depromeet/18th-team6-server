@@ -33,14 +33,14 @@ class UserService(private val userRepository: UserRepository) {
             throw BusinessException("UUID 형식이 올바르지 않습니다.")
         }
 
-        val user = userRepository.findByUuid(request.value) ?: createUser(request.value)
+        val user = userRepository.findByUuidAndDeletedAtIsNull(request.value) ?: createUser(request.value)
         return RegisterUserResponse(userId = requireNotNull(user.id), uuid = requireNotNull(user.uuid))
     }
 
     private fun createUser(uuid: String): User = try {
         userRepository.save(User(uuid = uuid))
     } catch (e: DataIntegrityViolationException) {
-        userRepository.findByUuid(uuid)
+        userRepository.findByUuidAndDeletedAtIsNull(uuid)
             ?: throw e
     }
 }

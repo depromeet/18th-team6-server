@@ -41,6 +41,13 @@ class ItemService(
 ) {
 
     @Transactional(readOnly = true)
+    fun countByCategoryIds(userId: Long, categoryIds: Collection<Long>): Map<Long, Int> {
+        if (categoryIds.isEmpty()) return emptyMap()
+        return itemRepository.countByCategoryIdsAndUserId(categoryIds, userId)
+            .associate { (it[0] as Long) to (it[1] as Long).toInt() }
+    }
+
+    @Transactional(readOnly = true)
     fun listItems(userId: Long): List<ItemResponse> {
         val items = itemRepository.findActiveByUserId(userId)
         val categoryNamesById = categoryQueryService.findVisibleCategoryNames(userId, items.map { it.categoryId })
@@ -66,9 +73,9 @@ class ItemService(
             .roundToOneDecimal()
 
         return ItemDetailResponse(
-            id = requireNotNull(item.id),
+            itemId = requireNotNull(item.id),
             name = item.name,
-            category = ItemCategoryResponse(id = category.id, name = category.name),
+            category = ItemCategoryResponse(categoryId = category.id, name = category.name),
             iconUrl = category.iconUrl,
             status = detailStatus(dday, item.quantity),
             dday = dday,
@@ -91,7 +98,7 @@ class ItemService(
             .findByItemIdOrderByReplacedDateDescIdDesc(itemId, PageRequest.ofSize(limit))
             .map {
                 ReplacementHistoryResponse(
-                    id = requireNotNull(it.id),
+                    replacementId = requireNotNull(it.id),
                     replacedDate = it.replacedDate,
                 )
             }
@@ -250,7 +257,7 @@ class ItemService(
 
         return eventsWithCycleDays.takeLast(5).map { (event, cycleDays) ->
             ItemReplacementResponse(
-                id = event.id,
+                replacementId = event.id,
                 date = event.date,
                 cycleDays = cycleDays,
                 isCurrent = event.isCurrent,
@@ -282,7 +289,7 @@ class ItemService(
     private fun Double.roundToOneDecimal(): Double = round(this * 10) / 10
 
     private fun Item.toResponse(categoryName: String): ItemResponse = ItemResponse(
-        id = requireNotNull(id),
+        itemId = requireNotNull(id),
         categoryId = categoryId,
         categoryName = categoryName,
         name = name,
@@ -295,6 +302,7 @@ class ItemService(
     private fun Item.toSnapshot(): ItemSnapshot = ItemSnapshot(
         id = requireNotNull(id),
         name = name,
+        categoryId = categoryId,
         nextReplacementDate = nextReplacementDate,
         quantity = quantity,
     )
@@ -302,6 +310,7 @@ class ItemService(
     private fun Item.toItemListSnapshot(): ItemListSnapshot = ItemListSnapshot(
         id = requireNotNull(id),
         name = name,
+        categoryId = categoryId,
         quantity = quantity,
         lastReplacedDate = lastReplacedDate,
         nextReplacementDate = nextReplacementDate,

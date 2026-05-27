@@ -5,6 +5,7 @@ import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategorySnapshot
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.global.common.IconUrlResolver
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.user.service.UserService
 import org.springframework.stereotype.Service
@@ -16,6 +17,7 @@ class CategoryQueryService(
     private val categoryRepository: CategoryRepository,
     private val categoryIconRepository: CategoryIconRepository,
     private val userService: UserService,
+    private val iconUrlResolver: IconUrlResolver,
 ) {
 
     fun listAllAccessibleCategories(userId: Long): List<CategoryResponse> {
@@ -25,9 +27,9 @@ class CategoryQueryService(
         val allCategories = presetCategories + userCategories
 
         val iconIds = allCategories.map { it.iconId }.distinct()
-        val iconUrlMap = categoryIconRepository.findAllById(iconIds).associate { it.id to it.url }
+        val iconKeyMap = categoryIconRepository.findAllById(iconIds).associate { it.id to it.key }
 
-        return allCategories.map { it.toResponse(iconUrlMap[it.iconId].orEmpty()) }
+        return allCategories.map { it.toResponse(iconUrlResolver.resolve(iconKeyMap[it.iconId].orEmpty())) }
     }
 
     fun getVisibleCategoryNameAndDefaultInterval(userId: Long, categoryId: Long): Pair<String, Int> {
@@ -61,8 +63,20 @@ class CategoryQueryService(
             .associate { requireNotNull(it.id) to it.name }
     }
 
+    fun findVisibleCategoryIconUrls(userId: Long, categoryIds: Collection<Long>): Map<Long, String> {
+        if (categoryIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        val categories = categoryRepository.findVisibleByIds(userId, categoryIds.toSet())
+        val iconUrlById = categoryIconRepository.findAllById(categories.map { it.iconId }.distinct())
+            .associate { it.id to it.url }
+
+        return categories.associate { requireNotNull(it.id) to iconUrlById[it.iconId].orEmpty() }
+    }
+
     private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
-        id = requireNotNull(id),
+        categoryId = requireNotNull(id),
         name = name,
         iconUrl = iconUrl,
         userId = userId,

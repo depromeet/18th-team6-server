@@ -161,7 +161,7 @@ class AdminBackofficeService(
         if (form.name.isBlank()) {
             throw BusinessException("사용자 이름은 필수입니다.")
         }
-        if (userRepository.findByUuid(form.uuid.trim()) != null) {
+        if (userRepository.findByUuidAndDeletedAtIsNull(form.uuid.trim()) != null) {
             throw BusinessException("이미 존재하는 UUID입니다.")
         }
         userRepository.save(User(uuid = form.uuid.trim(), name = form.name.trim()))
@@ -170,7 +170,7 @@ class AdminBackofficeService(
     @Transactional
     fun createIcon(form: AdminIconForm) {
         validateIconForm(form)
-        categoryIconRepository.save(CategoryIcon(name = form.name.trim(), url = form.url.trim()))
+        categoryIconRepository.save(CategoryIcon(name = form.name.trim(), key = "", url = form.url.trim()))
     }
 
     @Transactional

@@ -26,14 +26,21 @@ class HomeStatusCalculatorService {
         private const val SPARE_SCORE_WEIGHT = 0.4
     }
 
-    fun calculate(today: LocalDate, items: List<ItemSnapshot>): HomeResponse = HomeResponse(
+    fun calculate(
+        today: LocalDate,
+        items: List<ItemSnapshot>,
+        iconUrlMapByCategoryId: Map<Long, String> = emptyMap(),
+    ): HomeResponse = HomeResponse(
         overallStatus = calculateOverallStatus(today, items),
         myStatusSummary = calculateMyStatusSummary(today, items),
-        itemBuckets = bucketize(today, items),
+        itemBuckets = bucketize(today, items, iconUrlMapByCategoryId),
     )
 
-    fun calculateBuckets(today: LocalDate, items: List<ItemSnapshot>): HomeBucketsResponse =
-        HomeBucketsResponse(buckets = bucketize(today, items))
+    fun calculateBuckets(
+        today: LocalDate,
+        items: List<ItemSnapshot>,
+        iconUrlMapByCategoryId: Map<Long, String>,
+    ): HomeBucketsResponse = HomeBucketsResponse(buckets = bucketize(today, items, iconUrlMapByCategoryId))
 
     fun calculateOverallStatus(today: LocalDate, items: List<ItemSnapshot>): OverallStatusResponse {
         if (items.isEmpty()) {
@@ -100,7 +107,11 @@ class HomeStatusCalculatorService {
         )
     }
 
-    private fun bucketize(today: LocalDate, items: List<ItemSnapshot>): List<ItemBucketResponse> {
+    private fun bucketize(
+        today: LocalDate,
+        items: List<ItemSnapshot>,
+        iconUrlMapByCategoryId: Map<Long, String>,
+    ): List<ItemBucketResponse> {
         val grouped = items
             .mapNotNull { item ->
                 val status = ItemBucket.of(item.spareBand(), item.replacementBand(today)).status
@@ -113,16 +124,20 @@ class HomeStatusCalculatorService {
             ItemBucketResponse(
                 bucket = bucket,
                 count = bucketItems.size,
-                items = bucketItems.map { it.toBucketItemResponse(bucket.status) },
+                items = bucketItems.map {
+                    it.toBucketItemResponse(bucket.status, iconUrlMapByCategoryId[it.categoryId].orEmpty())
+                },
             )
         }
     }
 
-    private fun ItemSnapshot.toBucketItemResponse(status: ItemStatus): BucketItemResponse = BucketItemResponse(
-        id = id,
-        name = name,
-        spareQuantity = quantity,
-        nextReplacementDate = nextReplacementDate,
-        status = status,
-    )
+    private fun ItemSnapshot.toBucketItemResponse(status: ItemStatus, iconUrl: String): BucketItemResponse =
+        BucketItemResponse(
+            itemId = id,
+            name = name,
+            iconUrl = iconUrl,
+            spareQuantity = quantity,
+            nextReplacementDate = nextReplacementDate,
+            status = status,
+        )
 }

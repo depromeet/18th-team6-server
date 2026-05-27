@@ -26,7 +26,7 @@ depromeet.hotsix.obrit/
 
 ### 의존성 규칙
 
-- `controller` → 같은 도메인의 `controller`, `service`, `dto` + `global`만 사용
+- `controller` → 같은 도메인의 `controller`, `service`, `dto` + 다른 도메인의 `service` + `global` 사용 가능
 - `service` → 같은 도메인의 `service`, `entity`, `repository`, `dto`
   + 다른 도메인의 `service`
   + 다른 도메인 entity의 enum/value object

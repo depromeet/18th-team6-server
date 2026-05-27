@@ -59,7 +59,7 @@ class AdminBackofficeServiceTest {
         deletedUser.softDelete()
         userId = requireNotNull(user.id)
 
-        val icon = categoryIconRepository.save(CategoryIcon(name = "default", url = "/icons/default.png"))
+        val icon = categoryIconRepository.save(CategoryIcon(name = "default", key = "", url = "/icons/default.png"))
         iconId = icon.id
         val preset = categoryRepository.save(
             Category(

@@ -16,6 +16,13 @@ spring:
       ddl-auto: update
     open-in-view: false
 
+cloud:
+  aws:
+    s3:
+      bucket: ${S3_BUCKET}
+      region: ${S3_REGION}
+
+
 obrit:
   admin:
     username: ${ADMIN_USERNAME}
