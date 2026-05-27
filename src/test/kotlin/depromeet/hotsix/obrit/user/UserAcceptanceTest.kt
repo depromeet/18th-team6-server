@@ -78,4 +78,19 @@ class UserAcceptanceTest {
         }
         assertEquals("UUID 형식이 올바르지 않습니다.", exception.message)
     }
+
+    @Test
+    fun `삭제된_UUID로_다시_등록하면_새_회원이_생성된다`() {
+        val request = RegisterUserRequest(type = "uuid", value = "550e8400-e29b-41d4-a716-446655440000")
+
+        val first = userService.registerOrGet(request)
+        val deleted = userRepository.findById(first.userId).orElseThrow()
+        deleted.softDelete()
+        userRepository.save(deleted)
+
+        val second = userService.registerOrGet(request)
+
+        assert(first.userId != second.userId)
+        assertEquals(2, userRepository.count())
+    }
 }
