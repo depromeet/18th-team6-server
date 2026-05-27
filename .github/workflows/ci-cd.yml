@@ -75,18 +75,9 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
-            cat <<'EOF' > ~/deploy/.env
-            APP_IMAGE=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest
-            APP_PORT=${{ vars.APP_PORT || '8080' }}
-            TZ=Asia/Seoul
-            SPRING_PROFILES_ACTIVE=prod
-            JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0
-            DB_URL=${{ secrets.DB_URL }}
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PWD=${{ secrets.DB_PWD }}
-            ADMIN_USERNAME=${{ secrets.ADMIN_USERNAME }}
-            ADMIN_PASSWORD=${{ secrets.ADMIN_PASSWORD }}
-            EOF
+            cat <<'ENVEOF' > ~/deploy/.env
+            ${{ secrets.ENV_FILE }}
+            ENVEOF
 
             sudo docker compose -f ~/deploy/docker-compose.yml down
             sudo docker compose -f ~/deploy/docker-compose.yml pull --ignore-pull-failures
