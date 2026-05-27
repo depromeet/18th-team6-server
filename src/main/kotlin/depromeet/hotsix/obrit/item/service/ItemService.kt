@@ -41,6 +41,13 @@ class ItemService(
 ) {
 
     @Transactional(readOnly = true)
+    fun countByCategoryIds(userId: Long, categoryIds: Collection<Long>): Map<Long, Int> {
+        if (categoryIds.isEmpty()) return emptyMap()
+        return itemRepository.countByCategoryIdsAndUserId(categoryIds, userId)
+            .associate { (it[0] as Long) to (it[1] as Long).toInt() }
+    }
+
+    @Transactional(readOnly = true)
     fun listItems(userId: Long): List<ItemResponse> {
         val items = itemRepository.findActiveByUserId(userId)
         val categoryNamesById = categoryQueryService.findVisibleCategoryNames(userId, items.map { it.categoryId })
