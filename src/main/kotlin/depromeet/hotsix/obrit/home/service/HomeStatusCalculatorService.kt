@@ -133,7 +133,7 @@ class HomeStatusCalculatorService {
 
     private fun ItemSnapshot.toBucketItemResponse(status: ItemStatus, iconUrl: String): BucketItemResponse =
         BucketItemResponse(
-            itemId = id,
+            id = id,
             name = name,
             iconUrl = iconUrl,
             count = quantity,

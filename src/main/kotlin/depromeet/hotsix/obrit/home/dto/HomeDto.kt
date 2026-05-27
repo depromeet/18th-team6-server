@@ -29,8 +29,7 @@ data class ItemBucketResponse(val bucket: HomeRiskBucket, val count: Int, val it
 
 @Schema(description = "홈 버킷에 표시되는 아이템")
 data class BucketItemResponse(
-    @field:Schema(description = "아이템 ID", example = "1001")
-    val itemId: Long,
+    val id: Long,
     val name: String,
     @field:Schema(description = "아이템 카테고리의 아이콘 URL", example = "https://cdn.example.com/icons/toothbrush.png")
     val iconUrl: String,
@@ -45,7 +44,7 @@ data class HomeBucketsResponse(val buckets: List<ItemBucketResponse>)
 @Schema(description = "홈/리스트 화면의 무한 스크롤 목록에 표시되는 아이템 카드")
 data class HomeItemCard(
     @field:Schema(description = "아이템 ID", example = "1001")
-    val itemId: Long,
+    val id: Long,
     @field:Schema(description = "아이템 이름", example = "칫솔")
     val name: String,
     @field:Schema(

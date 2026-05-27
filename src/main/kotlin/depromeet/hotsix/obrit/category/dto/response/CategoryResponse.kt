@@ -6,7 +6,7 @@ import java.time.LocalDateTime
 @Schema(description = "카테고리 응답")
 data class CategoryResponse(
     @field:Schema(description = "카테고리 ID", example = "100")
-    val categoryId: Long,
+    val id: Long,
 
     @field:Schema(description = "카테고리 이름", example = "칫솔")
     val name: String,
