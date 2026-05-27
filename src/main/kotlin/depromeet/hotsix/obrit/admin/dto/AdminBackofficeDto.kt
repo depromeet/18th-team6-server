@@ -56,7 +56,7 @@ data class AdminIconRow(
 
 data class AdminUserForm(val uuid: String = "", val name: String = "")
 
-data class AdminIconForm(val name: String = "", val url: String = "")
+data class AdminIconForm(val name: String = "", val file: org.springframework.web.multipart.MultipartFile? = null)
 
 data class AdminCategoryForm(
     val userId: Long? = null,

@@ -14,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDate
@@ -146,11 +147,13 @@ class AdminBackofficeServiceTest {
 
     @Test
     fun `아이콘은 테이블로 조회하고 생성 수정 삭제할 수 있다`() {
-        adminBackofficeService.createIcon(AdminIconForm(name = "new", url = "/icons/new.png"))
+        val mockFile = MockMultipartFile("file", "new.png", "image/png", "test".toByteArray())
+        adminBackofficeService.createIcon(AdminIconForm(name = "new", file = mockFile))
         val created = adminBackofficeService.listIcons(includeDeleted = false)
             .first { it.name == "new" }
 
-        adminBackofficeService.updateIcon(created.id, AdminIconForm(name = "updated", url = "/icons/updated.png"))
+        val updateFile = MockMultipartFile("file", "updated.png", "image/png", "test".toByteArray())
+        adminBackofficeService.updateIcon(created.id, AdminIconForm(name = "updated", file = updateFile))
         val updated = adminBackofficeService.getIcon(created.id)
 
         adminBackofficeService.deleteIcon(created.id)
@@ -158,7 +161,7 @@ class AdminBackofficeServiceTest {
         val allIcons = adminBackofficeService.listIcons(includeDeleted = true)
 
         assertEquals("updated", updated.name)
-        assertEquals("/icons/updated.png", updated.url)
+        assertEquals("category-icon/updated.png", updated.url)
         assertTrue(activeIcons.none { it.id == created.id })
         assertTrue(allIcons.any { it.id == created.id && it.deletedAt != null })
     }

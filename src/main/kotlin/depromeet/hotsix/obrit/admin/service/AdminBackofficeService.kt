@@ -15,6 +15,8 @@ import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.global.common.storage.FileUploader
+import depromeet.hotsix.obrit.global.common.storage.UrlResolver
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.entity.Item
@@ -23,6 +25,7 @@ import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.entity.User
 import depromeet.hotsix.obrit.user.repository.UserRepository
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -36,6 +39,8 @@ class AdminBackofficeService(
     private val itemRepository: ItemRepository,
     private val itemReplacementHistoryRepository: ItemReplacementHistoryRepository,
     private val clock: Clock,
+    private val fileUploader: FileUploader,
+    @Qualifier("s3PublicUrlResolver") private val publicUrlResolver: UrlResolver,
 ) {
 
     @Transactional(readOnly = true)
@@ -170,15 +175,27 @@ class AdminBackofficeService(
     @Transactional
     fun createIcon(form: AdminIconForm) {
         validateIconForm(form)
-        categoryIconRepository.save(CategoryIcon(name = form.name.trim(), key = "", url = form.url.trim()))
+        val file = form.file!!
+        val key = fileUploader.upload(ICON_PREFIX, file)
+        val url = publicUrlResolver.resolve(key)
+        categoryIconRepository.save(CategoryIcon(name = form.name.trim(), key = key, url = url))
     }
 
     @Transactional
     fun updateIcon(iconId: Long, form: AdminIconForm) {
-        validateIconForm(form)
+        if (form.name.isBlank()) {
+            throw BusinessException("아이콘 이름은 필수입니다.")
+        }
         val icon = categoryIconRepository.findById(iconId)
             .orElseThrow { ResourceNotFoundException("존재하지 않는 아이콘입니다.") }
-        icon.updateForAdmin(name = form.name, url = form.url)
+        val file = form.file
+        if (file != null && !file.isEmpty) {
+            val key = fileUploader.upload(ICON_PREFIX, file)
+            val url = publicUrlResolver.resolve(key)
+            icon.updateForAdmin(name = form.name, key = key, url = url)
+        } else {
+            icon.updateForAdmin(name = form.name, key = icon.key, url = icon.url)
+        }
     }
 
     @Transactional
@@ -316,9 +333,13 @@ class AdminBackofficeService(
         if (form.name.isBlank()) {
             throw BusinessException("아이콘 이름은 필수입니다.")
         }
-        if (form.url.isBlank()) {
-            throw BusinessException("아이콘 URL은 필수입니다.")
+        if (form.file == null || form.file.isEmpty) {
+            throw BusinessException("아이콘 이미지 파일은 필수입니다.")
         }
+    }
+
+    companion object {
+        private const val ICON_PREFIX = "category-icon"
     }
 
     private fun validateItemForm(form: AdminItemForm) {
