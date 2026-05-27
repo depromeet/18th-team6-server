@@ -17,6 +17,8 @@ services:
       DB_PWD: ${DB_PWD}
       ADMIN_USERNAME: ${ADMIN_USERNAME}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
+      S3_REGION: ${S3_REGION}
+      S3_BUCKET: ${S3_BUCKET}
     networks:
       - orbit
 
