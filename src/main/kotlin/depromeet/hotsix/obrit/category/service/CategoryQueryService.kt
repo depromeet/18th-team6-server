@@ -74,7 +74,7 @@ class CategoryQueryService(
     }
 
     private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
-        id = requireNotNull(id),
+        categoryId = requireNotNull(id),
         name = name,
         iconUrl = iconUrl,
         userId = userId,

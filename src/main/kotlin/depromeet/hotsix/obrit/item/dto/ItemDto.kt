@@ -84,7 +84,7 @@ data class BulkCreateItemRequest(
 @Schema(description = "소모품 응답")
 data class ItemResponse(
     @field:Schema(description = "소모품 ID", example = "1")
-    val id: Long,
+    val itemId: Long,
 
     @field:Schema(description = "소모품 종류 ID", example = "200")
     val categoryId: Long,
@@ -111,7 +111,7 @@ data class ItemResponse(
 @Schema(description = "소모품 상세 응답")
 data class ItemDetailResponse(
     @field:Schema(description = "소모품 ID", example = "1")
-    val id: Long,
+    val itemId: Long,
 
     @field:Schema(description = "소모품명", example = "회사용 칫솔")
     val name: String,
@@ -159,7 +159,7 @@ data class ItemDetailResponse(
 @Schema(description = "소모품 카테고리 정보")
 data class ItemCategoryResponse(
     @field:Schema(description = "카테고리 ID", example = "200")
-    val id: Long,
+    val categoryId: Long,
 
     @field:Schema(description = "카테고리명", example = "칫솔")
     val name: String,
@@ -168,7 +168,7 @@ data class ItemCategoryResponse(
 @Schema(description = "소모품 교체 기록")
 data class ItemReplacementResponse(
     @field:Schema(description = "교체 기록 ID", example = "1")
-    val id: Long,
+    val replacementHistoryId: Long,
 
     @field:Schema(description = "교체 일자", example = "2025-11-23")
     val date: LocalDate,
@@ -183,7 +183,7 @@ data class ItemReplacementResponse(
 @Schema(description = "소모품 교체 이력 응답.")
 data class ReplacementHistoryResponse(
     @field:Schema(description = "교체 이력 ID.", example = "42")
-    val id: Long,
+    val replacementHistoryId: Long,
 
     @field:Schema(description = "교체일.", example = "2026-05-20")
     val replacedDate: LocalDate,
