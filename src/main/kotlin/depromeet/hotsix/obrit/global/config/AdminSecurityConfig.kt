@@ -4,6 +4,7 @@ import org.springframework.beans.factory.annotation.Value
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
 import org.springframework.core.annotation.Order
+import org.springframework.http.MediaType
 import org.springframework.security.config.Customizer
 import org.springframework.security.config.annotation.web.builders.HttpSecurity
 import org.springframework.security.core.userdetails.User
@@ -13,6 +14,7 @@ import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
 import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
+import org.springframework.security.web.util.matcher.MediaTypeRequestMatcher
 
 @Configuration
 class AdminSecurityConfig {
@@ -21,14 +23,24 @@ class AdminSecurityConfig {
     @Bean
     @Order(1)
     fun adminSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
+        // 브라우저(HTML 요청)는 /login 으로 리다이렉트, 그 외(테스트의 Basic 인증 등)는 기본 entryPoint(401 + WWW-Authenticate)
+        val browserMatcher = MediaTypeRequestMatcher(MediaType.TEXT_HTML).apply {
+            setIgnoredMediaTypes(setOf(MediaType.ALL))
+        }
+
         http
             .securityMatcher("/admin/**", "/login", "/logout")
             .authorizeHttpRequests { requests ->
                 requests.anyRequest().authenticated()
             }
             .httpBasic(Customizer.withDefaults())
-            .formLogin(Customizer.withDefaults())
-            .exceptionHandling { it.authenticationEntryPoint(LoginUrlAuthenticationEntryPoint("/login")) }
+            .formLogin { form -> form.defaultSuccessUrl("/admin", true) }
+            .exceptionHandling { exceptions ->
+                exceptions.defaultAuthenticationEntryPointFor(
+                    LoginUrlAuthenticationEntryPoint("/login"),
+                    browserMatcher,
+                )
+            }
             .csrf(Customizer.withDefaults())
 
         return http.build()
