@@ -9,4 +9,9 @@ data class ItemListSnapshot(
     val quantity: Int,
     val lastReplacedDate: LocalDate,
     val nextReplacementDate: LocalDate,
-)
+) {
+
+    fun replacementBand(today: LocalDate): ReplacementBand = ReplacementBand.of(today, nextReplacementDate)
+
+    fun spareBand(): SpareBand = SpareBand.of(quantity)
+}

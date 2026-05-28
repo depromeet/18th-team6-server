@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.home.service
 
 import depromeet.hotsix.obrit.home.entity.HomeRiskBucket
+import depromeet.hotsix.obrit.home.entity.ItemBucket
 import depromeet.hotsix.obrit.home.entity.OverallStatus
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemStatus
@@ -74,6 +75,29 @@ class HomeStatusCalculatorServiceTest {
         val warningIds = result.itemBuckets[1].items.map { it.itemId }
         assertEquals(listOf(1L, 3L, 2L), dangerIds)
         assertEquals(listOf(4L, 5L), warningIds)
+    }
+
+    @Test
+    fun `버킷 응답의 각 아이템은 여분 유무와 교체 시기 조합으로 itemBucket(6종)을 가진다`() {
+        val items = listOf(
+            item(id = 1, daysUntil = -1, quantity = 0), // NONE_OVERDUE
+            item(id = 2, daysUntil = 3, quantity = 0), // NONE_WARN
+            item(id = 3, daysUntil = 0, quantity = 5), // HAS_OVERDUE
+            item(id = 4, daysUntil = 3, quantity = 5), // HAS_WARN
+            item(id = 5, daysUntil = 4, quantity = 0), // NONE_SAFE
+        )
+
+        val result = calculator.calculate(today, items)
+
+        val itemBucketById = result.itemBuckets
+            .flatMap { it.items }
+            .associate { it.itemId to it.itemBucket }
+
+        assertEquals(ItemBucket.NONE_OVERDUE, itemBucketById[1L])
+        assertEquals(ItemBucket.NONE_WARN, itemBucketById[2L])
+        assertEquals(ItemBucket.HAS_OVERDUE, itemBucketById[3L])
+        assertEquals(ItemBucket.HAS_WARN, itemBucketById[4L])
+        assertEquals(ItemBucket.NONE_SAFE, itemBucketById[5L])
     }
 
     @Test

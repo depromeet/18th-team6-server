@@ -114,30 +114,38 @@ class HomeStatusCalculatorService {
     ): List<ItemBucketResponse> {
         val grouped = items
             .mapNotNull { item ->
-                val status = ItemBucket.of(item.spareBand(), item.replacementBand(today)).status
-                HomeRiskBucket.from(status)?.let { it to item }
+                val itemBucket = ItemBucket.of(item.spareBand(), item.replacementBand(today))
+                HomeRiskBucket.from(itemBucket.status)?.let { it to (item to itemBucket) }
             }
             .groupBy({ it.first }, { it.second })
 
         return HomeRiskBucket.entries.map { bucket ->
-            val bucketItems = grouped[bucket].orEmpty().sortedBy { it.nextReplacementDate }
+            val bucketItems = grouped[bucket].orEmpty().sortedBy { it.first.nextReplacementDate }
             ItemBucketResponse(
                 bucket = bucket,
                 count = bucketItems.size,
-                items = bucketItems.map {
-                    it.toBucketItemResponse(bucket.status, iconUrlMapByCategoryId[it.categoryId].orEmpty())
+                items = bucketItems.map { (item, itemBucket) ->
+                    item.toBucketItemResponse(
+                        status = bucket.status,
+                        itemBucket = itemBucket,
+                        iconUrl = iconUrlMapByCategoryId[item.categoryId].orEmpty(),
+                    )
                 },
             )
         }
     }
 
-    private fun ItemSnapshot.toBucketItemResponse(status: ItemStatus, iconUrl: String): BucketItemResponse =
-        BucketItemResponse(
-            itemId = id,
-            name = name,
-            iconUrl = iconUrl,
-            spareQuantity = quantity,
-            nextReplacementDate = nextReplacementDate,
-            status = status,
-        )
+    private fun ItemSnapshot.toBucketItemResponse(
+        status: ItemStatus,
+        itemBucket: ItemBucket,
+        iconUrl: String,
+    ): BucketItemResponse = BucketItemResponse(
+        itemId = id,
+        name = name,
+        iconUrl = iconUrl,
+        spareQuantity = quantity,
+        nextReplacementDate = nextReplacementDate,
+        status = status,
+        itemBucket = itemBucket,
+    )
 }
