@@ -12,7 +12,6 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder
 import org.springframework.security.crypto.password.PasswordEncoder
 import org.springframework.security.provisioning.InMemoryUserDetailsManager
 import org.springframework.security.web.SecurityFilterChain
-import org.springframework.security.web.authentication.LoginUrlAuthenticationEntryPoint
 
 @Configuration
 class AdminSecurityConfig {
@@ -26,9 +25,7 @@ class AdminSecurityConfig {
             .authorizeHttpRequests { requests ->
                 requests.anyRequest().authenticated()
             }
-            .httpBasic(Customizer.withDefaults())
-            .formLogin(Customizer.withDefaults())
-            .exceptionHandling { it.authenticationEntryPoint(LoginUrlAuthenticationEntryPoint("/login")) }
+            .formLogin { form -> form.defaultSuccessUrl("/admin", true) }
             .csrf(Customizer.withDefaults())
 
         return http.build()
