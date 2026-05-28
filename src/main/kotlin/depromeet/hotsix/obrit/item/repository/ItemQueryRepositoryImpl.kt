@@ -70,6 +70,8 @@ class ItemQueryRepositoryImpl(
                 )
             ItemOrder.USED_OLD -> item.lastReplacedDate.gt(cursor.lastReplacedDate)
                 .or(item.lastReplacedDate.eq(cursor.lastReplacedDate).and(item.id.gt(cursorId)))
+            ItemOrder.ITEM_NAME -> item.name.gt(cursor.name)
+                .or(item.name.eq(cursor.name).and(item.id.gt(cursorId)))
         }
     }
 
@@ -77,5 +79,6 @@ class ItemQueryRepositoryImpl(
         ItemOrder.REPLACEMENT_URGENT -> listOf(item.nextReplacementDate.asc(), item.id.asc())
         ItemOrder.SPARE_LOW -> listOf(item.quantity.asc(), item.nextReplacementDate.asc(), item.id.asc())
         ItemOrder.USED_OLD -> listOf(item.lastReplacedDate.asc(), item.id.asc())
+        ItemOrder.ITEM_NAME -> listOf(item.name.asc(), item.id.asc())
     }
 }
