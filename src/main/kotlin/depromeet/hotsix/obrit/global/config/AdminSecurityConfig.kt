@@ -22,7 +22,7 @@ class AdminSecurityConfig {
     @Order(1)
     fun adminSecurityFilterChain(http: HttpSecurity): SecurityFilterChain {
         http
-            .securityMatcher("/admin/**")
+            .securityMatcher("/admin/**", "/login", "/logout")
             .authorizeHttpRequests { requests ->
                 requests.anyRequest().authenticated()
             }
