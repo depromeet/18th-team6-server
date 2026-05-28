@@ -55,7 +55,7 @@ interface ItemRepository :
 
     @Query(
         """
-        select i.categoryId, count(i)
+        select i.categoryId, count(i), coalesce(sum(i.quantity), 0)
         from Item i
         where i.userId = :userId
           and i.categoryId in :categoryIds
