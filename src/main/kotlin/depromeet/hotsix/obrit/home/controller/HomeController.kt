@@ -142,7 +142,7 @@ class HomeController(private val homeService: HomeService) {
                 "- REPLACEMENT_URGENT: 교체가 임박한 순\n" +
                 "- SPARE_LOW: 여분 수량이 적은 순\n" +
                 "- USED_OLD: 오래 사용 중인 순\n" +
-                "- NAME_ALPHABETICAL: 아이템 이름 가나다 순",
+                "- ITEM_NAME: 아이템 이름 가나다 순",
             example = "USED_OLD",
         )
         @RequestParam(required = false, defaultValue = "USED_OLD") order: ItemOrder,
