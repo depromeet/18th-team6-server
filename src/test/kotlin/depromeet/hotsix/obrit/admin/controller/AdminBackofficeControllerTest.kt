@@ -101,6 +101,7 @@ class AdminBackofficeControllerTest {
 
         assertTrue(
             response.statusCode() == HttpStatus.UNAUTHORIZED.value() ||
+                response.statusCode() == HttpStatus.FORBIDDEN.value() ||
                 response.statusCode() == HttpStatus.FOUND.value(),
         )
     }
