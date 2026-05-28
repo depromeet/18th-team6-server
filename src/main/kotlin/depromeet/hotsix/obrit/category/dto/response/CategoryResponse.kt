@@ -27,5 +27,5 @@ data class CategoryResponse(
     val itemCount: Int = 0,
 
     @field:Schema(description = "카테고리에 등록된 소모품의 전체 수량 합", example = "12")
-    val totalQuantityOfItem: Int = 0,
+    val totalSpareQuantity: Int = 0,
 )

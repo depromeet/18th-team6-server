@@ -39,7 +39,7 @@ class CategoryController(
             val stats = statsMap[category.categoryId]
             category.copy(
                 itemCount = stats?.itemCount ?: 0,
-                totalQuantityOfItem = stats?.totalQuantity ?: 0,
+                totalSpareQuantity = stats?.totalQuantity ?: 0,
             )
         }
         return ApiResponse.ok(result)
