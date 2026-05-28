@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.global.common
+package depromeet.hotsix.obrit.global.common.storage
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

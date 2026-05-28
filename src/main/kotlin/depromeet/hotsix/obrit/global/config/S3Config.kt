@@ -1,6 +1,6 @@
 package depromeet.hotsix.obrit.global.config
 
-import depromeet.hotsix.obrit.global.common.S3Properties
+import depromeet.hotsix.obrit.global.common.storage.S3Properties
 import org.springframework.boot.context.properties.EnableConfigurationProperties
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
