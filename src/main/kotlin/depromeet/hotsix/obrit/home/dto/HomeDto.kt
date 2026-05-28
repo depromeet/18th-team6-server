@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.home.dto
 
 import depromeet.hotsix.obrit.home.entity.HomeRiskBucket
+import depromeet.hotsix.obrit.home.entity.ItemBucket
 import depromeet.hotsix.obrit.home.entity.OverallStatus
 import depromeet.hotsix.obrit.item.entity.ItemStatus
 import io.swagger.v3.oas.annotations.media.Schema
@@ -36,6 +37,17 @@ data class BucketItemResponse(
     val iconUrl: String,
     val nextReplacementDate: LocalDate,
     val status: ItemStatus,
+    @field:Schema(
+        description = "아이템 세부 상태 버킷(여분 유무 × 교체 시기 조합, 6종). 클라이언트 카드 배경 등 UI 분기 용도\n" +
+            "- NONE_OVERDUE: 여분 없음 + 교체 지남\n" +
+            "- NONE_WARN: 여분 없음 + 교체 임박\n" +
+            "- HAS_OVERDUE: 여분 있음 + 교체 지남\n" +
+            "- HAS_WARN: 여분 있음 + 교체 임박\n" +
+            "- NONE_SAFE: 여분 없음 + 교체 여유\n" +
+            "- HAS_SAFE: 여분 있음 + 교체 여유",
+        example = "NONE_OVERDUE",
+    )
+    val itemBucket: ItemBucket,
 )
 
 @Schema(description = "위험도(위험/경고) 기준으로 그룹화된 홈 버킷 목록. 항상 [DANGER, WARNING] 두 버킷이 반환됩니다.")
@@ -64,4 +76,15 @@ data class HomeItemCard(
     val replacementDday: String,
     @field:Schema(description = "여분 수량", example = "2")
     val spareQuantity: Int,
+    @field:Schema(
+        description = "아이템 세부 상태 버킷(여분 유무 × 교체 시기 조합, 6종). 클라이언트 카드 배경 등 UI 분기 용도\n" +
+            "- NONE_OVERDUE: 여분 없음 + 교체 지남\n" +
+            "- NONE_WARN: 여분 없음 + 교체 임박\n" +
+            "- HAS_OVERDUE: 여분 있음 + 교체 지남\n" +
+            "- HAS_WARN: 여분 있음 + 교체 임박\n" +
+            "- NONE_SAFE: 여분 없음 + 교체 여유\n" +
+            "- HAS_SAFE: 여분 있음 + 교체 여유",
+        example = "HAS_WARN",
+    )
+    val itemBucket: ItemBucket,
 )

@@ -90,6 +90,8 @@ class HomeController(private val homeService: HomeService) {
             - 양호(GOOD) 상태의 아이템은 어느 버킷에도 포함되지 않습니다.
             - 각 버킷의 items는 교체 D-day 순으로 정렬됩니다.
               교체일이 가장 많이 지난 아이템(D+N이 큰 순)이 먼저 노출됩니다.
+            - 각 아이템의 itemBucket 필드(6종)는 여분 유무 × 교체 시기 조합 세부 상태로,
+              클라이언트 카드 배경 등 UI 분기에 사용합니다.
         """,
     )
     @ApiResponses(
@@ -115,6 +117,8 @@ class HomeController(private val homeService: HomeService) {
             - 정렬(order), D-day, 최소 여분 수량 필터를 조합해 결과를 좁힙니다.
             - 응답의 nextCursor를 다음 요청의 cursor 파라미터로 그대로 넘기면 다음 페이지를 조회할 수 있습니다.
             - hasNext가 false이면 더 이상 페이지가 없습니다.
+            - 각 아이템 카드의 itemBucket 필드(6종)는 여분 유무 × 교체 시기 조합 세부 상태로,
+              클라이언트 카드 배경 등 UI 분기에 사용합니다.
         """,
     )
     @ApiResponses(

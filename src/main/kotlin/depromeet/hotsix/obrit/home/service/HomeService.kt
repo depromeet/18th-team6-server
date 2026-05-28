@@ -7,6 +7,7 @@ import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.HomeItemCard
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
+import depromeet.hotsix.obrit.home.entity.ItemBucket
 import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.service.ItemService
@@ -92,6 +93,7 @@ class HomeService(
         daysInUse = ChronoUnit.DAYS.between(lastReplacedDate, today).toInt().coerceAtLeast(0),
         replacementDday = replacementLabel(ChronoUnit.DAYS.between(today, nextReplacementDate)),
         spareQuantity = quantity,
+        itemBucket = ItemBucket.of(spareBand(), replacementBand(today)),
     )
 
     private fun replacementLabel(daysUntil: Long): String = when {
