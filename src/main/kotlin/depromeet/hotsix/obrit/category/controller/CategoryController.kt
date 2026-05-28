@@ -34,8 +34,14 @@ class CategoryController(
     @GetMapping
     override fun listCategories(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<CategoryResponse>> {
         val categories = categoryQueryService.listAllAccessibleCategories(userId)
-        val itemCountMap = itemService.countByCategoryIds(userId, categories.map { it.categoryId })
-        val result = categories.map { it.copy(itemCount = itemCountMap[it.categoryId] ?: 0) }
+        val statsMap = itemService.statsByCategoryIds(userId, categories.map { it.categoryId })
+        val result = categories.map { category ->
+            val stats = statsMap[category.categoryId]
+            category.copy(
+                itemCount = stats?.itemCount ?: 0,
+                totalQuantityOfItem = stats?.totalQuantity ?: 0,
+            )
+        }
         return ApiResponse.ok(result)
     }
 

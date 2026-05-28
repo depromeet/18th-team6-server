@@ -40,11 +40,13 @@ class ItemService(
     private val clock: Clock,
 ) {
 
+    data class CategoryItemStats(val itemCount: Int, val totalQuantity: Int)
+
     @Transactional(readOnly = true)
-    fun countByCategoryIds(userId: Long, categoryIds: Collection<Long>): Map<Long, Int> {
+    fun statsByCategoryIds(userId: Long, categoryIds: Collection<Long>): Map<Long, CategoryItemStats> {
         if (categoryIds.isEmpty()) return emptyMap()
         return itemRepository.countByCategoryIdsAndUserId(categoryIds, userId)
-            .associate { (it[0] as Long) to (it[1] as Long).toInt() }
+            .associate { (it[0] as Long) to CategoryItemStats((it[1] as Long).toInt(), (it[2] as Long).toInt()) }
     }
 
     @Transactional(readOnly = true)
