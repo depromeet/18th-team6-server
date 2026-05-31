@@ -61,8 +61,8 @@ class ItemServiceTest {
         val icon = categoryIconRepository.save(
             CategoryIcon(
                 name = "칫솔",
-                key = "",
-                url = "https://cdn.obrit.app/icons/toothbrush.png",
+                key = "icons/toothbrush.png",
+                url = "https://legacy.example.com/icons/toothbrush.png",
             ),
         )
         val category = categoryRepository.save(
@@ -101,7 +101,7 @@ class ItemServiceTest {
         assertEquals(itemId, result.itemId)
         assertEquals("회사용 칫솔", result.name)
         assertEquals("칫솔", result.category.name)
-        assertEquals("https://cdn.obrit.app/icons/toothbrush.png", result.iconUrl)
+        assertEquals("icons/toothbrush.png", result.iconUrl)
         assertEquals(ItemDetailStatus.DANGER, result.status)
         assertEquals(-1, result.dday)
         assertEquals("D+1", result.ddayLabel)
