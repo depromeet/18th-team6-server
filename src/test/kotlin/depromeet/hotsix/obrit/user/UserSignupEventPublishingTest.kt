@@ -11,6 +11,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import kotlin.test.assertEquals
+import kotlin.test.assertTrue
 
 // AFTER_COMMIT 리스너는 트랜잭션 커밋 후 실행되므로 @Transactional 롤백 환경에서는 호출되지 않는다.
 // 이 테스트는 의도적으로 실커밋 환경에서 동작하며, 사용/이벤트 데이터를 @BeforeEach/@AfterEach로 직접 정리한다.
@@ -50,8 +51,8 @@ class UserSignupEventPublishingTest {
         val event = events.first()
         assertEquals("signup_completed", event.eventName)
         assertEquals(response.userId, event.userId)
-        assert(event.properties.contains("signup_method")) { "properties=${event.properties}" }
-        assert(event.properties.contains("uuid")) { "properties=${event.properties}" }
+        assertTrue(event.properties.contains("signup_method"), "properties=${event.properties}")
+        assertTrue(event.properties.contains("uuid"), "properties=${event.properties}")
     }
 
     @Test
