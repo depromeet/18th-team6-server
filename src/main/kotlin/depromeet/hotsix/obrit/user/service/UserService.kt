@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.user.service
 
 import depromeet.hotsix.obrit.global.exception.BusinessException
+import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.global.log.analytics.event.SignupCompletedDomainEvent
 import depromeet.hotsix.obrit.user.dto.request.RegisterUserRequest
@@ -35,19 +36,21 @@ class UserService(private val userRepository: UserRepository, private val eventP
         }
 
         val existing = userRepository.findByUuidAndDeletedAtIsNull(request.value)
-        val user = existing ?: createUser(request.value).also {
-            eventPublisher.publishEvent(
-                SignupCompletedDomainEvent(userId = requireNotNull(it.id), signupMethod = request.type),
-            )
+        if (existing != null) {
+            return RegisterUserResponse(userId = requireNotNull(existing.id), uuid = requireNotNull(existing.uuid))
         }
+
+        val user = createUser(request.value)
+        eventPublisher.publishEvent(
+            SignupCompletedDomainEvent(userId = requireNotNull(user.id), signupMethod = request.type),
+        )
 
         return RegisterUserResponse(userId = requireNotNull(user.id), uuid = requireNotNull(user.uuid))
     }
 
     private fun createUser(uuid: String): User = try {
-        userRepository.save(User(uuid = uuid))
+        userRepository.saveAndFlush(User(uuid = uuid))
     } catch (e: DataIntegrityViolationException) {
-        userRepository.findByUuidAndDeletedAtIsNull(uuid)
-            ?: throw e
+        throw ConflictException("이미 가입 처리 중입니다. 잠시 후 다시 시도해주세요.", e)
     }
 }
