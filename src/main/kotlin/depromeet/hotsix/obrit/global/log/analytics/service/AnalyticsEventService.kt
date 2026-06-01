@@ -37,12 +37,12 @@ class AnalyticsEventService(private val repository: AnalyticsEventRepository, pr
     companion object {
         private const val SIGNUP_COMPLETED_EVENT_NAME = "signup_completed"
     }
-}
 
-private data class AnalyticsEvent(
-    val eventId: String = UUID.randomUUID().toString(),
-    val eventName: String,
-    val userId: Long?,
-    val occurredAt: LocalDateTime = LocalDateTime.now(),
-    val properties: Map<String, Any?>,
-)
+    private data class AnalyticsEvent(
+        val eventId: String = UUID.randomUUID().toString(),
+        val eventName: String,
+        val userId: Long?,
+        val occurredAt: LocalDateTime = LocalDateTime.now(),
+        val properties: Map<String, Any?>,
+    )
+}
