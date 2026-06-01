@@ -1,8 +1,8 @@
-package depromeet.hotsix.obrit.accesslog.service
+package depromeet.hotsix.obrit.global.log.access.service
 
-import depromeet.hotsix.obrit.accesslog.dto.AccessLogRecord
-import depromeet.hotsix.obrit.accesslog.entity.ApiAccessLog
-import depromeet.hotsix.obrit.accesslog.repository.ApiAccessLogRepository
+import depromeet.hotsix.obrit.global.log.access.dto.AccessLogRecord
+import depromeet.hotsix.obrit.global.log.access.entity.ApiAccessLog
+import depromeet.hotsix.obrit.global.log.access.repository.ApiAccessLogRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional

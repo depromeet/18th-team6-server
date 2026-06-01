@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.accesslog.dto
+package depromeet.hotsix.obrit.global.log.access.dto
 
 import java.time.LocalDateTime
 
