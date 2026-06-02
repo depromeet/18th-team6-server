@@ -175,7 +175,7 @@ class AdminBackofficeService(
     @Transactional
     fun createIcon(form: AdminIconForm) {
         validateIconForm(form)
-        val file = form.file!!
+        val file = requireNotNull(form.file) { "아이콘 이미지 파일은 필수입니다." }
         val key = fileUploader.upload(ICON_PREFIX, file)
         val url = publicUrlResolver.resolve(key)
         categoryIconRepository.save(CategoryIcon(name = form.name.trim(), key = key, url = url))
