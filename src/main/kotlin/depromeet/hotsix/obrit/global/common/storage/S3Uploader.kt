@@ -23,7 +23,7 @@ class S3Uploader(private val s3Client: S3Client, private val s3Properties: S3Pro
             .contentType(file.contentType)
             .build()
 
-        s3Client.putObject(request, RequestBody.fromInputStream(file.inputStream, file.size))
+        s3Client.putObject(request, RequestBody.fromBytes(file.bytes))
         return key
     }
 }
