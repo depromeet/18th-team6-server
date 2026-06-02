@@ -114,7 +114,7 @@ class HomeController(private val homeService: HomeService) {
             홈/리스트 화면의 아이템 카드 목록을 커서 기반 무한 스크롤로 반환합니다.
 
             동작:
-            - 정렬(order), D-day, 최소 여분 수량 필터를 조합해 결과를 좁힙니다.
+            - 정렬(order), D-day, 최대 여분 수량 필터를 조합해 결과를 좁힙니다.
             - 응답의 nextCursor를 다음 요청의 cursor 파라미터로 그대로 넘기면 다음 페이지를 조회할 수 있습니다.
             - hasNext가 false이면 더 이상 페이지가 없습니다.
             - 각 아이템 카드의 itemBucket 필드(6종)는 여분 유무 × 교체 시기 조합 세부 상태로,
@@ -154,7 +154,7 @@ class HomeController(private val homeService: HomeService) {
         )
         @RequestParam(required = false) dDay: Int?,
         @Parameter(
-            description = "최소 여분 수량 필터. 여분 수량이 이 값 이상인 아이템만 반환합니다. " +
+            description = "최대 여분 수량 필터. 여분 수량이 이 값 이하인 아이템만 반환합니다. " +
                 "값이 없으면 여분 수량 필터를 적용하지 않습니다.",
             example = "2",
         )
