@@ -15,7 +15,7 @@ class CategoryIcon(
     var name: String,
 
     @Column(name = "icon_key", nullable = false)
-    val key: String,
+    var key: String,
 
     @Column(nullable = false, length = 1000)
     var url: String,
@@ -25,8 +25,9 @@ class CategoryIcon(
     val id: Long = 0,
 ) : BaseTimeEntity() {
 
-    fun updateForAdmin(name: String, url: String) {
+    fun updateForAdmin(name: String, key: String, url: String) {
         this.name = name.trim()
+        this.key = key
         this.url = url.trim()
     }
 }

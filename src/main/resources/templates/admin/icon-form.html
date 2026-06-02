@@ -27,14 +27,15 @@
 
     <section class="module">
         <h2>Icon</h2>
-        <form method="post" th:action="${formAction}">
+        <form method="post" th:action="${formAction}" enctype="multipart/form-data">
             <div class="form-row">
                 <label for="name">Name</label>
                 <input id="name" name="name" required th:value="${isChange ? icon.name : ''}">
             </div>
             <div class="form-row">
-                <label for="url">URL</label>
-                <input id="url" name="url" required th:value="${isChange ? icon.url : ''}">
+                <label for="file">Image</label>
+                <input id="file" name="file" type="file" accept="image/*" th:required="${!isChange}">
+                <span th:if="${isChange}" class="help-text">변경하지 않으려면 비워두세요.</span>
             </div>
             <div class="form-row" th:if="${isChange}">
                 <label>Preview</label>
