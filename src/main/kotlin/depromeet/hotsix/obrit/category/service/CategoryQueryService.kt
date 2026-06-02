@@ -44,7 +44,7 @@ class CategoryQueryService(
     fun getVisibleCategorySnapshot(userId: Long, categoryId: Long): CategorySnapshot {
         val category = getVisibleCategoryOrThrow(userId, categoryId)
         val iconUrl = categoryIconRepository.findById(category.iconId)
-            .map { it.url }
+            .map { iconUrlResolver.resolve(it.key) }
             .orElseThrow { ResourceNotFoundException("존재하지 않는 카테고리 아이콘입니다.") }
 
         return CategorySnapshot(
@@ -70,10 +70,12 @@ class CategoryQueryService(
         }
 
         val categories = categoryRepository.findVisibleByIds(userId, categoryIds.toSet())
-        val iconUrlById = categoryIconRepository.findAllById(categories.map { it.iconId }.distinct())
-            .associate { it.id to it.url }
+        val iconKeyById = categoryIconRepository.findAllById(categories.map { it.iconId }.distinct())
+            .associate { it.id to it.key }
 
-        return categories.associate { requireNotNull(it.id) to iconUrlById[it.iconId].orEmpty() }
+        return categories.associate {
+            requireNotNull(it.id) to iconUrlResolver.resolve(iconKeyById[it.iconId].orEmpty())
+        }
     }
 
     private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
