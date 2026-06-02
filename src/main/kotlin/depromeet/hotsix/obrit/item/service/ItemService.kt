@@ -3,6 +3,8 @@ package depromeet.hotsix.obrit.item.service
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
+import depromeet.hotsix.obrit.global.log.analytics.event.ItemRegisteredDomainEvent
+import depromeet.hotsix.obrit.global.log.analytics.event.ReplacementRecordedDomainEvent
 import depromeet.hotsix.obrit.item.dto.BulkCreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
@@ -22,6 +24,7 @@ import depromeet.hotsix.obrit.item.entity.ItemSnapshot
 import depromeet.hotsix.obrit.item.repository.ItemReplacementHistoryRepository
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.service.UserService
+import org.springframework.context.ApplicationEventPublisher
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -38,6 +41,7 @@ class ItemService(
     private val categoryQueryService: CategoryQueryService,
     private val userService: UserService,
     private val clock: Clock,
+    private val eventPublisher: ApplicationEventPublisher,
 ) {
 
     data class CategoryItemStats(val itemCount: Int, val totalQuantity: Int)
@@ -127,16 +131,16 @@ class ItemService(
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
         userService.validateUserExist(userId)
-        return saveItem(userId, request)
+        return saveItem(userId, request, source = ITEM_SOURCE_SINGLE)
     }
 
     @Transactional
     fun bulkCreateItems(userId: Long, request: BulkCreateItemRequest): List<ItemResponse> {
         userService.validateUserExist(userId)
-        return request.items.map { saveItem(userId, it) }
+        return request.items.map { saveItem(userId, it, source = ITEM_SOURCE_BULK) }
     }
 
-    private fun saveItem(userId: Long, request: CreateItemRequest): ItemResponse {
+    private fun saveItem(userId: Long, request: CreateItemRequest, source: String): ItemResponse {
         val (categoryName, defaultReplacementIntervalDays) =
             categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, request.categoryId)
 
@@ -153,7 +157,18 @@ class ItemService(
             nextReplacementDate = lastReplacedDate.plusDays(intervalDays.toLong()),
         )
 
-        return itemRepository.save(item).toResponse(categoryName = categoryName)
+        val savedItem = itemRepository.save(item)
+        eventPublisher.publishEvent(
+            ItemRegisteredDomainEvent(
+                userId = userId,
+                itemId = requireNotNull(savedItem.id),
+                categoryId = savedItem.categoryId,
+                replacementIntervalDays = savedItem.replacementIntervalDays,
+                source = source,
+            ),
+        )
+
+        return savedItem.toResponse(categoryName = categoryName)
     }
 
     @Transactional
@@ -201,12 +216,23 @@ class ItemService(
     fun replaceItem(userId: Long, itemId: Long, request: CreateReplacementRequest): ItemResponse {
         val item = findActiveItem(userId, itemId)
         val replacedDate = request.replacedDate ?: LocalDate.now(clock)
+        val previousReplacedDate = item.lastReplacedDate
 
         item.replace(replacedDate)
-        itemReplacementHistoryRepository.save(
+        val history = itemReplacementHistoryRepository.save(
             ItemReplacementHistory(
                 item = item,
                 replacedDate = replacedDate,
+            ),
+        )
+
+        eventPublisher.publishEvent(
+            ReplacementRecordedDomainEvent(
+                userId = userId,
+                itemId = itemId,
+                replacementHistoryId = requireNotNull(history.id),
+                replacedDate = replacedDate,
+                daysSinceLastReplacement = ChronoUnit.DAYS.between(previousReplacedDate, replacedDate).toInt(),
             ),
         )
 
@@ -322,5 +348,7 @@ class ItemService(
 
     companion object {
         private const val REPLACEMENT_WARNING_DAYS = 3
+        private const val ITEM_SOURCE_SINGLE = "single"
+        private const val ITEM_SOURCE_BULK = "bulk"
     }
 }

@@ -1,5 +1,7 @@
 package depromeet.hotsix.obrit.global.log.analytics.listener
 
+import depromeet.hotsix.obrit.global.log.analytics.event.ItemRegisteredDomainEvent
+import depromeet.hotsix.obrit.global.log.analytics.event.ReplacementRecordedDomainEvent
 import depromeet.hotsix.obrit.global.log.analytics.event.SignupCompletedDomainEvent
 import depromeet.hotsix.obrit.global.log.analytics.service.AnalyticsEventService
 import org.slf4j.LoggerFactory
@@ -20,6 +22,36 @@ class AnalyticsEventListener(private val analyticsEventService: AnalyticsEventSe
             )
         } catch (t: Throwable) {
             log.error("signup_completed 이벤트 발행에 실패했습니다.", t)
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun handleItemRegistered(event: ItemRegisteredDomainEvent) {
+        try {
+            analyticsEventService.publishItemRegistered(
+                userId = event.userId,
+                itemId = event.itemId,
+                categoryId = event.categoryId,
+                replacementIntervalDays = event.replacementIntervalDays,
+                source = event.source,
+            )
+        } catch (t: Throwable) {
+            log.error("item_registered 이벤트 발행에 실패했습니다.", t)
+        }
+    }
+
+    @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
+    fun handleReplacementRecorded(event: ReplacementRecordedDomainEvent) {
+        try {
+            analyticsEventService.publishReplacementRecorded(
+                userId = event.userId,
+                itemId = event.itemId,
+                replacementHistoryId = event.replacementHistoryId,
+                replacedDate = event.replacedDate,
+                daysSinceLastReplacement = event.daysSinceLastReplacement,
+            )
+        } catch (t: Throwable) {
+            log.error("replacement_recorded 이벤트 발행에 실패했습니다.", t)
         }
     }
 }
