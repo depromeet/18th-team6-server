@@ -74,9 +74,9 @@ data class CreateReplacementRequest(
 
 @Schema(description = "소모품 다건 등록 요청.")
 data class BulkCreateItemRequest(
-    @field:Schema(description = "등록할 소모품 목록. 최소 1개, 최대 10개.")
+    @field:Schema(description = "등록할 소모품 목록. 최소 1개, 최대 20개.")
     @field:NotNull(message = "소모품 목록은 필수입니다.")
-    @field:Size(min = 1, max = 10, message = "소모품 목록은 1개 이상 10개 이하여야 합니다.")
+    @field:Size(min = 1, max = 20, message = "소모품 목록은 1개 이상 20개 이하여야 합니다.")
     @field:Valid
     val items: List<CreateItemRequest>,
 )

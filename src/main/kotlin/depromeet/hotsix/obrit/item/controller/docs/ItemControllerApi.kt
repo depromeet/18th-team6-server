@@ -164,7 +164,7 @@ interface ItemControllerApi {
 
     @Operation(
         summary = "소모품 다건 등록",
-        description = """한 번의 요청으로 여러 소모품을 등록합니다. 최소 1개, 최대 10개까지 등록할 수 있으며, 하나라도 실패하면 전체 롤백됩니다.
+        description = """한 번의 요청으로 여러 소모품을 등록합니다. 최소 1개, 최대 20개까지 등록할 수 있으며, 하나라도 실패하면 전체 롤백됩니다.
 
 ### 마지막 교체 시기 (lastReplacementPeriod)
 선택지별 기간의 평균치를 교체일자로 적용합니다.
@@ -193,7 +193,7 @@ interface ItemControllerApi {
                         examples = [
                             ExampleObject(
                                 name = "목록 크기 초과",
-                                value = """{"message": "소모품 목록은 1개 이상 10개 이하여야 합니다."}""",
+                                value = """{"message": "소모품 목록은 1개 이상 20개 이하여야 합니다."}""",
                             ),
                             ExampleObject(
                                 name = "목록 누락",
