@@ -18,12 +18,12 @@ class ItemPredicateRepository {
         return item.nextReplacementDate.loe(today.plusDays(dDay.toLong()))
     }
 
-    // 여분 수량이 spareQuantity 이상인 아이템만 남기는 필터. spareQuantity가 null이면 적용하지 않는다.
+    // 여분 수량이 spareQuantity 이하인 아이템만 남기는 필터. spareQuantity가 null이면 적용하지 않는다.
     fun filterSpareQuantity(item: QItem, spareQuantity: Int?): BooleanExpression? {
         if (spareQuantity == null) {
             return null
         }
 
-        return item.quantity.goe(spareQuantity)
+        return item.quantity.loe(spareQuantity)
     }
 }
