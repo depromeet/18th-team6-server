@@ -11,7 +11,6 @@ import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
 import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import depromeet.hotsix.obrit.item.service.ItemService
-import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
 import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
@@ -52,7 +51,7 @@ class ItemController(private val itemService: ItemService) : ItemControllerApi {
     @ResponseStatus(HttpStatus.CREATED)
     override fun bulkCreateItems(
         @RequestHeader("X-User-Id") userId: Long,
-        @Valid @RequestBody request: BulkCreateItemRequest,
+        @RequestBody request: BulkCreateItemRequest,
     ): ApiResponse<List<ItemResponse>> = ApiResponse.ok(itemService.bulkCreateItems(userId, request))
 
     @PatchMapping("/{itemId}")

@@ -4,6 +4,8 @@ import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.item.dto.CreateItemRequest
+import depromeet.hotsix.obrit.item.entity.LastReplacementPeriod
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.entity.User
 import depromeet.hotsix.obrit.user.repository.UserRepository
@@ -14,6 +16,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpStatus
 import org.springframework.test.context.ActiveProfiles
+import tools.jackson.databind.ObjectMapper
 import java.net.URI
 import java.net.http.HttpClient
 import java.net.http.HttpRequest
@@ -41,6 +44,9 @@ class ItemControllerBulkTest {
 
     @Autowired
     private lateinit var itemRepository: ItemRepository
+
+    @Autowired
+    private lateinit var objectMapper: ObjectMapper
 
     private var userId: Long = 0L
     private var categoryId: Long = 0L
@@ -97,16 +103,14 @@ class ItemControllerBulkTest {
     }
 
     private fun bulkRequestBody(itemCount: Int): String {
-        val items = (1..itemCount).joinToString(",") { index ->
-            """
-            {
-              "categoryId": $categoryId,
-              "name": "Bulk Item $index",
-              "spareQuantity": $index,
-              "lastReplacementPeriod": "WITHIN_WEEK"
-            }
-            """.trimIndent()
+        val items = (1..itemCount).map { index ->
+            CreateItemRequest(
+                categoryId = categoryId,
+                name = "Bulk Item $index",
+                spareQuantity = index,
+                lastReplacementPeriod = LastReplacementPeriod.WITHIN_WEEK,
+            )
         }
-        return """{"items":[$items]}"""
+        return objectMapper.writeValueAsString(mapOf("items" to items))
     }
 }
