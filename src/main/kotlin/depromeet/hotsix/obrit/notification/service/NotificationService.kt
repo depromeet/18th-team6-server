@@ -1,11 +1,12 @@
 package depromeet.hotsix.obrit.notification.service
 
-import depromeet.hotsix.obrit.global.exception.ForbiddenException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.notification.dto.response.ListNotificationResponse
+import depromeet.hotsix.obrit.notification.dto.response.MarkReadNotificationResponse
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 
 @Service
 class NotificationService(private val notificationRepository: NotificationRepository) {
@@ -25,21 +26,21 @@ class NotificationService(private val notificationRepository: NotificationReposi
     }
 
     @Transactional
-    fun markAsRead(userId: Long, notificationId: Long) {
-        val notification = notificationRepository.findById(notificationId)
-            .orElseThrow { ResourceNotFoundException("존재하지 않는 알림입니다.") }
-
-        if (!notification.isOwnedBy(userId)) {
-            throw ForbiddenException("알림을 읽을 권한이 없습니다.")
-        }
+    fun markAsRead(userId: Long, notificationId: Long): MarkReadNotificationResponse {
+        val notification = notificationRepository.findByIdAndUserId(notificationId, userId)
+            ?: throw ResourceNotFoundException("존재하지 않는 알림입니다.")
 
         notification.markAsRead()
+
+        return MarkReadNotificationResponse(
+            id = notification.id!!,
+            isRead = notification.isRead,
+            readAt = notification.readAt!!,
+        )
     }
 
     @Transactional
     fun markAsReadAll(userId: Long) {
-        notificationRepository.findAllByUserId(userId)
-            .filter { !it.isRead }
-            .forEach { it.markAsRead() }
+        notificationRepository.markAllAsReadByUserId(userId, LocalDateTime.now())
     }
 }

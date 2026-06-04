@@ -3,6 +3,7 @@ package depromeet.hotsix.obrit.notification.controller.docs
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.global.exception.ErrorResponse
 import depromeet.hotsix.obrit.notification.dto.response.ListNotificationResponse
+import depromeet.hotsix.obrit.notification.dto.response.MarkReadNotificationResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.enums.ParameterIn
@@ -46,16 +47,6 @@ interface NotificationControllerApi {
         value = [
             SwaggerApiResponse(responseCode = "200", description = "읽음 처리 완료"),
             SwaggerApiResponse(
-                responseCode = "403",
-                description = "알림을 읽을 권한이 없습니다.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
-            ),
-            SwaggerApiResponse(
                 responseCode = "404",
                 description = "존재하지 않는 알림입니다.",
                 content = [
@@ -72,7 +63,7 @@ interface NotificationControllerApi {
         userId: Long,
         @Parameter(description = "알림 ID", required = true, example = "1")
         notificationId: Long,
-    ): ApiResponse<Nothing?>
+    ): ApiResponse<MarkReadNotificationResponse>
 
     @Operation(
         summary = "알림 전체 읽음 처리",

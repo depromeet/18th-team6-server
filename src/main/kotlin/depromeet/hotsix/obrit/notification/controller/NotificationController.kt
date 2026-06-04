@@ -3,6 +3,7 @@ package depromeet.hotsix.obrit.notification.controller
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import depromeet.hotsix.obrit.notification.controller.docs.NotificationControllerApi
 import depromeet.hotsix.obrit.notification.dto.response.ListNotificationResponse
+import depromeet.hotsix.obrit.notification.dto.response.MarkReadNotificationResponse
 import depromeet.hotsix.obrit.notification.service.NotificationService
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PathVariable
@@ -27,9 +28,9 @@ class NotificationController(private val notificationService: NotificationServic
     override fun markAsRead(
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable notificationId: Long,
-    ): ApiResponse<Nothing?> {
-        notificationService.markAsRead(userId, notificationId)
-        return ApiResponse.ok(null)
+    ): ApiResponse<MarkReadNotificationResponse> {
+        val result = notificationService.markAsRead(userId, notificationId)
+        return ApiResponse.ok(result)
     }
 
     @PutMapping("/read-all")

@@ -16,8 +16,8 @@ class Notification(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
-    @Column(name = "user_id")
-    var userId: Long? = null,
+    @Column(name = "user_id", nullable = false)
+    var userId: Long,
 
     @Column(nullable = false)
     var title: String = "",
@@ -35,6 +35,7 @@ class Notification(
     fun isOwnedBy(userId: Long): Boolean = this.userId == userId
 
     fun markAsRead() {
+        if (isRead) return
         isRead = true
         readAt = LocalDateTime.now()
     }
