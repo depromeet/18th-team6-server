@@ -9,24 +9,12 @@ import depromeet.hotsix.obrit.notification.repository.FcmTokenRepository
 import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Async
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 
 @Service
 class FcmPushService(private val fcmTokenRepository: FcmTokenRepository) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Async
-    fun sendToToken(token: String, title: String, body: String) {
-        val message = buildMessage(token, title, body)
-        try {
-            FirebaseMessaging.getInstance().send(message)
-        } catch (e: FirebaseMessagingException) {
-            handleFailure(token, e)
-        }
-    }
-
-    @Async
-    @Transactional
     fun sendToUser(userId: Long, title: String, body: String) {
         val tokens = fcmTokenRepository.findAllByUserId(userId)
         if (tokens.isEmpty()) {
@@ -34,6 +22,15 @@ class FcmPushService(private val fcmTokenRepository: FcmTokenRepository) {
             return
         }
         tokens.forEach { sendToToken(it.token, title, body) }
+    }
+
+    private fun sendToToken(token: String, title: String, body: String) {
+        val message = buildMessage(token, title, body)
+        try {
+            FirebaseMessaging.getInstance().send(message)
+        } catch (e: FirebaseMessagingException) {
+            handleFailure(token, e)
+        }
     }
 
     private fun buildMessage(token: String, title: String, body: String): Message = Message.builder()
