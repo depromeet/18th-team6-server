@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.global.config
+package depromeet.hotsix.obrit.notification.config.firebase
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 

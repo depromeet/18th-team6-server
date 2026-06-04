@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.global.config
+package depromeet.hotsix.obrit.notification.config.firebase
 
 import com.google.auth.oauth2.GoogleCredentials
 import com.google.firebase.FirebaseApp
