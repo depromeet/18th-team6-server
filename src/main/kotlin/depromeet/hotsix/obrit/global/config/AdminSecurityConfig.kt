@@ -86,6 +86,8 @@ class AdminSecurityConfig {
             "/items", "/items/**",
             "/categories", "/categories/**",
             "/home", "/home/**",
+            "/fcm-tokens", "/fcm-tokens/**",
+            "/notifications", "/notifications/**",
             "/swagger-ui/**", "/swagger-ui.html",
             "/v3/api-docs/**",
         )
