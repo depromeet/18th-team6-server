@@ -7,3 +7,8 @@ spring:
 
 firebase:
   credentials-path: dummy-for-test
+
+obrit:
+  admin:
+    username: admin
+    password: admin

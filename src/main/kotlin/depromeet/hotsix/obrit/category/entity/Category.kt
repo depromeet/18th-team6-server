@@ -38,4 +38,10 @@ class Category(
         get() = userId == null
 
     fun isUserCategoryOf(userId: Long): Boolean = this.userId == userId
+
+    fun updateForAdmin(name: String, iconId: Long, defaultReplacementIntervalDays: Int) {
+        this.name = name.trim()
+        this.iconId = iconId
+        this.defaultReplacementIntervalDays = defaultReplacementIntervalDays
+    }
 }

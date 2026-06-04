@@ -5,7 +5,11 @@ import org.springframework.data.jpa.repository.JpaRepository
 import org.springframework.data.jpa.repository.Query
 import org.springframework.data.repository.query.Param
 
-interface ItemRepository : JpaRepository<Item, Long> {
+interface ItemRepository :
+    JpaRepository<Item, Long>,
+    ItemQueryRepository {
+
+    fun findAllByOrderByIdAsc(): List<Item>
 
     @Query(
         """
@@ -44,4 +48,23 @@ interface ItemRepository : JpaRepository<Item, Long> {
         @Param("userId")
         userId: Long,
     ): List<Item>
+
+    fun findAllByUserId(userId: Long): List<Item>
+
+    fun findAllByCategoryId(categoryId: Long): List<Item>
+
+    @Query(
+        """
+        select i.categoryId, count(i), coalesce(sum(i.quantity), 0)
+        from Item i
+        where i.userId = :userId
+          and i.categoryId in :categoryIds
+          and i.deletedAt is null
+        group by i.categoryId
+        """,
+    )
+    fun countByCategoryIdsAndUserId(
+        @Param("categoryIds") categoryIds: Collection<Long>,
+        @Param("userId") userId: Long,
+    ): List<Array<Any>>
 }

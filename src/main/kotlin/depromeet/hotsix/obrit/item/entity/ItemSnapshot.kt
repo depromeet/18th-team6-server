@@ -2,7 +2,16 @@ package depromeet.hotsix.obrit.item.entity
 
 import java.time.LocalDate
 
-data class ItemSnapshot(val id: Long, val name: String, val nextReplacementDate: LocalDate, val quantity: Int) {
+/**
+ * 홈 화면 상태 계산에 필요한 아이템 정보만 담는 읽기 전용 스냅샷.
+ */
+data class ItemSnapshot(
+    val id: Long,
+    val name: String,
+    val categoryId: Long,
+    val nextReplacementDate: LocalDate,
+    val quantity: Int,
+) {
 
     // 교체 시기는?
     fun replacementBand(today: LocalDate): ReplacementBand = ReplacementBand.of(today, nextReplacementDate)

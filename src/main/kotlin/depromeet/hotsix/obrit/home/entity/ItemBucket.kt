@@ -4,7 +4,7 @@ import depromeet.hotsix.obrit.item.entity.ItemStatus
 import depromeet.hotsix.obrit.item.entity.ReplacementBand
 import depromeet.hotsix.obrit.item.entity.SpareBand
 
-// 아이템 분류 버킷 6종류
+// 아이템 분류 버킷 6종류 (내부 세부 분류)
 enum class ItemBucket(val priority: Int, val status: ItemStatus) {
     NONE_OVERDUE(1, ItemStatus.DANGER),
     NONE_WARN(2, ItemStatus.DANGER),

@@ -48,9 +48,11 @@ class FcmTokenAcceptanceTest {
     fun `동일_토큰을_재등록하면_중복_저장되지_않는다`() {
         // Given
         `FCM 토큰을 등록한다`(userId = 1L, token = "same-token")
+            .andExpect(status().isOk)
 
         // When
         `FCM 토큰을 등록한다`(userId = 1L, token = "same-token")
+            .andExpect(status().isOk)
 
         // Then
         val allTokens = fcmTokenRepository.findAllByUserId(1L)
@@ -61,9 +63,11 @@ class FcmTokenAcceptanceTest {
     fun `같은_사용자가_다른_토큰을_등록하면_멀티_디바이스로_저장된다`() {
         // Given
         `FCM 토큰을 등록한다`(userId = 1L, token = "device-a-token")
+            .andExpect(status().isOk)
 
         // When
         `FCM 토큰을 등록한다`(userId = 1L, token = "device-b-token")
+            .andExpect(status().isOk)
 
         // Then
         val tokens = fcmTokenRepository.findAllByUserId(1L)
@@ -74,9 +78,11 @@ class FcmTokenAcceptanceTest {
     fun `다른_사용자가_동일_토큰을_등록하면_소유자가_변경된다`() {
         // Given: 유저1이 토큰 등록
         `FCM 토큰을 등록한다`(userId = 1L, token = "shared-device-token")
+            .andExpect(status().isOk)
 
         // When: 유저2가 같은 토큰 등록 (디바이스 주인 변경)
         `FCM 토큰을 등록한다`(userId = 2L, token = "shared-device-token")
+            .andExpect(status().isOk)
 
         // Then: 유저1은 토큰 없음, 유저2가 소유
         val user1Tokens = fcmTokenRepository.findAllByUserId(1L)

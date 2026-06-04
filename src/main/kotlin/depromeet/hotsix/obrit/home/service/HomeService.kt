@@ -1,18 +1,28 @@
 package depromeet.hotsix.obrit.home.service
 
+import depromeet.hotsix.obrit.category.service.CategoryQueryService
+import depromeet.hotsix.obrit.global.paging.CursorSliceResponse
+import depromeet.hotsix.obrit.global.paging.normalizePageSize
 import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
+import depromeet.hotsix.obrit.home.dto.HomeItemCard
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
+import depromeet.hotsix.obrit.home.entity.ItemBucket
+import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
+import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.service.ItemService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.temporal.ChronoUnit
+import kotlin.math.abs
 
 @Service
 class HomeService(
     private val itemService: ItemService,
     private val homeStatusCalculatorService: HomeStatusCalculatorService,
+    private val categoryQueryService: CategoryQueryService,
     private val clock: Clock,
 ) {
 
@@ -37,7 +47,58 @@ class HomeService(
     fun getBuckets(userId: Long): HomeBucketsResponse {
         val today = LocalDate.now(clock)
         val items = itemService.findActiveSnapshotsByUserId(userId)
+        val iconUrlMapByCategoryId = categoryQueryService.findVisibleCategoryIconUrls(
+            userId,
+            items.map { it.categoryId },
+        )
 
-        return homeStatusCalculatorService.calculateBuckets(today, items)
+        return homeStatusCalculatorService.calculateBuckets(today, items, iconUrlMapByCategoryId)
+    }
+
+    @Transactional(readOnly = true)
+    fun getItems(
+        userId: Long,
+        order: ItemOrder,
+        dDay: Int?,
+        spareQuantity: Int?,
+        cursor: Long?,
+        size: Int,
+    ): CursorSliceResponse<HomeItemCard> {
+        val today = LocalDate.now(clock)
+        val pageSize = normalizePageSize(size)
+        val items = itemService.findItemListSnapshots(
+            userId = userId,
+            order = order,
+            dDay = dDay,
+            spareQuantity = spareQuantity,
+            cursor = cursor,
+            today = today,
+            size = pageSize + 1,
+        )
+        val iconUrlMapByCategoryId = categoryQueryService.findVisibleCategoryIconUrls(
+            userId,
+            items.map { it.categoryId },
+        )
+        return CursorSliceResponse.fromFetched(
+            fetchedContent = items.map { it.toHomeItemCard(today, iconUrlMapByCategoryId[it.categoryId].orEmpty()) },
+            size = pageSize,
+            cursorSelector = { it.itemId },
+        )
+    }
+
+    private fun ItemListSnapshot.toHomeItemCard(today: LocalDate, iconUrl: String): HomeItemCard = HomeItemCard(
+        itemId = id,
+        name = name,
+        iconUrl = iconUrl,
+        daysInUse = ChronoUnit.DAYS.between(lastReplacedDate, today).toInt().coerceAtLeast(0),
+        replacementDday = replacementLabel(ChronoUnit.DAYS.between(today, nextReplacementDate)),
+        spareQuantity = quantity,
+        itemBucket = ItemBucket.of(spareBand(), replacementBand(today)),
+    )
+
+    private fun replacementLabel(daysUntil: Long): String = when {
+        daysUntil == 0L -> "교체 D-day"
+        daysUntil > 0 -> "교체 D-$daysUntil"
+        else -> "교체 D+${abs(daysUntil)}"
     }
 }

@@ -1,6 +1,9 @@
+server:
+  forward-headers-strategy: native
+
 spring:
   application:
-    name: orbit
+    name: obrit-api
   datasource:
     url: ${DB_URL}
     username: ${DB_USERNAME}
@@ -10,8 +13,25 @@ spring:
       mode: never
   jpa:
     hibernate:
-      ddl-auto: update
+      ddl-auto: validate
     open-in-view: false
 
 firebase:
   credentials-path: ${FIREBASE_CREDENTIALS_PATH}
+
+flyway:
+    enabled: true
+    baseline-on-migrate: true
+    baseline-version: 0
+
+cloud:
+  aws:
+    s3:
+      bucket: ${S3_BUCKET}
+      region: ${S3_REGION}
+
+
+obrit:
+  admin:
+    username: ${ADMIN_USERNAME}
+    password: ${ADMIN_PASSWORD}

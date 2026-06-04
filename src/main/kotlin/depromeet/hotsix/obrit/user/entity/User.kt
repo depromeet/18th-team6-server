@@ -15,6 +15,14 @@ class User(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     var id: Long? = null,
 
+    @Column(length = 36)
+    var uuid: String? = null,
+
     @Column(nullable = false)
     var name: String = "",
-) : BaseTimeEntity()
+) : BaseTimeEntity() {
+
+    fun updateName(name: String) {
+        this.name = name.trim()
+    }
+}

@@ -11,7 +11,7 @@ on:
 
 jobs:
   build-docker-image:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04-arm
 
     steps:
       - uses: actions/checkout@v4
@@ -54,17 +54,13 @@ jobs:
           username: ${{ secrets.DOCKER_USERNAME }}
           password: ${{ secrets.DOCKER_PWD }}
 
-      - name: Docker build
+      - name: Docker build & push
         env:
           DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
           DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
-        run: docker build --no-cache -t ${DOCKER_USERNAME}/${DOCKER_REPO}:latest .
-
-      - name: Docker Hub push
-        env:
-          DOCKER_USERNAME: ${{ secrets.DOCKER_USERNAME }}
-          DOCKER_REPO: ${{ secrets.DOCKER_REPO }}
-        run: docker push ${DOCKER_USERNAME}/${DOCKER_REPO}:latest
+        run: |
+          docker build -t ${DOCKER_USERNAME}/${DOCKER_REPO}:latest .
+          docker push ${DOCKER_USERNAME}/${DOCKER_REPO}:latest
 
   deploy:
     needs: build-docker-image
@@ -79,16 +75,9 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
-            cat <<'EOF' > ~/deploy/.env
-            APP_IMAGE=${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest
-            APP_PORT=${{ vars.APP_PORT || '8080' }}
-            TZ=Asia/Seoul
-            SPRING_PROFILES_ACTIVE=prod
-            JAVA_TOOL_OPTIONS=-XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0
-            DB_URL=${{ secrets.DB_URL }}
-            DB_USERNAME=${{ secrets.DB_USERNAME }}
-            DB_PWD=${{ secrets.DB_PWD }}
-            EOF
+            cat <<'ENVEOF' > ~/deploy/.env
+            ${{ secrets.ENV_FILE }}
+            ENVEOF
 
             sudo docker compose -f ~/deploy/docker-compose.yml down
             sudo docker compose -f ~/deploy/docker-compose.yml pull --ignore-pull-failures

@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Obrit Admin - Categories</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header class="admin-header">
+    <a class="admin-brand" href="/admin/users">Obrit administration</a>
+    <nav class="admin-nav">
+        <a href="/admin/users">Users</a>
+        <a href="/admin/icons">Icons</a>
+        <a href="/admin/categories" class="active">Categories</a>
+        <a href="/admin/items">Items</a>
+    </nav>
+</header>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; Categories</div>
+<main class="content">
+    <div th:if="${message}" class="notice" th:text="${message}"></div>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div class="content-header">
+        <h1>Categories</h1>
+        <ul class="object-tools">
+            <li><a class="addlink" href="/admin/categories/add">Add category</a></li>
+        </ul>
+    </div>
+
+    <div class="changelist">
+        <section class="module results">
+            <table>
+                <thead>
+                <tr>
+                    <th>ID</th>
+                    <th>Scope</th>
+                    <th>User ID</th>
+                    <th>Name</th>
+                    <th>Icon</th>
+                    <th>Days</th>
+                    <th>Items</th>
+                    <th>Deleted</th>
+                    <th>Actions</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="category : ${categories}" th:classappend="${category.deletedAt != null} ? 'deleted'">
+                    <td>
+                        <a th:if="${category.deletedAt == null}" th:href="@{/admin/categories/{id}/change(id=${category.id})}" th:text="${category.id}"></a>
+                        <span th:if="${category.deletedAt != null}" th:text="${category.id}"></span>
+                    </td>
+                    <td th:text="${category.scope}"></td>
+                    <td th:text="${category.userId}"></td>
+                    <td>
+                        <a th:if="${category.deletedAt == null}" th:href="@{/admin/categories/{id}/change(id=${category.id})}" th:text="${category.name}"></a>
+                        <span th:if="${category.deletedAt != null}" th:text="${category.name}"></span>
+                    </td>
+                    <td>
+                        <span class="icon-cell">
+                            <img th:if="${category.iconUrl != null}" class="admin-icon" th:src="${category.iconUrl}" alt="category icon"
+                                 th:alt="|${category.name} icon|">
+                            <span th:text="|${category.iconId} - ${category.iconUrl ?: ''}|"></span>
+                        </span>
+                    </td>
+                    <td th:text="${category.defaultReplacementIntervalDays}"></td>
+                    <td th:text="${category.itemCount}"></td>
+                    <td th:text="${category.deletedAt}"></td>
+                    <td>
+                        <form th:if="${category.deletedAt == null}" th:action="@{/admin/categories/{id}/delete(id=${category.id})}" method="post"
+                              th:onsubmit="|return confirm('Delete this category and ${category.itemCount} connected items?')|">
+                            <button class="deletelink" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <aside class="module filters">
+            <h2>Filter</h2>
+            <form class="filter-body" method="get" action="/admin/categories">
+                <label><input type="checkbox" name="includeDeleted" value="true" th:checked="${includeDeleted}"> Include deleted</label>
+                <button type="submit">Apply</button>
+                <div class="row-count" th:text="|${#lists.size(categories)} rows|"></div>
+            </form>
+        </aside>
+    </div>
+</main>
+</body>
+</html>
