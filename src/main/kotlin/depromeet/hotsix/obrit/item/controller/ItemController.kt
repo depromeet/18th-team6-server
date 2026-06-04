@@ -1,21 +1,18 @@
 package depromeet.hotsix.obrit.item.controller
 
-import depromeet.hotsix.obrit.global.exception.ErrorResponse
+import depromeet.hotsix.obrit.global.dto.ApiResponse
+import depromeet.hotsix.obrit.item.controller.docs.ItemControllerApi
+import depromeet.hotsix.obrit.item.dto.BulkCreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
+import depromeet.hotsix.obrit.item.dto.ItemDetailResponse
 import depromeet.hotsix.obrit.item.dto.ItemResponse
+import depromeet.hotsix.obrit.item.dto.ReplacementHistoryResponse
 import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
+import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import depromeet.hotsix.obrit.item.service.ItemService
-import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.Parameter
-import io.swagger.v3.oas.annotations.media.ArraySchema
-import io.swagger.v3.oas.annotations.media.Content
-import io.swagger.v3.oas.annotations.media.Schema
-import io.swagger.v3.oas.annotations.responses.ApiResponse
-import io.swagger.v3.oas.annotations.responses.ApiResponses
-import io.swagger.v3.oas.annotations.tags.Tag
-import jakarta.validation.Valid
 import org.springframework.http.HttpStatus
+import org.springframework.validation.annotation.Validated
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
 import org.springframework.web.bind.annotation.PatchMapping
@@ -24,193 +21,73 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestBody
 import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
+import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
 import org.springframework.web.bind.annotation.RestController
 
-@Tag(name = "Items", description = "Item APIs")
 @RestController
+@Validated
 @RequestMapping("/items")
-class ItemController(private val itemService: ItemService) {
+class ItemController(private val itemService: ItemService) : ItemControllerApi {
 
-    @Operation(
-        summary = "List items",
-        description = "Lists the user's items ordered by next replacement date.",
-    )
-    @ApiResponses(
-        value = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Items returned.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        array = ArraySchema(schema = Schema(implementation = ItemResponse::class)),
-                    ),
-                ],
-            ),
-        ],
-    )
     @GetMapping
-    fun listItems(
-        @Parameter(description = "Development user id.", required = true, example = "1")
-        @RequestHeader("X-User-Id") userId: Long,
-    ): List<ItemResponse> = itemService.listItems(userId)
+    override fun listItems(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<ItemResponse>> =
+        ApiResponse.ok(itemService.listItems(userId))
 
-    @Operation(
-        summary = "Create item",
-        description = "Creates an item in a preset or user-owned custom category.",
-    )
-    @ApiResponses(
-        value = [
-            ApiResponse(
-                responseCode = "201",
-                description = "Item created.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ItemResponse::class),
-                    ),
-                ],
-            ),
-            ApiResponse(
-                responseCode = "400",
-                description = "Invalid item request.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "Category not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
-            ),
-        ],
-    )
+    @GetMapping("/{itemId}")
+    override fun getItemDetail(
+        @RequestHeader("X-User-Id") userId: Long,
+        @PathVariable itemId: Long,
+    ): ApiResponse<ItemDetailResponse> = ApiResponse.ok(itemService.getItemDetail(userId, itemId))
+
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    fun createItem(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+    override fun createItem(
         @RequestHeader("X-User-Id") userId: Long,
-        @Valid @RequestBody request: CreateItemRequest,
-    ): ItemResponse = itemService.createItem(userId, request)
+        @RequestBody request: CreateItemRequest,
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.createItem(userId, request))
 
-    @Operation(
-        summary = "Update item",
-        description = "Updates mutable fields of an item.",
-    )
-    @ApiResponses(
-        value = [
-            ApiResponse(
-                responseCode = "200",
-                description = "Item updated.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ItemResponse::class),
-                    ),
-                ],
-            ),
-            ApiResponse(
-                responseCode = "400",
-                description = "Invalid item request.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "Item not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
-            ),
-        ],
-    )
+    @PostMapping("/bulk")
+    @ResponseStatus(HttpStatus.CREATED)
+    override fun bulkCreateItems(
+        @RequestHeader("X-User-Id") userId: Long,
+        @RequestBody request: BulkCreateItemRequest,
+    ): ApiResponse<List<ItemResponse>> = ApiResponse.ok(itemService.bulkCreateItems(userId, request))
+
     @PatchMapping("/{itemId}")
-    fun updateItem(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+    override fun updateItem(
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
-        @Valid @RequestBody request: UpdateItemRequest,
-    ): ItemResponse = itemService.updateItem(userId, itemId, request)
+        @RequestBody request: UpdateItemRequest,
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.updateItem(userId, itemId, request))
 
-    @Operation(
-        summary = "Delete item",
-        description = "Deletes an item.",
-    )
-    @ApiResponses(
-        value = [
-            ApiResponse(responseCode = "204", description = "Item deleted."),
-            ApiResponse(
-                responseCode = "404",
-                description = "Item not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
-            ),
-        ],
-    )
+    @PatchMapping("/{itemId}/spare-count")
+    override fun updateSpareCount(
+        @RequestHeader("X-User-Id") userId: Long,
+        @PathVariable itemId: Long,
+        @RequestBody request: UpdateSpareCountRequest,
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.updateSpareCount(userId, itemId, request))
+
     @DeleteMapping("/{itemId}")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    fun deleteItem(
-        @Parameter(description = "Development user id.", required = true, example = "1")
-        @RequestHeader("X-User-Id") userId: Long,
-        @PathVariable itemId: Long,
-    ) {
+    override fun deleteItem(@RequestHeader("X-User-Id") userId: Long, @PathVariable itemId: Long) {
         itemService.deleteItem(userId, itemId)
     }
 
-    @Operation(
-        summary = "Record item replacement",
-        description = "Records a replacement date and updates the item's next replacement date.",
-    )
-    @ApiResponses(
-        value = [
-            ApiResponse(
-                responseCode = "201",
-                description = "Replacement recorded.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ItemResponse::class),
-                    ),
-                ],
-            ),
-            ApiResponse(
-                responseCode = "404",
-                description = "Item not found.",
-                content = [
-                    Content(
-                        mediaType = "application/json",
-                        schema = Schema(implementation = ErrorResponse::class),
-                    ),
-                ],
-            ),
-        ],
-    )
     @PostMapping("/{itemId}/replacements")
     @ResponseStatus(HttpStatus.CREATED)
-    fun replaceItem(
-        @Parameter(description = "Development user id.", required = true, example = "1")
+    override fun replaceItem(
         @RequestHeader("X-User-Id") userId: Long,
         @PathVariable itemId: Long,
         @RequestBody request: CreateReplacementRequest,
-    ): ItemResponse = itemService.replaceItem(userId, itemId, request)
+    ): ApiResponse<ItemResponse> = ApiResponse.ok(itemService.replaceItem(userId, itemId, request))
+
+    @GetMapping("/{itemId}/replacements")
+    override fun listReplacements(
+        @RequestHeader("X-User-Id") userId: Long,
+        @PathVariable itemId: Long,
+        @RequestParam(defaultValue = "5")
+        limit: Int,
+    ): ApiResponse<List<ReplacementHistoryResponse>> =
+        ApiResponse.ok(itemService.listReplacementHistories(userId, itemId, limit))
 }

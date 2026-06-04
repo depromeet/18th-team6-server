@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.home.service
 
+import depromeet.hotsix.obrit.home.entity.HomeRiskBucket
 import depromeet.hotsix.obrit.home.entity.ItemBucket
 import depromeet.hotsix.obrit.home.entity.OverallStatus
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
@@ -24,7 +25,7 @@ class HomeStatusCalculatorServiceTest {
         assertEquals(0, result.myStatusSummary.needReplaceCount)
         assertEquals(45.0, result.myStatusSummary.score)
         assertEquals(45.0, result.myStatusSummary.averageScore)
-        assertEquals(6, result.itemBuckets.size)
+        assertEquals(listOf(HomeRiskBucket.DANGER, HomeRiskBucket.WARNING), result.itemBuckets.map { it.bucket })
         assertEquals(0, result.itemBuckets.sumOf { it.count })
     }
 
@@ -55,7 +56,7 @@ class HomeStatusCalculatorServiceTest {
     }
 
     @Test
-    fun `여섯 개 버킷을 우선순위 순서로 반환한다`() {
+    fun `위험_경고 두 버킷을 항상 반환하고 양호 아이템은 제외한다`() {
         val items = listOf(
             item(id = 1, daysUntil = -1, quantity = 0),
             item(id = 2, daysUntil = 3, quantity = 0),
@@ -67,13 +68,56 @@ class HomeStatusCalculatorServiceTest {
 
         val result = calculator.calculate(today, items)
 
-        assertEquals(ItemBucket.entries.sortedBy { it.priority }, result.itemBuckets.map { it.bucket })
-        assertEquals(List(6) { 1 }, result.itemBuckets.map { it.count })
+        assertEquals(listOf(HomeRiskBucket.DANGER, HomeRiskBucket.WARNING), result.itemBuckets.map { it.bucket })
+        assertEquals(listOf(3, 2), result.itemBuckets.map { it.count })
+
+        val dangerIds = result.itemBuckets[0].items.map { it.itemId }
+        val warningIds = result.itemBuckets[1].items.map { it.itemId }
+        assertEquals(listOf(1L, 3L, 2L), dangerIds)
+        assertEquals(listOf(4L, 5L), warningIds)
+    }
+
+    @Test
+    fun `버킷 응답의 각 아이템은 여분 유무와 교체 시기 조합으로 itemBucket(6종)을 가진다`() {
+        val items = listOf(
+            item(id = 1, daysUntil = -1, quantity = 0), // NONE_OVERDUE
+            item(id = 2, daysUntil = 3, quantity = 0), // NONE_WARN
+            item(id = 3, daysUntil = 0, quantity = 5), // HAS_OVERDUE
+            item(id = 4, daysUntil = 3, quantity = 5), // HAS_WARN
+            item(id = 5, daysUntil = 4, quantity = 0), // NONE_SAFE
+        )
+
+        val result = calculator.calculate(today, items)
+
+        val itemBucketById = result.itemBuckets
+            .flatMap { it.items }
+            .associate { it.itemId to it.itemBucket }
+
+        assertEquals(ItemBucket.NONE_OVERDUE, itemBucketById[1L])
+        assertEquals(ItemBucket.NONE_WARN, itemBucketById[2L])
+        assertEquals(ItemBucket.HAS_OVERDUE, itemBucketById[3L])
+        assertEquals(ItemBucket.HAS_WARN, itemBucketById[4L])
+        assertEquals(ItemBucket.NONE_SAFE, itemBucketById[5L])
+    }
+
+    @Test
+    fun `버킷 내 아이템은 교체 D-day가 가장 지난 순으로 정렬된다`() {
+        val items = listOf(
+            item(id = 1, daysUntil = 0, quantity = 0),
+            item(id = 2, daysUntil = -5, quantity = 0),
+            item(id = 3, daysUntil = -2, quantity = 0),
+        )
+
+        val result = calculator.calculate(today, items)
+
+        val dangerItems = result.itemBuckets.first { it.bucket == HomeRiskBucket.DANGER }.items
+        assertEquals(listOf(2L, 3L, 1L), dangerItems.map { it.itemId })
     }
 
     private fun item(id: Long, daysUntil: Long, quantity: Int): ItemSnapshot = ItemSnapshot(
         id = id,
         name = "item-$id",
+        categoryId = 100L,
         nextReplacementDate = today.plusDays(daysUntil),
         quantity = quantity,
     )

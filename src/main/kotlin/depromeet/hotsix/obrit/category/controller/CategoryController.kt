@@ -2,11 +2,12 @@ package depromeet.hotsix.obrit.category.controller
 
 import depromeet.hotsix.obrit.category.controller.docs.CategoryControllerApi
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.category.service.CategoryService
 import depromeet.hotsix.obrit.global.dto.ApiResponse
-import jakarta.validation.Valid
+import depromeet.hotsix.obrit.item.service.ItemService
 import org.springframework.http.HttpStatus
 import org.springframework.web.bind.annotation.DeleteMapping
 import org.springframework.web.bind.annotation.GetMapping
@@ -23,11 +24,24 @@ import org.springframework.web.bind.annotation.RestController
 class CategoryController(
     private val categoryService: CategoryService,
     private val categoryQueryService: CategoryQueryService,
+    private val itemService: ItemService,
 ) : CategoryControllerApi {
+
+    @GetMapping("/icons")
+    override fun listCategoryIcons(): ApiResponse<List<CategoryIconResponse>> =
+        ApiResponse.ok(categoryService.listCategoryIcons())
 
     @GetMapping
     override fun listCategories(@RequestHeader("X-User-Id") userId: Long): ApiResponse<List<CategoryResponse>> {
-        val result = categoryQueryService.listAllAccessibleCategories(userId)
+        val categories = categoryQueryService.listAllAccessibleCategories(userId)
+        val statsMap = itemService.statsByCategoryIds(userId, categories.map { it.categoryId })
+        val result = categories.map { category ->
+            val stats = statsMap[category.categoryId]
+            category.copy(
+                itemCount = stats?.itemCount ?: 0,
+                totalSpareQuantity = stats?.totalQuantity ?: 0,
+            )
+        }
         return ApiResponse.ok(result)
     }
 
@@ -35,7 +49,7 @@ class CategoryController(
     @ResponseStatus(HttpStatus.CREATED)
     override fun createCategory(
         @RequestHeader("X-User-Id") userId: Long,
-        @Valid @RequestBody request: CreateCategoryRequest,
+        @RequestBody request: CreateCategoryRequest,
     ): ApiResponse<CategoryResponse> = ApiResponse.ok(categoryService.createCategory(userId, request))
 
     @DeleteMapping("/{categoryId}")

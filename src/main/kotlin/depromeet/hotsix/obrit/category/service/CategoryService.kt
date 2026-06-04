@@ -1,15 +1,18 @@
 package depromeet.hotsix.obrit.category.service
 
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.common.CategoryItemCleaner
+import depromeet.hotsix.obrit.global.common.storage.UrlResolver
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.user.service.UserService
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
@@ -19,19 +22,30 @@ class CategoryService(
     private val categoryIconRepository: CategoryIconRepository,
     private val userService: UserService,
     private val categoryItemCleaner: CategoryItemCleaner,
+    @Qualifier("s3PublicUrlResolver") private val iconUrlResolver: UrlResolver,
 ) {
+
+    @Transactional(readOnly = true)
+    fun listCategoryIcons(): List<CategoryIconResponse> = categoryIconRepository.findAllByOrderByIdDesc().map {
+        CategoryIconResponse(iconId = it.id, url = iconUrlResolver.resolve(it.key))
+    }
 
     @Transactional
     fun createCategory(userId: Long, request: CreateCategoryRequest): CategoryResponse {
         userService.validateUserExist(userId)
 
         val trimmedName = request.name.trim()
-        if (categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, trimmedName)) {
+        if (categoryRepository.existsByUserIdIsNullAndNameAndDeletedAtIsNull(trimmedName) ||
+            categoryRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, trimmedName)
+        ) {
             throw ConflictException("이미 등록된 소모품 종류입니다.")
         }
 
         val icon = categoryIconRepository.findById(request.iconId)
             .orElseThrow { BusinessException("유효하지 않은 아이콘입니다.") }
+        if (icon.deletedAt != null) {
+            throw BusinessException("유효하지 않은 아이콘입니다.")
+        }
 
         val category = Category(
             userId = userId,
@@ -39,7 +53,7 @@ class CategoryService(
             iconId = icon.id,
         )
 
-        return categoryRepository.save(category).toResponse(icon.url)
+        return categoryRepository.save(category).toResponse(iconUrlResolver.resolve(icon.key))
     }
 
     @Transactional
@@ -60,7 +74,7 @@ class CategoryService(
     }
 
     private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
-        id = requireNotNull(id),
+        categoryId = requireNotNull(id),
         name = name,
         iconUrl = iconUrl,
         userId = userId,

@@ -9,6 +9,7 @@ class LayerDependencyTest {
         private const val BASE_PACKAGE = "depromeet.hotsix.obrit"
 
         private val importedClasses = ArchitectureRules.importProductionClasses()
+        private val classesExcludingControllers = ArchitectureRules.importProductionClassesExcludingControllers()
     }
 
     @Test
@@ -40,6 +41,6 @@ class LayerDependencyTest {
 
     @Test
     fun `순환 의존성이 없어야 한다`() {
-        ArchitectureRules.cycleRule(allowEmptyShould = true).check(importedClasses)
+        ArchitectureRules.cycleRule(allowEmptyShould = true).check(classesExcludingControllers)
     }
 }

@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Obrit Admin - ${pageTitle}|">Obrit Admin</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header class="admin-header">
+    <a class="admin-brand" href="/admin/users">Obrit administration</a>
+    <nav class="admin-nav">
+        <a href="/admin/users">Users</a>
+        <a href="/admin/icons" class="active">Icons</a>
+        <a href="/admin/categories">Categories</a>
+        <a href="/admin/items">Items</a>
+    </nav>
+</header>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; <a href="/admin/icons">Icons</a> &rsaquo; <span th:text="${pageTitle}"></span></div>
+<main class="content">
+    <div th:if="${message}" class="notice" th:text="${message}"></div>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div class="content-header">
+        <h1 th:text="${pageTitle}"></h1>
+    </div>
+
+    <section class="module">
+        <h2>Icon</h2>
+        <form method="post" th:action="${formAction}" enctype="multipart/form-data">
+            <div class="form-row">
+                <label for="name">Name</label>
+                <input id="name" name="name" required th:value="${isChange ? icon.name : ''}">
+            </div>
+            <div class="form-row">
+                <label for="file">Image</label>
+                <input id="file" name="file" type="file" accept="image/*" th:required="${!isChange}">
+                <span th:if="${isChange}" class="help-text">변경하지 않으려면 비워두세요.</span>
+            </div>
+            <div class="form-row" th:if="${isChange}">
+                <label>Preview</label>
+                <img class="admin-icon" th:src="${icon.url}" alt="icon preview" th:alt="|${icon.name} icon|">
+            </div>
+            <div class="form-row" th:if="${isChange}">
+                <label>Created</label>
+                <div class="readonly" th:text="${icon.createdAt}"></div>
+            </div>
+            <div class="form-row" th:if="${isChange}">
+                <label>Updated</label>
+                <div class="readonly" th:text="${icon.updatedAt}"></div>
+            </div>
+            <div class="submit-row">
+                <a class="button" href="/admin/icons">Back</a>
+                <button class="default" type="submit">Save</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

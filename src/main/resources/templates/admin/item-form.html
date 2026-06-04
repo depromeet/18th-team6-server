@@ -1,0 +1,83 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title th:text="|Obrit Admin - ${pageTitle}|">Obrit Admin</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header class="admin-header">
+    <a class="admin-brand" href="/admin/users">Obrit administration</a>
+    <nav class="admin-nav">
+        <a href="/admin/users">Users</a>
+        <a href="/admin/icons">Icons</a>
+        <a href="/admin/categories">Categories</a>
+        <a href="/admin/items" class="active">Items</a>
+    </nav>
+</header>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; <a href="/admin/items">Items</a> &rsaquo; <span th:text="${pageTitle}"></span></div>
+<main class="content">
+    <div th:if="${message}" class="notice" th:text="${message}"></div>
+    <div th:if="${error}" class="error" th:text="${error}"></div>
+
+    <div class="content-header">
+        <h1 th:text="${pageTitle}"></h1>
+    </div>
+
+    <section class="module">
+        <h2>Item</h2>
+        <form method="post" th:action="${formAction}">
+            <div class="form-row">
+                <label for="userId">User</label>
+                <select id="userId" name="userId" required>
+                    <option th:each="user : ${users}" th:value="${user.id}" th:text="|${user.id} - ${user.name}|"
+                            th:selected="${isChange && user.id == item.userId}"></option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="categoryId">Category</label>
+                <select id="categoryId" name="categoryId" required>
+                    <option th:each="category : ${categories}" th:value="${category.id}" th:text="${category.label}"
+                            th:selected="${isChange && category.id == item.categoryId}"></option>
+                </select>
+            </div>
+            <div class="form-row">
+                <label for="name">Name</label>
+                <input id="name" name="name" required th:value="${isChange ? item.name : ''}">
+            </div>
+            <div class="form-row">
+                <label for="spareQuantity">Spare Quantity</label>
+                <input id="spareQuantity" name="spareQuantity" type="number" min="0" required th:value="${isChange ? item.spareQuantity : 1}">
+            </div>
+            <div class="form-row">
+                <label for="lastReplacedDate">Last replaced</label>
+                <input id="lastReplacedDate" name="lastReplacedDate" type="date" th:value="${isChange ? item.lastReplacedDate : ''}">
+            </div>
+            <div class="form-row">
+                <label for="replacementIntervalDays">Days</label>
+                <input id="replacementIntervalDays" name="replacementIntervalDays" type="number" min="1" required
+                       th:value="${isChange ? item.replacementIntervalDays : 30}">
+            </div>
+            <div class="submit-row">
+                <a class="button" href="/admin/items">Back</a>
+                <button class="default" type="submit">Save</button>
+            </div>
+        </form>
+    </section>
+
+    <section class="module" th:if="${isChange}">
+        <h2>Replacement</h2>
+        <form th:action="@{/admin/items/{id}/replacements(id=${item.id})}" method="post">
+            <div class="form-row">
+                <label for="replacedDate">Replaced date</label>
+                <input id="replacedDate" name="replacedDate" type="date">
+            </div>
+            <div class="submit-row">
+                <button class="default" type="submit">Replace</button>
+            </div>
+        </form>
+    </section>
+</main>
+</body>
+</html>

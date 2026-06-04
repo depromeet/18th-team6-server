@@ -6,6 +6,7 @@ import depromeet.hotsix.obrit.home.dto.HomeResponse
 import depromeet.hotsix.obrit.home.dto.ItemBucketResponse
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
 import depromeet.hotsix.obrit.home.dto.OverallStatusResponse
+import depromeet.hotsix.obrit.home.entity.HomeRiskBucket
 import depromeet.hotsix.obrit.home.entity.ItemBucket
 import depromeet.hotsix.obrit.home.entity.OverallStatus
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
@@ -25,14 +26,21 @@ class HomeStatusCalculatorService {
         private const val SPARE_SCORE_WEIGHT = 0.4
     }
 
-    fun calculate(today: LocalDate, items: List<ItemSnapshot>): HomeResponse = HomeResponse(
+    fun calculate(
+        today: LocalDate,
+        items: List<ItemSnapshot>,
+        iconUrlMapByCategoryId: Map<Long, String> = emptyMap(),
+    ): HomeResponse = HomeResponse(
         overallStatus = calculateOverallStatus(today, items),
         myStatusSummary = calculateMyStatusSummary(today, items),
-        itemBuckets = bucketize(today, items),
+        itemBuckets = bucketize(today, items, iconUrlMapByCategoryId),
     )
 
-    fun calculateBuckets(today: LocalDate, items: List<ItemSnapshot>): HomeBucketsResponse =
-        HomeBucketsResponse(buckets = bucketize(today, items))
+    fun calculateBuckets(
+        today: LocalDate,
+        items: List<ItemSnapshot>,
+        iconUrlMapByCategoryId: Map<Long, String>,
+    ): HomeBucketsResponse = HomeBucketsResponse(buckets = bucketize(today, items, iconUrlMapByCategoryId))
 
     fun calculateOverallStatus(today: LocalDate, items: List<ItemSnapshot>): OverallStatusResponse {
         if (items.isEmpty()) {
@@ -99,21 +107,45 @@ class HomeStatusCalculatorService {
         )
     }
 
-    private fun bucketize(today: LocalDate, items: List<ItemSnapshot>): List<ItemBucketResponse> = ItemBucket.entries
-        .map { bucket ->
-            val bucketItems = items.filter { ItemBucket.of(it.spareBand(), it.replacementBand(today)) == bucket }
+    private fun bucketize(
+        today: LocalDate,
+        items: List<ItemSnapshot>,
+        iconUrlMapByCategoryId: Map<Long, String>,
+    ): List<ItemBucketResponse> {
+        val grouped = items
+            .mapNotNull { item ->
+                val itemBucket = ItemBucket.of(item.spareBand(), item.replacementBand(today))
+                HomeRiskBucket.from(itemBucket.status)?.let { it to (item to itemBucket) }
+            }
+            .groupBy({ it.first }, { it.second })
+
+        return HomeRiskBucket.entries.map { bucket ->
+            val bucketItems = grouped[bucket].orEmpty().sortedBy { it.first.nextReplacementDate }
             ItemBucketResponse(
                 bucket = bucket,
                 count = bucketItems.size,
-                items = bucketItems.map { it.toBucketItemResponse(bucket.status) },
+                items = bucketItems.map { (item, itemBucket) ->
+                    item.toBucketItemResponse(
+                        status = bucket.status,
+                        itemBucket = itemBucket,
+                        iconUrl = iconUrlMapByCategoryId[item.categoryId].orEmpty(),
+                    )
+                },
             )
         }
+    }
 
-    private fun ItemSnapshot.toBucketItemResponse(status: ItemStatus): BucketItemResponse = BucketItemResponse(
-        id = id,
+    private fun ItemSnapshot.toBucketItemResponse(
+        status: ItemStatus,
+        itemBucket: ItemBucket,
+        iconUrl: String,
+    ): BucketItemResponse = BucketItemResponse(
+        itemId = id,
         name = name,
-        count = quantity,
+        iconUrl = iconUrl,
+        spareQuantity = quantity,
         nextReplacementDate = nextReplacementDate,
         status = status,
+        itemBucket = itemBucket,
     )
 }
