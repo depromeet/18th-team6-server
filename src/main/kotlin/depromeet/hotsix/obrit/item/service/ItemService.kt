@@ -141,7 +141,7 @@ class ItemService(
         val trimmedNames = request.items.map { it.name.trim() }
         val hasDuplicateInRequest = trimmedNames.size != trimmedNames.toSet().size
         if (hasDuplicateInRequest) {
-            throw ConflictException("이미 등록된 소모품 이름입니다.")
+            throw ConflictException("요청에 중복된 소모품 이름이 있습니다.")
         }
         val duplicateInDb = trimmedNames.any { itemRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, it) }
         if (duplicateInDb) {
