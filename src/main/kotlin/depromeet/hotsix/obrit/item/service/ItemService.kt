@@ -143,8 +143,8 @@ class ItemService(
         if (hasDuplicateInRequest) {
             throw ConflictException("요청에 중복된 소모품 이름이 있습니다.")
         }
-        val duplicateInDb = trimmedNames.any { itemRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, it) }
-        if (duplicateInDb) {
+        val existingNames = itemRepository.findExistingNamesByUserIdAndNames(userId, trimmedNames)
+        if (existingNames.isNotEmpty()) {
             throw ConflictException("이미 등록된 소모품 이름입니다.")
         }
         return request.items.map { saveItem(userId, it) }

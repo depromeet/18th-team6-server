@@ -57,6 +57,20 @@ interface ItemRepository :
 
     @Query(
         """
+        select i.name
+        from Item i
+        where i.userId = :userId
+          and i.name in :names
+          and i.deletedAt is null
+        """,
+    )
+    fun findExistingNamesByUserIdAndNames(
+        @Param("userId") userId: Long,
+        @Param("names") names: Collection<String>,
+    ): List<String>
+
+    @Query(
+        """
         select i.categoryId, count(i), coalesce(sum(i.quantity), 0)
         from Item i
         where i.userId = :userId
