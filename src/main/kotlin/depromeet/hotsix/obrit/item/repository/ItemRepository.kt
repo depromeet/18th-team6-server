@@ -53,6 +53,8 @@ interface ItemRepository :
 
     fun findAllByCategoryId(categoryId: Long): List<Item>
 
+    fun existsByUserIdAndNameAndDeletedAtIsNull(userId: Long, name: String): Boolean
+
     @Query(
         """
         select i.categoryId, count(i), coalesce(sum(i.quantity), 0)
