@@ -1,7 +1,8 @@
 -- V1: 초기 스키마 (baseline)
 -- 기존 운영 DB에 이미 존재하는 스키마를 기록용으로 작성.
--- baseline-on-migrate=true, baseline-version=0 설정으로 인해
+-- baseline-on-migrate=true, baseline-version=1 설정으로 인해
 -- 기존 DB에서는 이 스크립트가 실행되지 않고 baseline으로 마킹됨.
+-- (baseline-version=0이면 V1이 실행되어 기존 테이블과 충돌하므로 반드시 1 이상이어야 함)
 
 CREATE TABLE users (
     id BIGINT NOT NULL AUTO_INCREMENT,

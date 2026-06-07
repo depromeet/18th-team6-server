@@ -57,6 +57,9 @@ class AdminSecurityConfig {
                     .anyRequest().authenticated()
             }
             .csrf { it.disable() }
+            .headers { headers ->
+                headers.frameOptions { frameOptions -> frameOptions.sameOrigin() }
+            }
             .formLogin { it.disable() }
             .httpBasic { it.disable() }
 
@@ -88,6 +91,7 @@ class AdminSecurityConfig {
             "/home", "/home/**",
             "/fcm-tokens", "/fcm-tokens/**",
             "/notifications", "/notifications/**",
+            "/h2-console", "/h2-console/**",
             "/swagger-ui/**", "/swagger-ui.html",
             "/v3/api-docs/**",
         )

@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.item.service
 
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.global.exception.BusinessException
+import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.dto.BulkCreateItemRequest
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
@@ -127,12 +128,25 @@ class ItemService(
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
         userService.validateUserExist(userId)
+        val trimmedName = request.name.trim()
+        if (itemRepository.existsByUserIdAndNameAndDeletedAtIsNull(userId, trimmedName)) {
+            throw ConflictException("이미 등록된 소모품 이름입니다.")
+        }
         return saveItem(userId, request)
     }
 
     @Transactional
     fun bulkCreateItems(userId: Long, request: BulkCreateItemRequest): List<ItemResponse> {
         userService.validateUserExist(userId)
+        val trimmedNames = request.items.map { it.name.trim() }
+        val hasDuplicateInRequest = trimmedNames.size != trimmedNames.toSet().size
+        if (hasDuplicateInRequest) {
+            throw ConflictException("요청에 중복된 소모품 이름이 있습니다.")
+        }
+        val existingNames = itemRepository.findExistingNamesByUserIdAndNames(userId, trimmedNames)
+        if (existingNames.isNotEmpty()) {
+            throw ConflictException("이미 등록된 소모품 이름입니다.")
+        }
         return request.items.map { saveItem(userId, it) }
     }
 

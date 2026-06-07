@@ -154,6 +154,22 @@ interface ItemControllerApi {
                     ),
                 ],
             ),
+            SwaggerApiResponse(
+                responseCode = "409",
+                description = "이미 등록된 소모품 이름입니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "중복 이름",
+                                value = """{"message": "이미 등록된 소모품 이름입니다."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
         ],
     )
     fun createItem(
@@ -214,6 +230,26 @@ interface ItemControllerApi {
                             ExampleObject(
                                 name = "카테고리 없음",
                                 value = """{"message": "존재하지 않는 소모품 카테고리입니다."}""",
+                            ),
+                        ],
+                    ),
+                ],
+            ),
+            SwaggerApiResponse(
+                responseCode = "409",
+                description = "이름 중복으로 등록 불가합니다.",
+                content = [
+                    Content(
+                        mediaType = "application/json",
+                        schema = Schema(implementation = ErrorResponse::class),
+                        examples = [
+                            ExampleObject(
+                                name = "요청 내 중복",
+                                value = """{"message": "요청에 중복된 소모품 이름이 있습니다."}""",
+                            ),
+                            ExampleObject(
+                                name = "기존 데이터 중복",
+                                value = """{"message": "이미 등록된 소모품 이름입니다."}""",
                             ),
                         ],
                     ),
