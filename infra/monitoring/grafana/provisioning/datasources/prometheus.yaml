@@ -1,0 +1,8 @@
+# Grafana가 Prometheus를 datasource로 연결할 때 쓰는 등록 파일
+apiVersion: 1
+datasources:
+  - name: Prometheus    # Grafana에 등록되는 datasource 이름 (그냥 별명이라 생각하면 될듯!)
+    type: prometheus    # Grafana가 알고 있는 plugin 타입
+    access: proxy
+    url: http://prometheus:9090  # 실제 프로메테우스 서버 주소
+    isDefault: true
