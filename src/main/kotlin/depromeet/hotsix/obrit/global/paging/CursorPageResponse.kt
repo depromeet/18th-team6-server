@@ -26,15 +26,13 @@ data class CursorPageResponse<T>(
             totalCount: Long,
             cursorSelector: (T) -> Long,
         ): CursorPageResponse<T> {
-            val normalizedSize = normalizePageSize(size)
-            val content = fetchedContent.take(normalizedSize)
-            val hasNext = fetchedContent.size > normalizedSize
+            val slice = CursorSliceResponse.fromFetched(fetchedContent, size, cursorSelector)
 
             return CursorPageResponse(
-                content = content,
-                nextCursor = content.lastOrNull()?.let(cursorSelector)?.takeIf { hasNext },
-                size = normalizedSize,
-                hasNext = hasNext,
+                content = slice.content,
+                nextCursor = slice.nextCursor,
+                size = slice.size,
+                hasNext = slice.hasNext,
                 totalCount = totalCount,
             )
         }
