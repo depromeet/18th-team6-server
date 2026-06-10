@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.global.config
 
 import io.micrometer.core.instrument.Gauge
 import io.micrometer.core.instrument.binder.MeterBinder
+import org.slf4j.LoggerFactory
 import org.springframework.boot.health.contributor.Status
 import org.springframework.boot.jdbc.health.DataSourceHealthIndicator
 import org.springframework.context.annotation.Bean
@@ -20,7 +21,16 @@ class DbHealthMetricsConfig {
     @Bean
     fun dbHealthGauge(dbHealthIndicator: DataSourceHealthIndicator): MeterBinder = MeterBinder { registry ->
         Gauge.builder("obrit_db_up") {
-            if (dbHealthIndicator.health().status == Status.UP) 1.0 else 0.0
+            try {
+                if (dbHealthIndicator.health().status == Status.UP) 1.0 else 0.0
+            } catch (e: Exception) {
+                log.warn("DB health 확인 실패, DOWN으로 간주", e)
+                0.0
+            }
         }.register(registry)
+    }
+
+    companion object {
+        private val log = LoggerFactory.getLogger(DbHealthMetricsConfig::class.java)
     }
 }
