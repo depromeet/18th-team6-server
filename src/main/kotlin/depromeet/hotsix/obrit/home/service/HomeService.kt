@@ -1,7 +1,7 @@
 package depromeet.hotsix.obrit.home.service
 
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
-import depromeet.hotsix.obrit.global.paging.CursorSliceResponse
+import depromeet.hotsix.obrit.global.paging.CursorPageResponse
 import depromeet.hotsix.obrit.global.paging.normalizePageSize
 import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.HomeItemCard
@@ -63,7 +63,7 @@ class HomeService(
         spareQuantity: Int?,
         cursor: Long?,
         size: Int,
-    ): CursorSliceResponse<HomeItemCard> {
+    ): CursorPageResponse<HomeItemCard> {
         val today = LocalDate.now(clock)
         val pageSize = normalizePageSize(size)
         val items = itemService.findItemListSnapshots(
@@ -75,13 +75,20 @@ class HomeService(
             today = today,
             size = pageSize + 1,
         )
+        val totalCount = itemService.countItemList(
+            userId = userId,
+            dDay = dDay,
+            spareQuantity = spareQuantity,
+            today = today,
+        )
         val iconUrlMapByCategoryId = categoryQueryService.findVisibleCategoryIconUrls(
             userId,
             items.map { it.categoryId },
         )
-        return CursorSliceResponse.fromFetched(
+        return CursorPageResponse.fromFetched(
             fetchedContent = items.map { it.toHomeItemCard(today, iconUrlMapByCategoryId[it.categoryId].orEmpty()) },
             size = pageSize,
+            totalCount = totalCount,
             cursorSelector = { it.itemId },
         )
     }

@@ -26,13 +26,8 @@ class ItemQueryRepositoryImpl(
     ): List<Item> {
         val item = QItem.item
         val cursorItem = cursor?.let { findCursorItem(userId, it) ?: return emptyList() }
-        val predicates = listOfNotNull(
-            item.userId.eq(userId),
-            item.deletedAt.isNull,
-            itemPredicateRepository.filterDday(item, today, dDay),
-            itemPredicateRepository.filterSpareQuantity(item, spareQuantity),
-            cursorItem?.let { cursorPredicate(item, order, it) },
-        )
+        val predicates = basePredicates(item, userId, today, dDay, spareQuantity) +
+            listOfNotNull(cursorItem?.let { cursorPredicate(item, order, it) })
 
         return queryFactory
             .selectFrom(item)
@@ -41,6 +36,31 @@ class ItemQueryRepositoryImpl(
             .limit(size.toLong())
             .fetch()
     }
+
+    override fun countItemList(userId: Long, dDay: Int?, spareQuantity: Int?, today: LocalDate): Long {
+        val item = QItem.item
+        val predicates = basePredicates(item, userId, today, dDay, spareQuantity)
+
+        return queryFactory
+            .select(item.count())
+            .from(item)
+            .where(*predicates.toTypedArray())
+            .fetchOne() ?: 0L
+    }
+
+    // findItemList와 countItemList가 공유하는 기본 필터 조건. 커서/정렬은 포함하지 않는다.
+    private fun basePredicates(
+        item: QItem,
+        userId: Long,
+        today: LocalDate,
+        dDay: Int?,
+        spareQuantity: Int?,
+    ): List<BooleanExpression> = listOfNotNull(
+        item.userId.eq(userId),
+        item.deletedAt.isNull,
+        itemPredicateRepository.filterDday(item, today, dDay),
+        itemPredicateRepository.filterSpareQuantity(item, spareQuantity),
+    )
 
     private fun findCursorItem(userId: Long, cursor: Long): Item? {
         val item = QItem.item

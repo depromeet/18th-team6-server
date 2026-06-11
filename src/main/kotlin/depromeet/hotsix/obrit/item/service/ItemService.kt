@@ -125,6 +125,14 @@ class ItemService(
         size = size,
     ).map { it.toItemListSnapshot() }
 
+    fun countItemList(userId: Long, dDay: Int?, spareQuantity: Int?, today: LocalDate): Long =
+        itemRepository.countItemList(
+            userId = userId,
+            dDay = dDay,
+            spareQuantity = spareQuantity,
+            today = today,
+        )
+
     @Transactional
     fun createItem(userId: Long, request: CreateItemRequest): ItemResponse {
         userService.validateUserExist(userId)
