@@ -22,6 +22,6 @@ receivers:
           *Description*: {{ .Annotations.description }}
           {{ end }}
         # Discord의 Slack-호환 엔드포인트는 title_link가 비어 있으면 400을 반환한다.
-        title_link: 'https://obrit.local/'
+        title_link: '{{ .ExternalURL }}'
         # 디폴트 색상 'danger'/'good' 문자열 대신 hex로 명시
         color: '{{ if eq .Status "firing" }}#ff0000{{ else }}#00ff00{{ end }}'

@@ -29,7 +29,7 @@ Prometheus  ──룰 평가──→  Alertmanager  ──slack-호환 webhook�
 
 - 모든 컨테이너는 루트 `docker-compose.yml`이 만드는 `orbit-network`에 참여한다. Prometheus는 `app:8080`을 서비스 이름으로 직접 스크랩 (호스트 포트 노출 불필요).
 - Alertmanager는 yaml 내 `${VAR}` 환경변수 치환을 지원하지 않아 Discord webhook은 `slack_api_url_file` + compose `secrets:` 패턴으로 주입한다.
-- Discord의 Slack-호환 엔드포인트는 `title_link` 빈 값 / 키워드 색상(`danger`/`good`)에 400을 반환하므로 명시적 URL과 hex 색상을 사용한다.
+- Discord의 Slack-호환 엔드포인트는 `title_link` 빈 값 / 키워드 색상(`danger`/`good`)에 400을 반환하므로 `--web.external-url`로 주입한 URL과 hex 색상을 사용한다.
 
 ## 알람 정책
 
@@ -41,5 +41,5 @@ Prometheus  ──룰 평가──→  Alertmanager  ──slack-호환 webhook�
 ## 시크릿
 
 - 로컬: `.env`와 `secrets/discord_webhook_url`을 직접 작성 (`.env.example` 참고).
-- 운영: `.github/workflows/ci-cd.yml`이 GitHub Secrets(`MONITORING_ENV_FILE`, `MONITORING_DISCORD_WEBHOOK_URL`)을 EC2에 자동 주입.
+- 운영: `.github/workflows/ci-cd.yml`이 GitHub Secrets(`MONITORING_ENV_FILE`, `MONITORING_DISCORD_WEBHOOK_URL`)을 EC2에 자동 주입한다. `MONITORING_ENV_FILE`에는 `GRAFANA_ADMIN_PASSWORD`, `ALERT_TITLE_LINK`를 포함한다.
 - Discord webhook URL은 끝에 `/slack`을 붙여야 Slack 호환 포맷을 받는다.

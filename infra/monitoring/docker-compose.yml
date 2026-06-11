@@ -12,6 +12,10 @@ services:
   alertmanager:     # 알람 전송, 현재 디스코드로 전송
     image: prom/alertmanager:latest
     ports: ["9093:9093"]
+    command:
+      - "--config.file=/etc/alertmanager/alertmanager.yml"
+      - "--storage.path=/alertmanager"
+      - "--web.external-url=${ALERT_TITLE_LINK}"    # AlertManager 실행 시 운영 도메인 전달
     volumes:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro # 우리가 작성한 alertmanager.yml을 읽어와 기본 규칙을 설정해 해당 규칙대로 알람 발송
       - alertmanager-data:/alertmanager    # 알람 그룹 상태 영속화 (재시작 시 중복 알림 방지)
