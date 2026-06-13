@@ -1,0 +1,17 @@
+# Prometheus 설정을 담당하는 파일
+global:
+  scrape_interval: 15s      # 15초 마다 타켓 정보 가져오기
+
+rule_files:
+  - alerts.yml      # 알람을 "언제 보낼지" rule 명시 / 알람을 "어떻게 보낼지" rule 이 적힌 alertmanager와 다른 역할임
+
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets: ["alertmanager:9093"]    # 알람 발송 시 보낼 대상
+
+scrape_configs:
+  - job_name: obrit
+    metrics_path: /actuator/prometheus
+    static_configs:
+      - targets: ["app:8080"]    # orbit-network 안에서 app 서비스를 찾아 통신

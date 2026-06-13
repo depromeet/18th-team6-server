@@ -48,6 +48,18 @@ jobs:
           source: "docker-compose.yml"
           target: "~/deploy/"
 
+      - name: Copy monitoring stack
+        # infra/monitoring 디렉토리 통째로 ~/deploy/infra/monitoring 으로 복사
+        # (secrets/*, .env는 gitignore 되어 runner에 없음 -> 안전)
+        uses: appleboy/scp-action@v0.1.7
+        with:
+          host: ${{ secrets.SERVER_HOST }}
+          username: ${{ secrets.SERVER_USER }}
+          key: ${{ secrets.SERVER_SSH_KEY }}
+          port: ${{ secrets.SERVER_PORT || 22 }}
+          source: "infra/monitoring/"
+          target: "~/deploy/"
+
       - name: Docker Hub login
         uses: docker/login-action@v3
         with:
@@ -75,10 +87,28 @@ jobs:
           key: ${{ secrets.SERVER_SSH_KEY }}
           port: ${{ secrets.SERVER_PORT || 22 }}
           script: |
+            # 앱 .env
             cat <<'ENVEOF' > ~/deploy/.env
             ${{ secrets.ENV_FILE }}
             ENVEOF
 
+            # 모니터링 .env (Grafana admin 비밀번호 등)
+            cat <<'MENVEOF' > ~/deploy/infra/monitoring/.env
+            ${{ secrets.MONITORING_ENV_FILE }}
+            MENVEOF
+
+            # Discord webhook secret 파일 (alertmanager가 slack_api_url_file로 읽음)
+            mkdir -p ~/deploy/infra/monitoring/secrets
+            cat <<'WHEOF' > ~/deploy/infra/monitoring/secrets/discord_webhook_url
+            ${{ secrets.MONITORING_DISCORD_WEBHOOK_URL }}
+            WHEOF
+            chmod 600 ~/deploy/infra/monitoring/secrets/discord_webhook_url
+
+            # 앱 재배포 (orbit-network 생성)
             sudo docker compose -f ~/deploy/docker-compose.yml down
             sudo docker compose -f ~/deploy/docker-compose.yml pull --ignore-pull-failures
             sudo docker compose -f ~/deploy/docker-compose.yml up -d --force-recreate
+
+            # 모니터링 스택 기동 (orbit-network에 외부 참여)
+            # 이미 떠 있으면 변경된 config만 반영, 처음이면 새로 생성
+            sudo docker compose -f ~/deploy/infra/monitoring/docker-compose.yml up -d
