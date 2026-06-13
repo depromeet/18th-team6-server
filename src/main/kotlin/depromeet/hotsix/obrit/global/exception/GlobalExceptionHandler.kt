@@ -61,4 +61,4 @@ class BusinessException(message: String) : RuntimeException(message)
 
 class ResourceNotFoundException(message: String) : RuntimeException(message)
 
-class ConflictException(message: String) : RuntimeException(message)
+class ConflictException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)

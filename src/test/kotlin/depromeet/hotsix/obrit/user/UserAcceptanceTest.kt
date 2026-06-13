@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.assertEquals
+import kotlin.test.assertNotEquals
 import kotlin.test.assertNotNull
 
 @SpringBootTest
@@ -56,7 +57,7 @@ class UserAcceptanceTest {
         val response2 = userService.registerOrGet(request2)
 
         assertEquals(2, userRepository.count())
-        assert(response1.userId != response2.userId)
+        assertNotEquals(response1.userId, response2.userId)
     }
 
     @Test
@@ -90,7 +91,7 @@ class UserAcceptanceTest {
 
         val second = userService.registerOrGet(request)
 
-        assert(first.userId != second.userId)
+        assertNotEquals(first.userId, second.userId)
         assertEquals(2, userRepository.count())
     }
 }
