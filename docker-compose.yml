@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: orbit-server
-    restart: unless-stopped
+    restart: on-failure:3
     ports:
       - "${APP_PORT:-8080}:8080"
     environment:
