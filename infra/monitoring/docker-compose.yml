@@ -1,6 +1,7 @@
 services:
   prometheus:       # 메트릭 수집/저장
     image: prom/prometheus:latest
+    restart: on-failure:3
     ports: ["9090:9090"]
     volumes:
       - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
@@ -11,6 +12,7 @@ services:
 
   alertmanager:     # 알람 전송, 현재 디스코드로 전송
     image: prom/alertmanager:latest
+    restart: on-failure:3
     ports: ["9093:9093"]
     command:
       - "--config.file=/etc/alertmanager/alertmanager.yml"
@@ -26,6 +28,7 @@ services:
 
   grafana:    # 시각화
     image: grafana/grafana:latest
+    restart: on-failure:3
     ports: ["3000:3000"]
     environment:
       - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_ADMIN_PASSWORD}
