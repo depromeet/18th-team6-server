@@ -3,19 +3,35 @@ package depromeet.hotsix.obrit.item.client
 import com.fasterxml.jackson.databind.ObjectMapper
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
+import org.springframework.context.annotation.Bean
+import org.springframework.context.annotation.Configuration
 import org.springframework.http.MediaType
+import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpServerErrorException
 import org.springframework.web.client.RestClient
 import java.util.Base64
 
+@Configuration
+class ReceiptOcrClientConfig {
+    @Bean
+    fun ocrRestClient(): RestClient {
+        val factory = SimpleClientHttpRequestFactory().apply {
+            setConnectTimeout(10000)
+            setReadTimeout(30000)
+        }
+        return RestClient.builder()
+            .requestFactory(factory)
+            .build()
+    }
+}
+
 @Component
 class ReceiptOcrClient(
     private val receiptOcrProperties: ReceiptOcrProperties,
-    private val restClient: RestClient = RestClient.create(),
+    private val restClient: RestClient,
+    private val objectMapper: ObjectMapper,
 ) {
-
-    private val objectMapper = ObjectMapper()
 
     fun analyzeImage(imageBytes: ByteArray): OcrAnalysisResponse {
         if (receiptOcrProperties.apiKey.isEmpty()) {

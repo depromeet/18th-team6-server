@@ -164,10 +164,13 @@ class ItemService(
         val resolvedCategoryId = if (request.categoryId != null) {
             request.categoryId
         } else {
+            // newCategoryName이 반드시 제공되어야 함
+            val newCategoryName = request.newCategoryName
+                ?: throw BusinessException("categoryId가 없으면 newCategoryName은 필수입니다.")
             // 새 카테고리 생성 또는 재사용
             resolveOrCreateCategory(
                 userId,
-                request.newCategoryName!!,
+                newCategoryName,
                 request.newCategoryDefaultReplacementIntervalDays ?: 1,
             )
         }
@@ -204,13 +207,21 @@ class ItemService(
         }
 
         // 새 카테고리 생성 (기본 아이콘 iconId = 1)
-        val newCategory = depromeet.hotsix.obrit.category.entity.Category(
-            userId = userId,
-            name = categoryName,
-            iconId = 1L,
-            defaultReplacementIntervalDays = defaultReplacementIntervalDays,
-        )
-        return categoryRepository.save(newCategory).id!!
+        return try {
+            val newCategory = depromeet.hotsix.obrit.category.entity.Category(
+                userId = userId,
+                name = categoryName,
+                iconId = 1L,
+                defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+            )
+            categoryRepository.save(newCategory).id!!
+        } catch (e: Exception) {
+            // Race condition: 다른 요청이 동시에 같은 카테고리를 생성한 경우
+            // 새로 조회하여 해당 카테고리 반환
+            val retryCategory = categoryRepository.findActiveByUserIdAndName(userId, categoryName)
+                ?: throw e
+            retryCategory.id!!
+        }
     }
 
     @Transactional

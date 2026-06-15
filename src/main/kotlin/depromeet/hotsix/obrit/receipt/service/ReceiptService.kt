@@ -27,7 +27,10 @@ class ReceiptService(
         // 1. 이미지 검증
         validateImageFile(imageFile)
 
-        // 2. S3 업로드 비동기 시작 (별도 스레드)
+        // 2. OCR 분석 먼저 실행 (실패 시 S3 업로드 없음)
+        val ocrResult = ocrService.analyzeReceiptImage(imageFile.bytes)
+
+        // 3. S3 업로드 비동기 시작
         val uploadFuture = CompletableFuture.supplyAsync(
             {
                 fileUploader.upload(RECEIPT_PREFIX, imageFile)
@@ -35,12 +38,13 @@ class ReceiptService(
             ForkJoinPool.commonPool(),
         )
 
-        // 3. OCR 분석 (동시 진행, AI 호출 즉시 시작)
-        val ocrResult = ocrService.analyzeReceiptImage(imageFile.bytes)
+        // 4. 카테고리 미리 로드 (N+1 쿼리 해결)
+        val userCategories = categoryRepository.findActiveByUserId(userId)
+        val presetCategories = categoryRepository.findActivePresets()
 
-        // 4. 카테고리 매칭
+        // 5. 카테고리 매칭
         val analyzedItems = ocrResult.items.map { ocrItem ->
-            val matchedCategoryId = matchCategory(userId, ocrItem.category)
+            val matchedCategoryId = matchCategory(ocrItem.category, userCategories, presetCategories)
 
             AnalyzedItem(
                 originalName = ocrItem.original_name,
@@ -52,10 +56,10 @@ class ReceiptService(
             )
         }
 
-        // 5. S3 업로드 완료 대기
+        // 6. S3 업로드 완료 대기
         val receiptImageUrl = uploadFuture.join()
 
-        // 6. 응답 구성
+        // 7. 응답 구성
         return AnalyzeReceiptResponse(
             receiptImageUrl = receiptImageUrl,
             purchasedDate = ocrResult.date,
@@ -85,19 +89,19 @@ class ReceiptService(
         }
     }
 
-    private fun matchCategory(userId: Long, suggestedCategoryName: String): Long? {
+    private fun matchCategory(
+        suggestedCategoryName: String,
+        userCategories: List<depromeet.hotsix.obrit.category.entity.Category>,
+        presetCategories: List<depromeet.hotsix.obrit.category.entity.Category>,
+    ): Long? {
         // 사용자 카테고리 우선 매칭
-        val userCategory = categoryRepository.findActiveByUserId(userId)
-            .firstOrNull { it.name == suggestedCategoryName }
-
+        val userCategory = userCategories.firstOrNull { it.name == suggestedCategoryName }
         if (userCategory != null) {
             return userCategory.id
         }
 
         // 프리셋 카테고리 매칭
-        val presetCategory = categoryRepository.findActivePresets()
-            .firstOrNull { it.name == suggestedCategoryName }
-
+        val presetCategory = presetCategories.firstOrNull { it.name == suggestedCategoryName }
         return presetCategory?.id
     }
 }

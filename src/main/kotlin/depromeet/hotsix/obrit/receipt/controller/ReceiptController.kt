@@ -33,7 +33,8 @@ class ReceiptController(private val receiptService: ReceiptService) {
         ),
     )
     fun analyzeReceipt(@RequestParam("image") imageFile: MultipartFile): ApiResponse<AnalyzeReceiptResponse> {
-        val userId = SecurityContextHolder.getContext().authentication.principal.toString().toLong()
+        val userId = SecurityContextHolder.getContext().authentication?.principal?.toString()?.toLong()
+            ?: throw org.springframework.security.authentication.BadCredentialsException("인증 정보가 없습니다.")
         return ApiResponse.ok(receiptService.analyzeReceipt(userId, imageFile))
     }
 }

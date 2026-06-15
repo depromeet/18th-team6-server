@@ -44,7 +44,7 @@ class Item(
     @Column(name = "next_replacement_date", nullable = false)
     var nextReplacementDate: LocalDate,
 
-    @Column(name = "receipt_image_url")
+    @Column(name = "receipt_image_url", length = 512)
     var receiptImageUrl: String? = null,
 ) : BaseTimeEntity() {
 

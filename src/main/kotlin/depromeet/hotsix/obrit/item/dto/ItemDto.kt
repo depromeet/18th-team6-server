@@ -12,6 +12,7 @@ import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 @Schema(description = "소모품 등록 요청")
+@EitherCategoryIdOrNewCategoryName
 data class CreateItemRequest(
     @field:Schema(description = "소모품 종류 ID. categoryId와 newCategoryName 중 정확히 하나만 제공해야 함.", example = "200")
     val categoryId: Long? = null,
