@@ -13,9 +13,21 @@ import java.time.LocalDate
 
 @Schema(description = "소모품 등록 요청")
 data class CreateItemRequest(
-    @field:Schema(description = "소모품 종류 ID", example = "200")
-    @field:NotNull(message = "소모품 종류는 필수입니다.")
-    val categoryId: Long,
+    @field:Schema(description = "소모품 종류 ID. categoryId와 newCategoryName 중 정확히 하나만 제공해야 함.", example = "200")
+    val categoryId: Long? = null,
+
+    @field:Schema(
+        description = "새로 만들 카테고리 이름. categoryId가 null이면 필수. 15자 이내, 한글/영문만.",
+        example = "칫솔",
+    )
+    val newCategoryName: String? = null,
+
+    @field:Schema(
+        description = "새 카테고리의 기본 교체 주기(일). newCategoryName과 함께 제공. 미제공 시 카테고리 엔티티 기본값(1) 사용. 범위 1~365.",
+        example = "90",
+    )
+    @field:Positive(message = "교체 주기는 1일 이상이어야 합니다.")
+    val newCategoryDefaultReplacementIntervalDays: Int? = null,
 
     @field:Schema(description = "소모품 이름", example = "사무실 제로콜라")
     @field:NotBlank(message = "소모품 이름은 필수입니다.")
@@ -74,6 +86,12 @@ data class CreateReplacementRequest(
 
 @Schema(description = "소모품 다건 등록 요청.")
 data class BulkCreateItemRequest(
+    @field:Schema(
+        description = "영수증으로 등록한 경우 1단계에서 받은 URL을 그대로 전달. 일반 등록은 null.",
+        example = "https://...",
+    )
+    val receiptImageUrl: String? = null,
+
     @field:Schema(description = "등록할 소모품 목록. 최소 1개, 최대 20개.")
     @field:NotNull(message = "소모품 목록은 필수입니다.")
     @field:Size(min = 1, max = 20, message = "소모품 목록은 1개 이상 20개 이하여야 합니다.")

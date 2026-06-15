@@ -70,4 +70,15 @@ interface CategoryRepository : JpaRepository<Category, Long> {
     fun existsByUserIdIsNullAndNameAndDeletedAtIsNull(name: String): Boolean
 
     fun findAllByUserId(userId: Long): List<Category>
+
+    @Query(
+        """
+        select c
+        from Category c
+        where c.userId = :userId
+          and c.name = :name
+          and c.deletedAt is null
+        """,
+    )
+    fun findActiveByUserIdAndName(@Param("userId") userId: Long, @Param("name") name: String): Category?
 }
