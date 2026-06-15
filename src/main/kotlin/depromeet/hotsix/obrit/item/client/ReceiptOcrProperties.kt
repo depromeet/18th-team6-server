@@ -4,10 +4,10 @@ import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component
 
 @Component
-@ConfigurationProperties(prefix = "ocr.ai")
+@ConfigurationProperties(prefix = "ocr.client")
 data class ReceiptOcrProperties(
-    var apiKey: String = "",
-    var url: String = "",
-    var prompt: String = "",
-    var authHeader: String = "",
+    val apiKey: String = "",
+    val url: String = "",
+    val prompt: String = "",
+    val authHeader: String = "",
 )

@@ -29,7 +29,7 @@ class ReceiptOcrClient(
             val response = restClient
                 .post()
                 .uri(receiptOcrProperties.url)
-                .header("x-goog-api-key", receiptOcrProperties.apiKey)
+                .header(receiptOcrProperties.authHeader, receiptOcrProperties.apiKey)
                 .contentType(MediaType.APPLICATION_JSON)
                 .body(aiRequest)
                 .retrieve()
