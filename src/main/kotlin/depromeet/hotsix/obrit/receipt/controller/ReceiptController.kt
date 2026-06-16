@@ -9,8 +9,8 @@ import io.swagger.v3.oas.annotations.parameters.RequestBody
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.HttpStatus
 import org.springframework.http.MediaType
-import org.springframework.security.core.context.SecurityContextHolder
 import org.springframework.web.bind.annotation.PostMapping
+import org.springframework.web.bind.annotation.RequestHeader
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.ResponseStatus
@@ -32,9 +32,8 @@ class ReceiptController(private val receiptService: ReceiptService) {
             description = "영수증 이미지 파일",
         ),
     )
-    fun analyzeReceipt(@RequestParam("image") imageFile: MultipartFile): ApiResponse<AnalyzeReceiptResponse> {
-        val userId = SecurityContextHolder.getContext().authentication?.principal?.toString()?.toLong()
-            ?: throw org.springframework.security.authentication.BadCredentialsException("인증 정보가 없습니다.")
-        return ApiResponse.ok(receiptService.analyzeReceipt(userId, imageFile))
-    }
+    fun analyzeReceipt(
+        @RequestHeader("X-User-Id") userId: Long,
+        @RequestParam("image") imageFile: MultipartFile,
+    ): ApiResponse<AnalyzeReceiptResponse> = ApiResponse.ok(receiptService.analyzeReceipt(userId, imageFile))
 }
