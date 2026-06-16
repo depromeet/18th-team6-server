@@ -81,4 +81,26 @@ class CategoryService(
         createdAt = createdAt,
         defaultReplacementIntervalDays = defaultReplacementIntervalDays,
     )
+
+    @Transactional
+    fun getOrCreateUserCategoryId(userId: Long, categoryName: String, defaultReplacementIntervalDays: Int): Long {
+        val existingCategory = categoryRepository.findActiveByUserIdAndName(userId, categoryName)
+        if (existingCategory != null) {
+            return existingCategory.id!!
+        }
+
+        return try {
+            val newCategory = Category(
+                userId = userId,
+                name = categoryName,
+                iconId = 1L,
+                defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+            )
+            categoryRepository.save(newCategory).id!!
+        } catch (e: Exception) {
+            val retryCategory = categoryRepository.findActiveByUserIdAndName(userId, categoryName)
+                ?: throw e
+            retryCategory.id!!
+        }
+    }
 }

@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.item.service
 
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
+import depromeet.hotsix.obrit.category.service.CategoryService
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
@@ -40,6 +41,7 @@ class ItemService(
     private val userService: UserService,
     private val categoryRepository: depromeet.hotsix.obrit.category.repository.CategoryRepository,
     private val clock: Clock,
+    private val categoryService: CategoryService,
 ) {
 
     data class CategoryItemStats(val itemCount: Int, val totalQuantity: Int)
@@ -161,19 +163,16 @@ class ItemService(
 
     private fun saveItem(userId: Long, request: CreateItemRequest, receiptImageUrl: String? = null): ItemResponse {
         // categoryId가 있으면 우선 사용, 없으면 newCategoryName으로 새 카테고리 생성 또는 재사용
-        val resolvedCategoryId = if (request.categoryId != null) {
-            request.categoryId
-        } else {
-            // newCategoryName이 반드시 제공되어야 함
-            val newCategoryName = request.newCategoryName
-                ?: throw BusinessException("categoryId가 없으면 newCategoryName은 필수입니다.")
-            // 새 카테고리 생성 또는 재사용
-            resolveOrCreateCategory(
-                userId,
-                newCategoryName,
-                request.newCategoryDefaultReplacementIntervalDays ?: 1,
-            )
-        }
+        val resolvedCategoryId = request.categoryId
+            ?: run {
+                val newCategoryName = request.newCategoryName
+                    ?: throw BusinessException("categoryId가 없으면 newCategoryName은 필수입니다.")
+                resolveOrCreateCategory(
+                    userId,
+                    newCategoryName,
+                    request.newCategoryDefaultReplacementIntervalDays ?: 1,
+                )
+            }
 
         val (categoryName, defaultReplacementIntervalDays) =
             categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, resolvedCategoryId)
@@ -199,30 +198,7 @@ class ItemService(
         userId: Long,
         categoryName: String,
         defaultReplacementIntervalDays: Int,
-    ): Long {
-        // 같은 이름의 사용자 카테고리가 있으면 재사용
-        val existingCategory = categoryRepository.findActiveByUserIdAndName(userId, categoryName)
-        if (existingCategory != null) {
-            return existingCategory.id!!
-        }
-
-        // 새 카테고리 생성 (기본 아이콘 iconId = 1)
-        return try {
-            val newCategory = depromeet.hotsix.obrit.category.entity.Category(
-                userId = userId,
-                name = categoryName,
-                iconId = 1L,
-                defaultReplacementIntervalDays = defaultReplacementIntervalDays,
-            )
-            categoryRepository.save(newCategory).id!!
-        } catch (e: Exception) {
-            // Race condition: 다른 요청이 동시에 같은 카테고리를 생성한 경우
-            // 새로 조회하여 해당 카테고리 반환
-            val retryCategory = categoryRepository.findActiveByUserIdAndName(userId, categoryName)
-                ?: throw e
-            retryCategory.id!!
-        }
-    }
+    ): Long = categoryService.getOrCreateUserCategoryId(userId, categoryName, defaultReplacementIntervalDays)
 
     @Transactional
     fun updateItem(userId: Long, itemId: Long, request: UpdateItemRequest): ItemResponse {
