@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.item.client
+package depromeet.hotsix.obrit.receipt.client
 
 import org.springframework.boot.context.properties.ConfigurationProperties
 import org.springframework.stereotype.Component

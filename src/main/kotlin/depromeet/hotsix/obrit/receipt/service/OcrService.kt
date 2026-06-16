@@ -1,6 +1,6 @@
 package depromeet.hotsix.obrit.receipt.service
 
-import depromeet.hotsix.obrit.item.client.ReceiptOcrClient
+import depromeet.hotsix.obrit.receipt.client.ReceiptOcrClient
 import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
 import org.springframework.stereotype.Service
 

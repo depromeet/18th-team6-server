@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.item.client
+package depromeet.hotsix.obrit.receipt.client
 
 import com.fasterxml.jackson.databind.ObjectMapper
 import depromeet.hotsix.obrit.global.exception.BusinessException

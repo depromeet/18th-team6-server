@@ -1,4 +1,4 @@
-package depromeet.hotsix.obrit.item.client
+package depromeet.hotsix.obrit.receipt.client
 
 data class ReceiptOcrClientRequest(val contents: List<ReceiptOcrContent>)
 
