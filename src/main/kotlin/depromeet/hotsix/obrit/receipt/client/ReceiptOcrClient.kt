@@ -1,6 +1,5 @@
 package depromeet.hotsix.obrit.receipt.client
 
-import com.fasterxml.jackson.databind.ObjectMapper
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
 import org.springframework.http.MediaType
@@ -8,6 +7,7 @@ import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpServerErrorException
 import org.springframework.web.client.RestClient
+import tools.jackson.databind.ObjectMapper
 import java.util.Base64
 
 @Component
@@ -26,13 +26,13 @@ class ReceiptOcrClient(
             .build()
     }
 
-    fun analyzeImage(imageBytes: ByteArray): OcrAnalysisResponse {
-        if (receiptOcrProperties.apiKey.isEmpty()) {
+    fun analyzeImage(imageBytes: ByteArray, mimeType: String = "image/jpeg"): OcrAnalysisResponse {
+        if (receiptOcrProperties.apiKey.isBlank()) {
             throw BusinessException("OCR AI 설정이 누락되었습니다.")
         }
 
         val imageBase64 = Base64.getEncoder().encodeToString(imageBytes)
-        val aiRequest = buildReceiptOcrRequest(imageBase64, receiptOcrProperties.prompt)
+        val aiRequest = buildReceiptOcrRequest(imageBase64, receiptOcrProperties.prompt, mimeType)
 
         return try {
             val response = restClient
@@ -67,14 +67,14 @@ class ReceiptOcrClient(
         }
     }
 
-    private fun buildReceiptOcrRequest(imageBase64: String, prompt: String): ReceiptOcrClientRequest =
+    private fun buildReceiptOcrRequest(imageBase64: String, prompt: String, mimeType: String): ReceiptOcrClientRequest =
         ReceiptOcrClientRequest(
             contents = listOf(
                 ReceiptOcrContent(
                     parts = listOf(
                         ReceiptOcrPart(
                             inlineData = ReceiptOcrInlineData(
-                                mimeType = "image/jpeg",
+                                mimeType = mimeType,
                                 data = imageBase64,
                             ),
                         ),

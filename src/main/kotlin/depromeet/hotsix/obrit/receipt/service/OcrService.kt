@@ -7,5 +7,6 @@ import org.springframework.stereotype.Service
 @Service
 class OcrService(private val receiptOcrClient: ReceiptOcrClient) {
 
-    fun analyzeReceiptImage(imageBytes: ByteArray): OcrAnalysisResponse = receiptOcrClient.analyzeImage(imageBytes)
+    fun analyzeReceiptImage(imageBytes: ByteArray, mimeType: String): OcrAnalysisResponse =
+        receiptOcrClient.analyzeImage(imageBytes, mimeType)
 }

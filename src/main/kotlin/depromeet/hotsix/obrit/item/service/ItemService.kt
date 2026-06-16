@@ -39,7 +39,6 @@ class ItemService(
     private val itemReplacementHistoryRepository: ItemReplacementHistoryRepository,
     private val categoryQueryService: CategoryQueryService,
     private val userService: UserService,
-    private val categoryRepository: depromeet.hotsix.obrit.category.repository.CategoryRepository,
     private val clock: Clock,
     private val categoryService: CategoryService,
 ) {

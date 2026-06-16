@@ -9,6 +9,7 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.util.concurrent.CompletableFuture
+import java.util.concurrent.CompletionException
 import java.util.concurrent.ForkJoinPool
 
 private const val RECEIPT_PREFIX = "receipts"
@@ -26,7 +27,9 @@ class ReceiptService(
     fun analyzeReceipt(userId: Long, imageFile: MultipartFile): AnalyzeReceiptResponse {
         validateImageFile(imageFile)
 
-        val ocrResult = ocrService.analyzeReceiptImage(imageFile.bytes)
+        val extension = imageFile.originalFilename?.substringAfterLast('.')?.lowercase() ?: "jpg"
+        val mimeType = if (extension == "png") "image/png" else "image/jpeg"
+        val ocrResult = ocrService.analyzeReceiptImage(imageFile.bytes, mimeType)
 
         val uploadFuture = CompletableFuture.supplyAsync(
             { fileUploader.upload(RECEIPT_PREFIX, imageFile) },
@@ -46,7 +49,13 @@ class ReceiptService(
             )
         }
 
-        val receiptImageUrl = uploadFuture.join()
+        val receiptImageUrl = try {
+            uploadFuture.join()
+        } catch (e: CompletionException) {
+            val cause = e.cause
+            if (cause is depromeet.hotsix.obrit.global.exception.BusinessException) throw cause
+            throw depromeet.hotsix.obrit.global.exception.BusinessException("영수증 이미지 업로드 중 오류가 발생했습니다.")
+        }
 
         return AnalyzeReceiptResponse(
             receiptImageUrl = receiptImageUrl,

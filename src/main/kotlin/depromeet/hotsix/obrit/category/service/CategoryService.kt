@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+private const val DEFAULT_CATEGORY_ICON_ID = 1L
+
 @Service
 class CategoryService(
     private val categoryRepository: CategoryRepository,
@@ -84,7 +86,8 @@ class CategoryService(
 
     @Transactional
     fun getOrCreateUserCategoryId(userId: Long, categoryName: String, defaultReplacementIntervalDays: Int): Long {
-        val existingCategory = categoryRepository.findActiveByUserIdAndName(userId, categoryName)
+        val trimmedName = categoryName.trim()
+        val existingCategory = categoryRepository.findActiveByUserIdAndName(userId, trimmedName)
         if (existingCategory != null) {
             return existingCategory.id!!
         }
@@ -92,13 +95,13 @@ class CategoryService(
         return try {
             val newCategory = Category(
                 userId = userId,
-                name = categoryName,
-                iconId = 1L,
+                name = trimmedName,
+                iconId = DEFAULT_CATEGORY_ICON_ID,
                 defaultReplacementIntervalDays = defaultReplacementIntervalDays,
             )
             categoryRepository.save(newCategory).id!!
         } catch (e: Exception) {
-            val retryCategory = categoryRepository.findActiveByUserIdAndName(userId, categoryName)
+            val retryCategory = categoryRepository.findActiveByUserIdAndName(userId, trimmedName)
                 ?: throw e
             retryCategory.id!!
         }
