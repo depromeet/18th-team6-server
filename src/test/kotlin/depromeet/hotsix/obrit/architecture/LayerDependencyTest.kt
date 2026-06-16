@@ -41,5 +41,6 @@ class LayerDependencyTest {
 
     @Test
     fun `순환 의존성이 없어야 한다`() {
+        ArchitectureRules.cycleRule(allowEmptyShould = true).check(classesExcludingControllers)
     }
 }
