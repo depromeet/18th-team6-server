@@ -6,7 +6,6 @@ import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.receipt.dto.AnalyzeReceiptResponse
 import depromeet.hotsix.obrit.receipt.dto.AnalyzedItem
 import org.springframework.stereotype.Service
-import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
@@ -23,7 +22,6 @@ class ReceiptService(
     private val categoryQueryService: CategoryQueryService,
 ) {
 
-    @Transactional(readOnly = true)
     fun analyzeReceipt(userId: Long, imageFile: MultipartFile): AnalyzeReceiptResponse {
         validateImageFile(imageFile)
 
