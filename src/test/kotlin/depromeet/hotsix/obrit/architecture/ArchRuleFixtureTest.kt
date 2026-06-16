@@ -66,13 +66,14 @@ class ArchRuleFixtureTest {
     }
 
     @Test
-    fun `service는 같은 도메인의 entity repository dto와 다른 도메인의 service를 참조할 수 있다`() {
+    fun `service는 같은 도메인의 entity repository dto와 다른 도메인의 service repository를 참조할 수 있다`() {
         val classes = importClasses(
             AllowedAlphaService::class.java,
             AlphaResponse::class.java,
             AlphaEntity::class.java,
             AlphaRepository::class.java,
             BetaService::class.java,
+            BetaRepository::class.java,
         )
 
         assertDoesNotThrow {
@@ -105,13 +106,13 @@ class ArchRuleFixtureTest {
     }
 
     @Test
-    fun `service는 다른 도메인의 repository를 참조하면 안 된다`() {
+    fun `service는 다른 도메인의 repository를 참조할 수 있다`() {
         val classes = importClasses(
             InvalidBetaRepositoryService::class.java,
             BetaRepository::class.java,
         )
 
-        assertThrows(AssertionError::class.java) {
+        assertDoesNotThrow {
             ArchitectureRules.serviceRule("alpha", allowEmptyShould = false).check(classes)
         }
     }

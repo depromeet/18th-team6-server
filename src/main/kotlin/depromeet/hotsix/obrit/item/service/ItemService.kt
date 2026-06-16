@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.item.service
 
 import depromeet.hotsix.obrit.category.service.CategoryQueryService
+import depromeet.hotsix.obrit.category.service.CategoryService
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
@@ -39,6 +40,7 @@ class ItemService(
     private val categoryQueryService: CategoryQueryService,
     private val userService: UserService,
     private val clock: Clock,
+    private val categoryService: CategoryService,
 ) {
 
     data class CategoryItemStats(val itemCount: Int, val totalQuantity: Int)
@@ -155,28 +157,47 @@ class ItemService(
         if (existingNames.isNotEmpty()) {
             throw ConflictException("이미 등록된 소모품 이름입니다.")
         }
-        return request.items.map { saveItem(userId, it) }
+        return request.items.map { saveItem(userId, it, request.receiptImageUrl) }
     }
 
-    private fun saveItem(userId: Long, request: CreateItemRequest): ItemResponse {
+    private fun saveItem(userId: Long, request: CreateItemRequest, receiptImageUrl: String? = null): ItemResponse {
+        // categoryId가 있으면 우선 사용, 없으면 newCategoryName으로 새 카테고리 생성 또는 재사용
+        val resolvedCategoryId = request.categoryId
+            ?: run {
+                val newCategoryName = request.newCategoryName
+                    ?: throw BusinessException("categoryId가 없으면 newCategoryName은 필수입니다.")
+                resolveOrCreateCategory(
+                    userId,
+                    newCategoryName,
+                    request.newCategoryDefaultReplacementIntervalDays ?: 1,
+                )
+            }
+
         val (categoryName, defaultReplacementIntervalDays) =
-            categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, request.categoryId)
+            categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, resolvedCategoryId)
 
         val intervalDays = request.replacementIntervalDays ?: defaultReplacementIntervalDays
         val today = LocalDate.now(clock)
         val lastReplacedDate = request.lastReplacementPeriod?.toDate(today) ?: today
         val item = Item(
             userId = userId,
-            categoryId = request.categoryId,
+            categoryId = resolvedCategoryId,
             name = request.name.trim(),
             quantity = request.spareQuantity,
             replacementIntervalDays = intervalDays,
             lastReplacedDate = lastReplacedDate,
             nextReplacementDate = lastReplacedDate.plusDays(intervalDays.toLong()),
+            receiptImageUrl = receiptImageUrl,
         )
 
         return itemRepository.save(item).toResponse(categoryName = categoryName)
     }
+
+    private fun resolveOrCreateCategory(
+        userId: Long,
+        categoryName: String,
+        defaultReplacementIntervalDays: Int,
+    ): Long = categoryService.getOrCreateUserCategoryId(userId, categoryName, defaultReplacementIntervalDays)
 
     @Transactional
     fun updateItem(userId: Long, itemId: Long, request: UpdateItemRequest): ItemResponse {

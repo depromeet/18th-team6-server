@@ -93,4 +93,12 @@ class CategoryQueryService(
 
         return category
     }
+
+    @Transactional(readOnly = true)
+    fun findAccessibleCategoryNameToIdMap(userId: Long): Map<String, Long> {
+        userService.validateUserExist(userId)
+        val presetCategories = categoryRepository.findActivePresets()
+        val userCategories = categoryRepository.findActiveByUserId(userId)
+        return (presetCategories + userCategories).associate { it.name to requireNotNull(it.id) }
+    }
 }

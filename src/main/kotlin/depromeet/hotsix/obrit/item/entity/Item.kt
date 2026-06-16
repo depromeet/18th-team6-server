@@ -43,6 +43,9 @@ class Item(
 
     @Column(name = "next_replacement_date", nullable = false)
     var nextReplacementDate: LocalDate,
+
+    @Column(name = "receipt_image_url", length = 512)
+    var receiptImageUrl: String? = null,
 ) : BaseTimeEntity() {
 
     constructor() : this(
@@ -53,6 +56,7 @@ class Item(
         replacementIntervalDays = 1,
         lastReplacedDate = LocalDate.EPOCH,
         nextReplacementDate = LocalDate.EPOCH,
+        receiptImageUrl = null,
     )
 
     fun update(name: String?, quantity: Int?, replacementIntervalDays: Int?, lastReplacedDate: LocalDate?) {

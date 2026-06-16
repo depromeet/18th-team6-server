@@ -28,6 +28,7 @@ object ArchitectureRules {
         DTO_LAYER,
         ENTITY_LAYER,
         REPOSITORY_LAYER,
+        "client",
     )
 
     fun importProductionClasses(): JavaClasses = ClassFileImporter()
@@ -72,7 +73,7 @@ object ArchitectureRules {
             },
         )
         .because(
-            "Service는 같은 도메인의 service, entity, repository, dto와 다른 도메인의 service, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다.",
+            "Service는 같은 도메인의 service, entity, repository, dto, client와 다른 도메인의 service/repository, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다.",
         )
         .allowEmptyShould(allowEmptyShould)
 
@@ -115,7 +116,7 @@ object ArchitectureRules {
         "$domain controller는 같은 도메인의 controller/service/dto, 다른 도메인의 service, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다."
 
     private fun serviceDescription(domain: String): String =
-        "$domain service는 같은 도메인의 service/entity/repository/dto, 다른 도메인의 service, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다."
+        "$domain service는 같은 도메인의 service/entity/repository/dto/client, 다른 도메인의 service/repository, global 패키지, 공유 가능한 enum/value object만 참조할 수 있습니다."
 
     private fun forbiddenProjectDependencyPredicate(
         description: String,
@@ -145,8 +146,9 @@ object ArchitectureRules {
             isShareableDomainType(javaClass) -> true
             domain == ADMIN_DOMAIN -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER, SERVICE_LAYER)
             location.layer == SERVICE_LAYER -> true
+            location.layer == REPOSITORY_LAYER -> true
             location.domain != domain -> false
-            else -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER)
+            else -> location.layer in setOf(ENTITY_LAYER, REPOSITORY_LAYER, DTO_LAYER, "client")
         }
 
     private fun isShareableDomainType(javaClass: JavaClass): Boolean =
