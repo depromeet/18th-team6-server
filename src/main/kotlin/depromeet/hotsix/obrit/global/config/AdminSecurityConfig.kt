@@ -88,6 +88,7 @@ class AdminSecurityConfig {
             "/users", "/users/**",
             "/items", "/items/**",
             "/categories", "/categories/**",
+            "/receipts", "/receipts/**",
             "/home", "/home/**",
             "/h2-console", "/h2-console/**",
             "/swagger-ui/**", "/swagger-ui.html",
