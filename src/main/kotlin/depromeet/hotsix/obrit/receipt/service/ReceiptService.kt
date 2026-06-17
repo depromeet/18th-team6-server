@@ -35,12 +35,17 @@ class ReceiptService(
         )
 
         val categoryNameToId = categoryQueryService.findAccessibleCategoryNameToIdMap(userId)
+        val matchedCategoryIds = ocrResult.items.mapNotNull { categoryNameToId[it.category] }
+        val categoryIdToIconUrl = categoryQueryService.findVisibleCategoryIconUrls(userId, matchedCategoryIds)
+        val defaultIconUrl = categoryQueryService.getDefaultCategoryIconUrl()
 
         val analyzedItems = ocrResult.items.map { ocrItem ->
+            val categoryId = categoryNameToId[ocrItem.category]
             AnalyzedItem(
                 originalName = ocrItem.original_name,
                 suggestedName = ocrItem.original_name,
-                categoryId = categoryNameToId[ocrItem.category],
+                categoryId = categoryId,
+                iconUrl = categoryId?.let { categoryIdToIconUrl[it] } ?: defaultIconUrl,
                 suggestedCategoryName = ocrItem.category,
                 quantity = ocrItem.effective_quantity,
                 suggestedReplacementIntervalDays = ocrItem.suggested_replacement_interval_days ?: 1,
@@ -51,8 +56,8 @@ class ReceiptService(
             uploadFuture.join()
         } catch (e: CompletionException) {
             val cause = e.cause
-            if (cause is depromeet.hotsix.obrit.global.exception.BusinessException) throw cause
-            throw depromeet.hotsix.obrit.global.exception.BusinessException("영수증 이미지 업로드 중 오류가 발생했습니다.")
+            if (cause is BusinessException) throw cause
+            throw BusinessException("영수증 이미지 업로드 중 오류가 발생했습니다.")
         }
 
         return AnalyzeReceiptResponse(
