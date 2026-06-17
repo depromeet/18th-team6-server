@@ -27,10 +27,6 @@ class ReceiptOcrClient(
     }
 
     fun analyzeImage(imageBytes: ByteArray, mimeType: String = "image/jpeg"): OcrAnalysisResponse {
-        if (receiptOcrProperties.apiKey.isBlank()) {
-            throw BusinessException("OCR AI 설정이 누락되었습니다.")
-        }
-
         val imageBase64 = Base64.getEncoder().encodeToString(imageBytes)
         val aiRequest = buildReceiptOcrRequest(imageBase64, receiptOcrProperties.prompt, mimeType)
 
