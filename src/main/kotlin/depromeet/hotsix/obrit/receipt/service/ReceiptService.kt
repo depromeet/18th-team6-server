@@ -13,7 +13,14 @@ import java.util.concurrent.ForkJoinPool
 
 private const val RECEIPT_PREFIX = "receipts"
 private const val MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
-private val ALLOWED_EXTENSIONS = setOf("jpg", "jpeg", "png")
+private val EXTENSION_TO_MIME_TYPE = mapOf(
+    "jpg" to "image/jpeg",
+    "jpeg" to "image/jpeg",
+    "png" to "image/png",
+    "webp" to "image/webp",
+    "heic" to "image/heic",
+    "heif" to "image/heif",
+)
 
 @Service
 class ReceiptService(
@@ -25,8 +32,7 @@ class ReceiptService(
     fun analyzeReceipt(userId: Long, imageFile: MultipartFile): AnalyzeReceiptResponse {
         validateImageFile(imageFile)
 
-        val extension = imageFile.originalFilename?.substringAfterLast('.')?.lowercase() ?: "jpg"
-        val mimeType = if (extension == "png") "image/png" else "image/jpeg"
+        val mimeType = resolveMimeType(imageFile)
         val ocrResult = ocrService.analyzeReceiptImage(imageFile.bytes, mimeType)
 
         val uploadFuture = CompletableFuture.supplyAsync(
@@ -62,13 +68,18 @@ class ReceiptService(
         )
     }
 
+    private fun resolveMimeType(imageFile: MultipartFile): String {
+        val extension = imageFile.originalFilename!!.substringAfterLast('.').lowercase()
+        return EXTENSION_TO_MIME_TYPE[extension]!!
+    }
+
     private fun validateImageFile(file: MultipartFile) {
         val originalFilename = file.originalFilename
             ?: throw BusinessException("파일명이 없습니다.")
 
         val extension = originalFilename.substringAfterLast('.').lowercase()
-        if (extension !in ALLOWED_EXTENSIONS) {
-            throw BusinessException("허용되지 않은 파일 확장자입니다. (허용: jpg, jpeg, png)")
+        if (extension !in EXTENSION_TO_MIME_TYPE) {
+            throw BusinessException("허용되지 않은 파일 확장자입니다. (허용: jpg, jpeg, png, webp, heic, heif)")
         }
 
         if (file.size > MAX_IMAGE_SIZE_BYTES) {
