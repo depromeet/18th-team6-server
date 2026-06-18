@@ -22,11 +22,7 @@ services:
       - ./alertmanager.yml:/etc/alertmanager/alertmanager.yml:ro # 우리가 작성한 alertmanager.yml을 읽어와 기본 규칙을 설정해 해당 규칙대로 알람 발송
       - alertmanager-data:/alertmanager    # 알람 그룹 상태 영속화 (재시작 시 중복 알림 방지)
     secrets:
-      # alertmanager 컨테이너는 nobody(65534)로 실행되는데, 호스트 secret 파일은 0600 ubuntu 소유라 기본 마운트(0400 root)로는 읽지 못함.
-      # mode 0444로 마운트해 nobody가 읽을 수 있게 한다. secret은 컨테이너 tmpfs에만 노출되므로 호스트 보안과 무관.
-      - source: discord_webhook_url
-        target: discord_webhook_url
-        mode: 0444
+      - discord_webhook_url   # 디스코드 URL은 시크릿으로 주입 -> alertmanger는 yaml 안의 ${VAR} 환경변수를 치환 안 하므로 secret 변수를 둬 대입
     networks:
       - orbit
 
