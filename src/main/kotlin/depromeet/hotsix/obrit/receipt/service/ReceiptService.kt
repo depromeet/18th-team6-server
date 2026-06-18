@@ -41,7 +41,11 @@ class ReceiptService(
         )
 
         val categoryNameToId = categoryQueryService.findAccessibleCategoryNameToIdMap(userId)
-        val analyzedItems = buildAnalyzedItems(ocrResult.items, categoryNameToId)
+        val matchedCategoryIds = ocrResult.items.mapNotNull { categoryNameToId[it.category] }
+        val categoryIdToIconUrl = categoryQueryService.findVisibleCategoryIconUrls(userId, matchedCategoryIds)
+        val defaultIconUrl = categoryQueryService.getDefaultCategoryIconUrl()
+
+        val analyzedItems = buildAnalyzedItems(ocrResult.items, categoryNameToId, categoryIdToIconUrl, defaultIconUrl)
         val receiptImageUrl = awaitUpload(uploadFuture)
 
         return AnalyzeReceiptResponse(
@@ -56,17 +60,23 @@ class ReceiptService(
         return EXTENSION_TO_MIME_TYPE[extension]!!
     }
 
-    private fun buildAnalyzedItems(ocrItems: List<OcrItem>, categoryNameToId: Map<String, Long>): List<AnalyzedItem> =
-        ocrItems.map { ocrItem ->
-            AnalyzedItem(
-                originalName = ocrItem.original_name,
-                suggestedName = ocrItem.original_name,
-                categoryId = categoryNameToId[ocrItem.category],
-                suggestedCategoryName = ocrItem.category,
-                quantity = ocrItem.effective_quantity,
-                suggestedReplacementIntervalDays = ocrItem.suggested_replacement_interval_days ?: 1,
-            )
-        }
+    private fun buildAnalyzedItems(
+        ocrItems: List<OcrItem>,
+        categoryNameToId: Map<String, Long>,
+        categoryIdToIconUrl: Map<Long, String>,
+        defaultIconUrl: String,
+    ): List<AnalyzedItem> = ocrItems.map { ocrItem ->
+        val categoryId = categoryNameToId[ocrItem.category]
+        AnalyzedItem(
+            originalName = ocrItem.original_name,
+            suggestedName = ocrItem.original_name,
+            categoryId = categoryId,
+            iconUrl = categoryId?.let { categoryIdToIconUrl[it] } ?: defaultIconUrl,
+            suggestedCategoryName = ocrItem.category,
+            quantity = ocrItem.effective_quantity,
+            suggestedReplacementIntervalDays = ocrItem.suggested_replacement_interval_days ?: 1,
+        )
+    }
 
     private fun awaitUpload(future: CompletableFuture<String>): String = try {
         future.join()
