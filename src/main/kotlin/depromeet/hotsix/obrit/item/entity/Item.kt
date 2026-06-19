@@ -76,6 +76,7 @@ class Item(
 
     fun replace(replacedDate: LocalDate) {
         lastReplacedDate = replacedDate
+        quantity = (quantity - 1).coerceAtLeast(0)
         recalculateNextReplacementDate()
     }
 
