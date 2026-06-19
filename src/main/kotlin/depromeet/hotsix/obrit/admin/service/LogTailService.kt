@@ -11,6 +11,7 @@ import java.nio.file.Path
 import java.nio.file.Paths
 import java.time.LocalDateTime
 import java.time.ZoneId
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.TimeUnit
 
 @Service
@@ -62,7 +63,14 @@ class LogTailService(private val logsDir: Path = Paths.get("logs")) { // 운영/
         log.info("admin log tail 호출: file={}, lines={}", file, lines)
 
         val command = if (file.endsWith(".gz")) {
-            listOf("bash", "-c", "gunzip -c ${target.toAbsolutePath()} | tail -n $lines")
+            listOf(
+                "bash",
+                "-c",
+                "gunzip -c -- \"$1\" | tail -n \"$2\"",
+                "_",
+                target.toAbsolutePath().toString(),
+                lines.toString(),
+            )
         } else {
             listOf("tail", "-n", lines.toString(), target.toAbsolutePath().toString())
         }
@@ -72,13 +80,18 @@ class LogTailService(private val logsDir: Path = Paths.get("logs")) { // 운영/
             .start()
 
         // 4. 결과 수집
+        val outputFuture = CompletableFuture.supplyAsync {
+            process.inputStream.bufferedReader().use { it.readText() }
+        }
+
         val finished = process.waitFor(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         if (!finished) {
             process.destroyForcibly()
+            outputFuture.cancel(true)
             throw LogTailTimeoutException("로그 조회가 ${TIMEOUT_SECONDS}초 안에 완료되지 않았습니다.")
         }
 
-        val output = process.inputStream.bufferedReader().use { it.readText() }
+        val output = outputFuture.get(TIMEOUT_SECONDS, TimeUnit.SECONDS)
         if (process.exitValue() != 0) {
             throw IllegalStateException("tail 실행 실패 (exit=${process.exitValue()}): $output")
         }

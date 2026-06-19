@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
-@Tag(name = "Admin Logs", description = "어드민 로그 조회 API")
+@Tag(name = "어드민 로그", description = "어드민 로그 조회 API")
 @SecurityRequirement(name = "basicAuth")
 @RestController
 @RequestMapping("/admin/logs")
