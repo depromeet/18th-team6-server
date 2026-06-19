@@ -5,6 +5,7 @@ import depromeet.hotsix.obrit.admin.service.LogTailService
 import depromeet.hotsix.obrit.global.dto.ApiResponse
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.Parameter
+import io.swagger.v3.oas.annotations.security.SecurityRequirement
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.http.MediaType
 import org.springframework.web.bind.annotation.GetMapping
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.bind.annotation.RestController
 
 @Tag(name = "Admin Logs", description = "어드민 로그 조회 API")
+@SecurityRequirement(name = "basicAuth")
 @RestController
 @RequestMapping("/admin/logs")
 class AdminLogController(private val logTailService: LogTailService) {

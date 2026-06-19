@@ -25,7 +25,8 @@ class LogTailService(private val logsDir: Path = Paths.get("logs")) { // 운영/
             stream
                 .filter { Files.isRegularFile(it) } // 일반 파일만! (만약 하위 디렉토리가 있으면 제외)
                 .filter { FILE_NAME_REGEX.matches(it.fileName.toString()) } // 정규식 매칭된 파일만 -> 정규식은 아래쪽에 존재
-                .map { // 각 파일을 DTO로 변환
+                .map {
+                    // 각 파일을 DTO로 변환
                     LogFileResponse(
                         name = it.fileName.toString(),
                         sizeBytes = Files.size(it),
