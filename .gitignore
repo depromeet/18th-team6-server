@@ -48,3 +48,6 @@ src/main/resources/application-dev.yml
 !.env.example
 .deploy.env
 gha-creds-*.json
+
+### Runtime logs ###
+logs/
