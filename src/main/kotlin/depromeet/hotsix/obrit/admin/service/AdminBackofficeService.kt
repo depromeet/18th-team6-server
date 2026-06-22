@@ -223,7 +223,9 @@ class AdminBackofficeService(
                 }
                 .sortedWith(compareBy<ApiAccessLog> { it.occurredAt }.thenBy { it.id ?: 0L })
             val firstItemEvent = events.firstOrNull { it.statusCode < 400 && it.isFirstItemRegistration() }
-            events.mapIndexed { index, event -> event.toTimelineRow(index + 1, selectedCohortUser.signedUpAt, firstItemEvent) }
+            events.mapIndexed { index, event ->
+                event.toTimelineRow(index + 1, selectedCohortUser.signedUpAt, firstItemEvent)
+            }
         }
 
         return AdminSignupFunnelView(
@@ -456,7 +458,12 @@ class AdminBackofficeService(
         val reachedHome = successEvents.any { it.isViewHome() }
         val reachedAdditionalAction = successEvents.any { it.isAdditionalActionAfter(firstItemEvent) }
         val reachedOcr = successEvents.any { it.isOcrUsed() }
-        val lastSuccessEvent = successEvents.maxWithOrNull(compareBy<ApiAccessLog> { it.occurredAt }.thenBy { it.id ?: 0L })
+        val lastSuccessEvent = successEvents.maxWithOrNull(
+            compareBy<ApiAccessLog> { it.occurredAt }.thenBy {
+                it.id
+                    ?: 0L
+            },
+        )
 
         return AdminSignupFunnelUserRow(
             userId = userId,
@@ -481,24 +488,22 @@ class AdminBackofficeService(
         seq: Int,
         signedUpAt: LocalDateTime,
         firstItemEvent: ApiAccessLog?,
-    ): AdminSignupFunnelTimelineRow =
-        AdminSignupFunnelTimelineRow(
-            seq = seq,
-            elapsedSec = Duration.between(signedUpAt, occurredAt).seconds,
-            method = method,
-            pathTemplate = pathTemplate,
-            statusCode = statusCode,
-            durationMs = durationMs,
-            signal = when {
-                statusCode >= 400 -> "error"
-                isSameEvent(firstItemEvent) -> "first_item"
-                isAdditionalActionAfter(firstItemEvent) -> "additional_action"
-                isOcrUsed() -> "ocr_used"
-                isViewHome() -> "view_home"
-                else -> ""
-            },
-        )
-    }
+    ): AdminSignupFunnelTimelineRow = AdminSignupFunnelTimelineRow(
+        seq = seq,
+        elapsedSec = Duration.between(signedUpAt, occurredAt).seconds,
+        method = method,
+        pathTemplate = pathTemplate,
+        statusCode = statusCode,
+        durationMs = durationMs,
+        signal = when {
+            statusCode >= 400 -> "error"
+            isSameEvent(firstItemEvent) -> "first_item"
+            isAdditionalActionAfter(firstItemEvent) -> "additional_action"
+            isOcrUsed() -> "ocr_used"
+            isViewHome() -> "view_home"
+            else -> ""
+        },
+    )
 
     private fun buildFunnelSummary(users: List<AdminSignupFunnelUserRow>): List<AdminSignupFunnelStepRow> {
         val counts = listOf(
@@ -524,59 +529,56 @@ class AdminBackofficeService(
         }
     }
 
-    private fun buildDropOffRows(users: List<AdminSignupFunnelUserRow>): List<AdminSignupFunnelDropOffRow> =
-        users
-            .filter { it.furthestStep < 5 }
-            .groupingBy {
-                DropOffKey(
-                    stepReached = it.furthestStep,
-                    lastSuccessCall = it.lastSuccessCall,
-                )
-            }
-            .eachCount()
-            .map { (key, count) ->
-                val callParts = key.lastSuccessCall.split(" ")
-                AdminSignupFunnelDropOffRow(
-                    stepReached = key.stepReached,
-                    method = callParts.getOrNull(0).orEmpty(),
-                    pathTemplate = callParts.getOrNull(1).orEmpty(),
-                    statusCode = callParts.getOrNull(2).orEmpty(),
-                    users = count,
-                )
-            }
-            .sortedWith(compareBy<AdminSignupFunnelDropOffRow> { it.stepReached }.thenByDescending { it.users })
-
-    private fun formatRate(numerator: Int, denominator: Int): String =
-        if (denominator == 0) {
-            "-"
-        } else {
-            "%.1f%%".format(numerator.toDouble() / denominator.toDouble() * 100.0)
+    private fun buildDropOffRows(users: List<AdminSignupFunnelUserRow>): List<AdminSignupFunnelDropOffRow> = users
+        .filter { it.furthestStep < 5 }
+        .groupingBy {
+            DropOffKey(
+                stepReached = it.furthestStep,
+                lastSuccessCall = it.lastSuccessCall,
+            )
         }
-
-    private fun ApiAccessLog.isFirstItemRegistration(): Boolean =
-        method == "POST" && (pathTemplate == "/items" || pathTemplate == "/items/bulk")
-
-    private fun ApiAccessLog.isViewHome(): Boolean =
-        pathTemplate == "/home/my-summary" ||
-            pathTemplate == "/home/items" ||
-            pathTemplate == "/home/overall-status"
-
-    private fun ApiAccessLog.isAdditionalActionAfter(firstItemEvent: ApiAccessLog?): Boolean =
-        isMaintenanceAction() || (isFirstItemRegistration() && firstItemEvent != null && isAfter(firstItemEvent))
-
-    private fun ApiAccessLog.isMaintenanceAction(): Boolean =
-        (method == "POST" && pathTemplate == "/items/{itemId}/replacements") ||
-            (method == "PATCH" && pathTemplate == "/items/{itemId}/spare-count")
-
-    private fun ApiAccessLog.isOcrUsed(): Boolean =
-        method == "POST" && pathTemplate == "/receipts/analyze"
-
-    private fun ApiAccessLog.isAfter(other: ApiAccessLog): Boolean =
-        occurredAt.isAfter(other.occurredAt) || (occurredAt == other.occurredAt && (id ?: 0L) > (other.id ?: 0L))
-
-    private fun ApiAccessLog.isSameEvent(other: ApiAccessLog?): Boolean =
-        other != null && id == other.id && occurredAt == other.occurredAt
+        .eachCount()
+        .map { (key, count) ->
+            val callParts = key.lastSuccessCall.split(" ")
+            AdminSignupFunnelDropOffRow(
+                stepReached = key.stepReached,
+                method = callParts.getOrNull(0).orEmpty(),
+                pathTemplate = callParts.getOrNull(1).orEmpty(),
+                statusCode = callParts.getOrNull(2).orEmpty(),
+                users = count,
+            )
+        }
+        .sortedWith(compareBy<AdminSignupFunnelDropOffRow> { it.stepReached }.thenByDescending { it.users })
 
     private data class CohortUser(val userId: Long, val signedUpAt: LocalDateTime)
 
-private data class DropOffKey(val stepReached: Int, val lastSuccessCall: String)
+    private data class DropOffKey(val stepReached: Int, val lastSuccessCall: String)
+}
+
+private fun formatRate(numerator: Int, denominator: Int): String = if (denominator == 0) {
+    "-"
+} else {
+    "%.1f%%".format(numerator.toDouble() / denominator.toDouble() * 100.0)
+}
+
+private fun ApiAccessLog.isFirstItemRegistration(): Boolean =
+    method == "POST" && (pathTemplate == "/items" || pathTemplate == "/items/bulk")
+
+private fun ApiAccessLog.isViewHome(): Boolean = pathTemplate == "/home/my-summary" ||
+    pathTemplate == "/home/items" ||
+    pathTemplate == "/home/overall-status"
+
+private fun ApiAccessLog.isAdditionalActionAfter(firstItemEvent: ApiAccessLog?): Boolean =
+    isMaintenanceAction() || (isFirstItemRegistration() && firstItemEvent != null && isAfter(firstItemEvent))
+
+private fun ApiAccessLog.isMaintenanceAction(): Boolean =
+    (method == "POST" && pathTemplate == "/items/{itemId}/replacements") ||
+        (method == "PATCH" && pathTemplate == "/items/{itemId}/spare-count")
+
+private fun ApiAccessLog.isOcrUsed(): Boolean = method == "POST" && pathTemplate == "/receipts/analyze"
+
+private fun ApiAccessLog.isAfter(other: ApiAccessLog): Boolean =
+    occurredAt.isAfter(other.occurredAt) || (occurredAt == other.occurredAt && (id ?: 0L) > (other.id ?: 0L))
+
+private fun ApiAccessLog.isSameEvent(other: ApiAccessLog?): Boolean =
+    other != null && id == other.id && occurredAt == other.occurredAt
