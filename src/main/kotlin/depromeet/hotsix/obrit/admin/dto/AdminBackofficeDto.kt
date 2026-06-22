@@ -75,3 +75,50 @@ data class AdminItemForm(
 )
 
 data class AdminReplacementForm(val replacedDate: LocalDate? = null)
+
+data class AdminSignupFunnelView(
+    val startAt: LocalDateTime,
+    val endAt: LocalDateTime,
+    val selectedUserId: Long?,
+    val summaryRows: List<AdminSignupFunnelStepRow>,
+    val userRows: List<AdminSignupFunnelUserRow>,
+    val timelineRows: List<AdminSignupFunnelTimelineRow>,
+    val dropOffRows: List<AdminSignupFunnelDropOffRow>,
+)
+
+data class AdminSignupFunnelStepRow(
+    val step: String,
+    val label: String,
+    val users: Int,
+    val previousConversionRate: String,
+)
+
+data class AdminSignupFunnelUserRow(
+    val userId: Long,
+    val signedUpAt: LocalDateTime,
+    val reachedAddFirstItem: Boolean,
+    val reachedViewHome: Boolean,
+    val reachedAdditionalAction: Boolean,
+    val reachedOcrUsed: Boolean,
+    val furthestStep: Int,
+    val eventCount: Int,
+    val lastSuccessCall: String,
+)
+
+data class AdminSignupFunnelTimelineRow(
+    val seq: Int,
+    val elapsedSec: Long,
+    val method: String,
+    val pathTemplate: String,
+    val statusCode: Int,
+    val durationMs: Int,
+    val signal: String,
+)
+
+data class AdminSignupFunnelDropOffRow(
+    val stepReached: Int,
+    val method: String,
+    val pathTemplate: String,
+    val statusCode: String,
+    val users: Int,
+)

@@ -232,6 +232,46 @@ tr.deleted {
     font-size: 12px;
 }
 
+.analytics-layout {
+    grid-template-columns: minmax(0, 1fr) 280px;
+}
+
+.analytics-grid {
+    display: grid;
+    grid-template-columns: minmax(0, 1.4fr) minmax(360px, 0.6fr);
+    gap: 18px;
+}
+
+.selected-row {
+    background: #eef6fa !important;
+}
+
+.status-pill,
+.signal-pill {
+    display: inline-flex;
+    align-items: center;
+    min-height: 20px;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 12px;
+    font-weight: 700;
+}
+
+.ok-status {
+    background: #e6f4ea;
+    color: #137333;
+}
+
+.error-status {
+    background: #fce8e6;
+    color: #a50e0e;
+}
+
+.signal-pill {
+    background: #eef3f6;
+    color: #24576b;
+}
+
 .form-row {
     display: grid;
     grid-template-columns: 220px minmax(280px, 520px);
@@ -291,6 +331,7 @@ tr.deleted {
     .admin-header,
     .content-header,
     .changelist,
+    .analytics-grid,
     .form-row {
         display: block;
     }
