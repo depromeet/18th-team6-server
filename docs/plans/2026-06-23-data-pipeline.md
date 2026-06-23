@@ -1,244 +1,262 @@
-# Obrit 데이터 파이프라인 설계안
+# Obrit 데이터 파이프라인 테크 스펙
 
-## 무엇을 만들었는지!
+## 요약
 
-**Obrit 사용자 행동과 서버 상태를 한눈에 확인할 수 있는 데이터 분석 파이프라인**을 설계했습니다.
+Obrit 운영 DB(MySQL)에 저장되는 로그 테이블과 핵심 도메인 테이블을 하루 1회 BigQuery로 적재하고,
+Superset에서 제품 지표와 기술 운영지표를 조회한다.
 
-현재 서버에 쌓이는 로그를 운영 DB에만 두지 않고, 하루 1회 BigQuery로 적재한 다음 Superset 대시보드로 확인하는 구조입니다.
+핵심 방향은 다음과 같다.
+
+- 운영 DB는 서비스 요청 처리에 집중한다.
+- BigQuery는 분석 쿼리 전용 저장소로 사용한다.
+- Superset은 운영 DB를 직접 조회하지 않고 BigQuery의 mart/view만 조회한다.
+- 로그만 적재하지 않고, 사용자/아이템/카테고리 같은 핵심 도메인 테이블도 함께 적재한다.
 
 ```mermaid
 flowchart LR
-    A["Spring Boot 서버"] --> B["운영 DB<br/>MySQL"]
-    B --> C["하루 1회<br/>증분 배치"]
-    C --> D["BigQuery<br/>분석 전용 저장소"]
-    D --> E["Superset<br/>제품/운영 대시보드"]
+    A["Obrit API<br/>Spring Boot"] --> B["운영 DB<br/>MySQL"]
+    B --> C["하루 1회<br/>배치 적재"]
+    C --> D["BigQuery<br/>raw + snapshot"]
+    D --> E["BigQuery<br/>mart/view"]
+    E --> F["Superset<br/>dashboard"]
 ```
 
-목적은 두 가지입니다.
+## 목적
 
-- 제품팀은 사용자가 어떤 기능을 실제로 쓰는지 확인한다.
-- 개발팀은 운영 DB에 부담을 주지 않고 API 품질과 에러를 확인한다.
+### 운영 DB 부하 분리
 
-## 현재 상태
+대시보드 쿼리는 기간별 집계, 사용자별 집계, API별 집계처럼 무거운 조회가 많다.
+이를 운영 DB에서 직접 실행하지 않고 BigQuery에서 처리해 서비스 DB 부하를 줄인다.
 
-레포에는 이미 로그를 저장하는 기반이 있습니다.
+### 제품 지표 분석
 
-### 1. API 접근 로그
+사용자가 가입 이후 어떤 행동을 하는지 확인한다.
 
-`api_access_logs` 테이블에는 모든 API 요청의 기본 정보가 저장됩니다.
+- 가입자 수
+- DAU
+- OCR 사용률
+- 아이템 등록 수
+- 카테고리 생성 수
+- 소모품 교체 기록 수
 
-| 컬럼 | 의미 |
-| --- | --- |
-| `user_id` | 요청한 사용자 ID |
-| `method` | HTTP method |
-| `path` | 실제 요청 경로 |
-| `path_template` | 템플릿 경로 |
-| `status_code` | 응답 상태코드 |
-| `duration_ms` | 응답 시간 |
-| `occurred_at` | 요청 발생 시각 |
+### 기술 운영지표 분석
 
-이 로그로 API 요청 수, 에러율, 느린 API를 분석할 수 있습니다.
+API 품질을 로그 기반으로 확인한다.
 
-### 2. 비즈니스 이벤트 로그
+- API 요청 수
+- 상태코드 비율
+- 4xx/5xx 에러율
+- API별 평균 응답시간
+- 느린 API Top N
 
-`analytics_events` 테이블에는 제품적으로 의미 있는 행동이 저장됩니다.
+### 도메인 맥락을 포함한 분석
 
-| 컬럼 | 의미 |
-| --- | --- |
-| `event_id` | 이벤트 고유 ID |
-| `event_name` | 이벤트 이름 |
-| `user_id` | 이벤트를 발생시킨 사용자 |
-| `occurred_at` | 이벤트 발생 시각 |
-| `properties` | 이벤트별 추가 정보 JSON |
+로그만으로는 "어떤 행동이 발생했다"는 사실만 알 수 있다.
+도메인 테이블을 함께 적재하면 행동의 맥락을 조인해서 볼 수 있다.
 
-현재는 `signup_completed` 이벤트가 저장되고 있습니다.
+예시:
 
-## 문제
+- OCR을 사용한 사용자가 실제로 아이템을 등록했는가?
+- 어떤 카테고리의 소모품이 많이 등록되는가?
+- 교체 기록이 많은 사용자는 어떤 아이템을 관리하는가?
+- API 에러가 특정 기능 사용 흐름에 영향을 주는가?
 
-로그는 이미 DB에 쌓이고 있지만, 이 상태로는 분석용 대시보드를 운영하기 어렵습니다.
+## 목적이 아닌 것
 
-### 1. 로그가 빠르게 증가함
+### 실시간 CDC 구축
 
-API 접근 로그는 모든 요청마다 저장됩니다.
+초기 범위는 하루 1회 배치 적재다.
+Debezium, Kafka, Pub/Sub 같은 CDC 기반 실시간 적재는 이번 범위가 아니다.
 
-사용자가 늘어나거나 분석 기간이 길어지면 로그 테이블 크기가 빠르게 커집니다.
+### Grafana 대체
 
-### 2. 운영 DB에 분석 쿼리를 날리면 성능 부담이 생김
+Prometheus와 Grafana는 서버 상태 모니터링 용도로 유지한다.
+Superset은 제품 행동 분석과 로그 기반 집계 분석에 사용한다.
 
-대시보드는 보통 기간별 집계, 사용자별 집계, API별 집계처럼 무거운 쿼리를 자주 실행합니다.
+### 운영 DB 직접 조회 대시보드
 
-운영 DB에서 이런 쿼리를 직접 실행하면 실제 서비스 요청 처리 성능에 영향을 줄 수 있습니다.
+Superset이 운영 DB에 직접 붙는 구조는 만들지 않는다.
+모든 Superset 쿼리는 BigQuery를 대상으로 실행한다.
 
-### 3. Grafana만으로는 제품 행동 분석이 부족함
+### 전체 데이터 거버넌스 완성
 
-Prometheus와 Grafana는 서버 상태를 보는 데 좋습니다.
+권한 체계, 데이터 카탈로그, 장기 보관 정책, 개인정보 파기 자동화까지 완성하는 것은 이번 범위가 아니다.
+다만 민감 컬럼 처리 기준은 확인 항목으로 남긴다.
 
-하지만 DAU, OCR 사용률, 아이템 등록 전환, 사용자별 행동 흐름 같은 제품 분석에는 BigQuery와 Superset이 더 적합합니다.
+### 모든 테이블의 무조건 적재
 
-## 설계
+운영 DB의 모든 시스템 테이블이나 임시 테이블을 적재하지 않는다.
+초기에는 현재 레포 migration에 정의된 핵심 비즈니스 테이블만 적재한다.
 
-### 원칙
+## 계획
 
-운영 DB는 서비스 요청 처리에 집중하고, 분석 쿼리는 BigQuery에서 실행합니다.
+### 1. 적재 대상
 
-```mermaid
-flowchart TD
-    A["사용자 요청"] --> B["Obrit API 서버"]
-    B --> C["운영 DB에 로그 저장"]
-    C --> D["일 1회 배치 실행"]
-    D --> E["BigQuery raw 테이블 적재"]
-    E --> F["BigQuery mart/view 생성"]
-    F --> G["Superset 대시보드 조회"]
-```
+#### 로그 테이블
 
-### 1. 수집
-
-서버는 기존 방식대로 운영 DB에 로그를 저장합니다.
-
-- API 요청: `api_access_logs`
-- 제품 이벤트: `analytics_events`
-
-추가로 제품 분석을 위해 이벤트를 늘립니다.
-
-| 이벤트 | 발생 시점 |
-| --- | --- |
-| `signup_completed` | 신규 사용자 가입 완료 |
-| `home_viewed` | 홈 화면 진입 |
-| `receipt_analyzed` | 영수증 OCR 분석 완료 |
-| `item_created` | 단일 아이템 등록 |
-| `bulk_item_created` | OCR 결과 등으로 아이템 일괄 등록 |
-| `item_replaced` | 소모품 교체 기록 생성 |
-| `category_created` | 사용자 카테고리 생성 |
-
-### 2. 적재
-
-하루 1회 배치로 전날 데이터를 BigQuery에 적재합니다.
-
-초기 기준은 다음과 같습니다.
-
-- 실행 주기: 하루 1회
-- 적재 방식: `occurred_at` 기준 증분 적재
-- 중복 방지: `id` 또는 `event_id` 기준 dedup
-- 실패 대응: 같은 날짜 배치를 다시 실행해도 같은 결과가 나오도록 idempotent하게 구성
-
-### 3. 저장
-
-BigQuery에는 raw 테이블과 분석용 view/mart를 분리합니다.
-
-| 구분 | 예시 | 용도 |
+| 테이블 | 목적 | 적재 방식 |
 | --- | --- | --- |
-| Raw | `raw_api_access_logs` | 운영 DB 로그를 그대로 보관 |
-| Raw | `raw_analytics_events` | 이벤트 로그를 그대로 보관 |
-| Mart | `daily_product_metrics` | DAU, 가입, OCR, 아이템 등록 지표 |
-| Mart | `daily_api_metrics` | API 요청 수, 에러율, 응답시간 |
+| `api_access_logs` | API 요청량, 에러율, 응답시간 분석 | append-only 증분 적재 |
+| `analytics_events` | 제품 행동 이벤트 분석 | append-only 증분 적재 |
 
-`occurred_at` 날짜 기준으로 파티션을 나누면 기간별 조회 비용을 줄일 수 있습니다.
+#### 핵심 도메인 테이블
 
-### 4. 시각화
+| 테이블 | 목적 | 적재 방식 |
+| --- | --- | --- |
+| `users` | 가입자, 활성 사용자 기준 집계 | 일 단위 스냅샷 |
+| `icons` | 카테고리 아이콘 참조 정보 | 일 단위 스냅샷 |
+| `categories` | 카테고리별 등록/사용 패턴 분석 | 일 단위 스냅샷 |
+| `items` | 아이템 등록, 보유, 삭제 상태 분석 | 일 단위 스냅샷 |
+| `item_replacement_histories` | 실제 소모품 교체 행동 분석 | 일 단위 스냅샷 |
 
-Superset은 BigQuery만 조회합니다.
+### 2. 적재 방식
 
-운영 DB에는 Superset이 직접 접근하지 않습니다.
+#### 로그/이벤트 테이블
 
-## 기능
+`api_access_logs`와 `analytics_events`는 발생 시각 기준으로 계속 쌓이는 데이터다.
+따라서 `occurred_at` 기준으로 전날 데이터를 append-only 증분 적재한다.
 
-### 1. 제품 핵심지표 대시보드
+중복 방지 기준:
 
-사용자가 실제로 제품을 어떻게 쓰는지 확인합니다.
+- `api_access_logs`: `id`
+- `analytics_events`: `event_id`
 
-| 지표 | 설명 |
-| --- | --- |
-| DAU | 하루 동안 API를 사용한 고유 사용자 수 |
-| 신규 가입자 수 | `signup_completed` 발생 사용자 수 |
-| OCR 사용률 | 가입자 또는 활성 사용자 중 OCR 사용 비율 |
-| 아이템 등록 수 | 단일/일괄 아이템 등록 수 |
-| 교체 기록 수 | 소모품 교체 행동 발생 수 |
-| 카테고리 생성 수 | 사용자 커스텀 카테고리 생성 수 |
+#### 도메인 테이블
 
-이 대시보드로 볼 수 있는 질문:
+`users`, `icons`, `categories`, `items`, `item_replacement_histories`는 현재 상태를 분석에 사용한다.
+하루 1회 전체 스냅샷을 BigQuery에 저장하고, `snapshot_date` 컬럼으로 기준일을 구분한다.
 
-- 사용자가 가입 후 실제로 아이템을 등록하는가?
-- OCR 기능이 얼마나 사용되는가?
-- OCR 분석 이후 일괄 등록까지 이어지는가?
-- 소모품 교체 기록이 실제 관리 행동으로 이어지는가?
+스냅샷을 사용하는 이유:
 
-### 2. 기술 운영지표 대시보드
+- soft delete 상태(`deleted_at`)까지 날짜별로 추적할 수 있다.
+- 특정 날짜의 사용자/아이템/카테고리 상태를 재현할 수 있다.
+- 운영 DB의 update/delete 이력을 별도 CDC 없이 분석할 수 있다.
 
-API 품질과 서버 상태를 로그 기반으로 확인합니다.
+### 3. BigQuery 테이블 구조
 
-| 지표 | 설명 |
-| --- | --- |
-| API 요청 수 | 날짜/시간/API별 요청량 |
-| 상태코드 비율 | 2xx, 4xx, 5xx 비율 |
-| 에러율 | API별 실패 비율 |
-| 평균 응답시간 | API별 평균 latency |
-| 느린 API Top N | 응답시간이 긴 API 목록 |
-| 사용자별 요청량 | 특정 사용자의 과도한 요청 여부 |
+BigQuery는 raw/snapshot 계층과 mart/view 계층을 분리한다.
 
-이 대시보드로 볼 수 있는 질문:
+| 계층 | 예시 | 설명 |
+| --- | --- | --- |
+| Raw | `raw_api_access_logs` | 운영 DB 로그를 거의 그대로 적재 |
+| Raw | `raw_analytics_events` | 이벤트 로그를 거의 그대로 적재 |
+| Snapshot | `snap_users` | 일자별 사용자 테이블 스냅샷 |
+| Snapshot | `snap_items` | 일자별 아이템 테이블 스냅샷 |
+| Mart/View | `daily_product_metrics` | Superset 제품 지표 조회용 |
+| Mart/View | `daily_api_metrics` | Superset 운영지표 조회용 |
 
-- 어떤 API에서 에러가 많이 나는가?
-- 특정 시간대에 요청이 몰리는가?
-- OCR, 아이템 등록 같은 핵심 API가 느려지는가?
-- 서비스 장애 전에 5xx나 latency가 증가하는가?
+파티션 기준:
 
-## 결과
+- 로그 테이블: `DATE(occurred_at)`
+- 스냅샷 테이블: `snapshot_date`
+- mart/view: 지표 기준일
 
-이 구조를 적용하면 운영 DB와 분석 워크로드를 분리할 수 있습니다.
+### 4. Superset 대시보드
 
-기존에는 로그가 운영 DB에만 있었기 때문에 분석 쿼리도 운영 DB를 직접 조회해야 했습니다.
+Superset은 BigQuery의 mart/view를 조회한다.
 
-변경 후에는 Superset이 BigQuery만 조회하므로, 대시보드를 자주 열어도 서비스 DB 부하가 증가하지 않습니다.
+초기 대시보드는 두 개로 나눈다.
 
-또한 제품 지표와 기술 운영지표를 같은 파이프라인에서 볼 수 있습니다.
+#### 제품 핵심지표
 
-### 기대효과
+- DAU
+- 신규 가입자 수
+- OCR 사용률
+- 아이템 등록 수
+- 카테고리 생성 수
+- 소모품 교체 기록 수
+- 카테고리별 아이템 등록 분포
 
-- 운영 DB 분석 쿼리 부담 감소
-- 로그 증가에 대한 확장성 확보
-- Superset을 통한 비개발자용 대시보드 제공
-- DAU, OCR 사용률, 아이템 등록 수 같은 제품 지표 확인
-- API 에러율, 응답시간, 느린 API 같은 운영 지표 확인
+#### 기술 운영지표
 
-## 개선점
+- API 요청 수
+- API별 4xx/5xx 비율
+- API별 평균 응답시간
+- 느린 API Top N
+- 시간대별 요청량
+- 사용자별 요청량 분포
 
-현재 설계는 하루 1회 배치이므로 실시간 분석에는 적합하지 않습니다.
+### 5. 검증 방식
 
-하지만 초기 단계에서는 구현 난이도와 비용을 낮추는 것이 더 중요합니다.
+#### 적재 검증
 
-운영 후 필요성이 확인되면 다음 단계로 확장할 수 있습니다.
+- 전날 `api_access_logs` row count와 BigQuery 적재 row count가 일치한다.
+- 전날 `analytics_events` row count와 BigQuery 적재 row count가 일치한다.
+- 같은 날짜 배치를 재실행해도 로그/이벤트 row가 중복되지 않는다.
+- 스냅샷 테이블에 `snapshot_date` 기준 데이터가 생성된다.
 
-- 1일 1회 배치 -> 1시간 단위 배치
-- Batch ETL -> CDC 기반 실시간 적재
-- Raw 로그 조회 -> 제품별 mart 테이블 고도화
-- Superset 단일 대시보드 -> 제품/운영/마케팅 대시보드 분리
+#### 대시보드 검증
 
-## 검증 기준
+- Superset 날짜 필터가 동작한다.
+- Superset API 경로 필터가 동작한다.
+- Superset 이벤트명 필터가 동작한다.
+- Superset이 운영 DB가 아니라 BigQuery를 조회한다.
 
-### 데이터 적재 검증
+#### 운영 검증
 
-- 하루치 `api_access_logs`가 BigQuery에 누락 없이 적재된다.
-- 하루치 `analytics_events`가 BigQuery에 누락 없이 적재된다.
-- 같은 날짜 배치를 재실행해도 중복 row가 생기지 않는다.
-- 운영 DB와 BigQuery의 날짜별 row count가 일치한다.
-
-### 대시보드 검증
-
-- Superset에서 날짜 필터가 동작한다.
-- Superset에서 API 경로별 필터가 동작한다.
-- Superset에서 이벤트명 필터가 동작한다.
-- 제품 핵심지표와 기술 운영지표가 각각 확인된다.
-
-### 운영 검증
-
-- Superset은 운영 DB가 아니라 BigQuery를 조회한다.
 - 배치 실패 시 실패 날짜를 기준으로 재실행할 수 있다.
-- 배치 실행 중에도 API 서버 요청 처리에 영향이 없다.
+- 배치 실행 중 API 서버 요청 처리가 막히지 않는다.
+- 배치 결과가 없을 때 대시보드에서 빈 값이 명확히 보인다.
 
-## 정리
+## 확인이 필요한 점
 
-Obrit의 데이터 파이프라인은 처음부터 복잡한 실시간 구조로 가지 않고, 현재 레포에 이미 있는 로그 테이블을 활용합니다.
+### 민감 컬럼 처리
 
-1일 1회 배치로 BigQuery에 적재하고, Superset에서 제품 핵심지표와 기술 운영지표를 확인하는 구조로 시작합니다.
+다음 값을 BigQuery raw/snapshot에 그대로 둘지, 마스킹할지 결정해야 한다.
 
-이렇게 하면 운영 DB 부하를 줄이면서도, 사용자의 실제 행동과 API 품질을 함께 분석할 수 있습니다.
+- `users.uuid`
+- `items.receipt_image_url`
+- `icons.url`
+- `analytics_events.properties`
+
+초기 기본값은 다음과 같이 둔다.
+
+- raw/snapshot 테이블은 제한된 계정만 접근한다.
+- Superset은 마스킹되거나 집계된 mart/view만 조회한다.
+- 사용자 식별은 내부 `user_id` 기준으로 하고, 외부 식별자인 `uuid` 노출은 최소화한다.
+
+### 배치 실행 위치
+
+하루 1회 배치를 어디서 실행할지 결정해야 한다.
+
+후보:
+
+- GitHub Actions scheduled workflow
+- 운영 서버 cron
+- 별도 배치 컨테이너
+- GCP Cloud Scheduler + Cloud Run
+
+초기에는 운영 서버와 분리하기 쉬운 별도 배치 컨테이너 또는 Cloud Run 계열이 적합하다.
+
+### BigQuery 프로젝트와 데이터셋
+
+다음을 정해야 한다.
+
+- GCP project id
+- BigQuery dataset 이름
+- raw/snapshot/mart 테이블 naming convention
+- partition expiration 여부
+
+### Superset 접근 권한
+
+다음을 정해야 한다.
+
+- 누가 제품 지표 대시보드를 볼 수 있는가?
+- 누가 기술 운영지표 대시보드를 볼 수 있는가?
+- raw/snapshot 테이블을 직접 조회할 수 있는 사람은 누구인가?
+
+### 적재 실패 알림
+
+배치 실패 시 알림 채널을 정해야 한다.
+
+후보:
+
+- Discord
+- Slack-compatible webhook
+- GitHub Actions failure notification
+- Cloud Logging alert
+
+### 비용 기준
+
+BigQuery는 저장 비용보다 쿼리 비용이 문제가 될 수 있다.
+Superset 대시보드가 raw 테이블을 직접 스캔하지 않도록 mart/view 중심으로 구성해야 한다.
