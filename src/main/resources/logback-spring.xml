@@ -1,0 +1,49 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+    obrit 로그 설정.
+    - 콘솔: Spring Boot 기본 어펜더 그대로 사용
+    - 파일: logs/obrit.log 에 누적, 일자/사이즈 기준 롤링 + gzip 압축
+    - 보관: 7일 또는 누적 3GB 초과 시 오래된 것부터 자동 삭제
+-->
+<configuration>
+    <!-- Spring Boot 기본값(${FILE_LOG_PATTERN} 등)과 기본 어펜더를 가져온다. -->
+    <include resource="org/springframework/boot/logging/logback/defaults.xml"/>
+    <include resource="org/springframework/boot/logging/logback/console-appender.xml"/>
+
+    <!-- 파일 어펜더: 일정 조건을 넘으면 새 파일로 갈아끼우는 RollingFileAppender. -->
+    <appender name="FILE" class="ch.qos.logback.core.rolling.RollingFileAppender">
+        <!-- 현재 활성 파일. 새 로그는 항상 여기에 쌓인다. -->
+        <file>logs/obrit.log</file>
+
+        <!-- Spring Boot 기본 패턴: 시각 / 레벨 / PID / 스레드 / 로거 / 메시지 -->
+        <encoder>
+            <pattern>${FILE_LOG_PATTERN}</pattern>
+        </encoder>
+
+        <!-- 롤링 정책: 시간(매일 자정) + 크기(maxFileSize 초과) 둘 다 체크!! -->
+        <rollingPolicy class="ch.qos.logback.core.rolling.SizeAndTimeBasedRollingPolicy">
+            <!--
+                롤링된 파일 이름 패턴.
+                %d{yyyy-MM-dd} = 날짜, %i = 같은 날의 순서 인덱스(0,1,2…), .gz = 자동 압축
+                예) obrit.2026-06-19.0.log.gz
+            -->
+            <fileNamePattern>logs/obrit.%d{yyyy-MM-dd}.%i.log.gz</fileNamePattern>
+            <!-- 단일 파일이 이 크기를 넘으면 같은 날 안에서도 분할(%i 증가). -->
+            <maxFileSize>500MB</maxFileSize>
+            <!-- logs/ 누적 용량 상한. 초과 시 오래된 파일부터 삭제. -->
+            <totalSizeCap>3GB</totalSizeCap>
+            <!-- 보관 일수(최대 7일). 8일째부터 가장 오래된 일자의 롤링 파일을 삭제. -->
+            <maxHistory>7</maxHistory>
+        </rollingPolicy>
+    </appender>
+
+    <!--
+        최상위 로거. 우리 코드의 모든 log.info / warn / error 가 여기로 모인다.
+        level="INFO" → INFO 이상만 기록 (DEBUG/TRACE 무시)
+        받은 로그를 CONSOLE + FILE 양쪽에 찍힘
+    -->
+    <root level="INFO">
+        <appender-ref ref="CONSOLE"/>
+        <appender-ref ref="FILE"/>
+    </root>
+</configuration>
