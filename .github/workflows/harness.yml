@@ -25,6 +25,43 @@ jobs:
       - name: Run build validation
         run: ./gradlew build
 
+      - name: Build Docker image
+        run: docker build -t obrit-server-smoke .
+
+      - name: Run Docker health smoke test
+        run: |
+          docker run -d --name obrit-server-smoke -p 18080:8080 \
+            -e SPRING_PROFILES_ACTIVE=dev \
+            -e SPRING_SQL_INIT_MODE=never \
+            -e OBRIT_ADMIN_USERNAME=admin \
+            -e OBRIT_ADMIN_PASSWORD=admin \
+            -e OCR_CLIENT_API_KEY=test \
+            -e OCR_CLIENT_URL=http://localhost \
+            -e OCR_CLIENT_AUTH_HEADER=x-test \
+            -e OCR_CLIENT_PROMPT=test \
+            obrit-server-smoke
+
+          for attempt in {1..30}; do
+            if curl -fsS http://localhost:18080/actuator/health > /tmp/obrit-health.json; then
+              cat /tmp/obrit-health.json
+              exit 0
+            fi
+
+            if [ "$(docker inspect -f '{{.State.Running}}' obrit-server-smoke)" != "true" ]; then
+              docker logs obrit-server-smoke
+              exit 1
+            fi
+
+            sleep 2
+          done
+
+          docker logs obrit-server-smoke
+          exit 1
+
+      - name: Clean up Docker smoke container
+        if: always()
+        run: docker rm -f obrit-server-smoke || true
+
       - name: Upload ktlint report
         if: always()
         uses: actions/upload-artifact@v4

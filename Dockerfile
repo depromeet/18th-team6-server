@@ -16,6 +16,7 @@ FROM eclipse-temurin:17-jre
 WORKDIR /app
 
 RUN useradd --system --uid 10001 --create-home appuser
+RUN mkdir -p /app/logs && chown -R appuser:appuser /app/logs
 
 COPY --from=builder /workspace/build/libs/*.jar /app/app.jar
 
