@@ -1,7 +1,7 @@
 package depromeet.hotsix.obrit.global.config
 
-import depromeet.hotsix.obrit.accesslog.dto.AccessLogRecord
-import depromeet.hotsix.obrit.accesslog.service.AccessLogService
+import depromeet.hotsix.obrit.global.log.access.dto.AccessLogRecord
+import depromeet.hotsix.obrit.global.log.access.service.AccessLogService
 import jakarta.servlet.http.HttpServletRequest
 import jakarta.servlet.http.HttpServletResponse
 import org.slf4j.LoggerFactory

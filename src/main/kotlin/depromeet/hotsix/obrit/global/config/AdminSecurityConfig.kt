@@ -88,12 +88,14 @@ class AdminSecurityConfig {
             "/users", "/users/**",
             "/items", "/items/**",
             "/categories", "/categories/**",
+            "/receipts", "/receipts/**",
             "/home", "/home/**",
             "/fcm-tokens", "/fcm-tokens/**",
             "/notifications", "/notifications/**",
             "/h2-console", "/h2-console/**",
             "/swagger-ui/**", "/swagger-ui.html",
             "/v3/api-docs/**",
+            "/actuator/prometheus", "/actuator/health",
         )
     }
 }

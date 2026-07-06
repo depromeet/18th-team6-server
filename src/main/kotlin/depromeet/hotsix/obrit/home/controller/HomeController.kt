@@ -1,7 +1,7 @@
 package depromeet.hotsix.obrit.home.controller
 
 import depromeet.hotsix.obrit.global.dto.ApiResponse
-import depromeet.hotsix.obrit.global.paging.CursorSliceResponse
+import depromeet.hotsix.obrit.global.paging.CursorPageResponse
 import depromeet.hotsix.obrit.home.dto.HomeBucketsResponse
 import depromeet.hotsix.obrit.home.dto.HomeItemCard
 import depromeet.hotsix.obrit.home.dto.MyStatusSummaryResponse
@@ -117,6 +117,7 @@ class HomeController(private val homeService: HomeService) {
             - 정렬(order), D-day, 최대 여분 수량 필터를 조합해 결과를 좁힙니다.
             - 응답의 nextCursor를 다음 요청의 cursor 파라미터로 그대로 넘기면 다음 페이지를 조회할 수 있습니다.
             - hasNext가 false이면 더 이상 페이지가 없습니다.
+            - totalCount는 현재 요청 필터가 적용된 전체 결과 개수입니다(페이지 크기와 무관).
             - 각 아이템 카드의 itemBucket 필드(6종)는 여분 유무 × 교체 시기 조합 세부 상태로,
               클라이언트 카드 배경 등 UI 분기에 사용합니다.
         """,
@@ -170,7 +171,7 @@ class HomeController(private val homeService: HomeService) {
             example = "20",
         )
         @RequestParam(required = false, defaultValue = "20") size: Int,
-    ): ApiResponse<CursorSliceResponse<HomeItemCard>> = ApiResponse.ok(
+    ): ApiResponse<CursorPageResponse<HomeItemCard>> = ApiResponse.ok(
         homeService.getItems(
             userId = userId,
             order = order,

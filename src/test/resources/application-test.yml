@@ -12,3 +12,10 @@ obrit:
   admin:
     username: admin
     password: admin
+
+ocr:
+  client:
+    api-key: test
+    url: http://localhost
+    auth-header: x-test
+    prompt: test

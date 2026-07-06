@@ -1,0 +1,20 @@
+# 알람 규칙 문서 (알림을 "언제" 보낼지 규칙, "어떻게" 보낼지 기술하는 alertmanager.yml 과는 다름)
+groups:
+  - name: obrit-availability
+    rules:
+      - alert: ObritDown      # 알람 이름
+        expr: up{job="obrit"} == 0    # Prometheus 스스로가 생성한 field (up -> 가장 최근 스크랩이 성공했는지 자동 저장되는 값, 앱 죽으면 0)
+        for: 5m     # 5분 연속 참일 때 알림 (왜 5분으로 설정 했나? -> 30초처럼 너무 짧게 설정하면 재배포/일시적 네트워크 때 등 조건에 자주 걸림)
+        labels:
+          severity: critical
+        annotations:
+          summary: "Obrit 서버 다운 감지"
+          description: "{{ $labels.instance }}가 5분 이상 스크랩 실패. /actuator/prometheus 확인 필요."
+      - alert: ObritDbDown
+        expr: obrit_db_up == 0    # DbHealthMetricConfig.kt의 MetaBinder에 등록한 DB 연결 상태 필드
+        for: 2m
+        labels:
+          severity: critical
+        annotations:
+          summary: "Obrit DB 연결 끊김"
+          description: "앱은 살아있지만 DataSourceHealthIndicator가 DOWN 상태. flyway/커넥션 풀 확인 필요."

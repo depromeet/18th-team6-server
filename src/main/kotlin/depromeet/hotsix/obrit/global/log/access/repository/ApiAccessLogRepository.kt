@@ -1,6 +1,6 @@
-package depromeet.hotsix.obrit.accesslog.repository
+package depromeet.hotsix.obrit.global.log.access.repository
 
-import depromeet.hotsix.obrit.accesslog.entity.ApiAccessLog
+import depromeet.hotsix.obrit.global.log.access.entity.ApiAccessLog
 import org.springframework.data.jpa.repository.JpaRepository
 
 interface ApiAccessLogRepository : JpaRepository<ApiAccessLog, Long>

@@ -5,9 +5,11 @@ import org.slf4j.LoggerFactory
 import org.springframework.http.HttpStatus
 import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.MethodArgumentNotValidException
+import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.HandlerMethodValidationException
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -48,6 +50,24 @@ class GlobalExceptionHandler {
     fun handleIllegalArgumentException(exception: IllegalArgumentException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(exception.message ?: "잘못된 요청입니다."))
 
+    @ExceptionHandler(MissingServletRequestParameterException::class)
+    fun handleMissingParameterException(
+        exception: MissingServletRequestParameterException,
+    ): ResponseEntity<ErrorResponse> {
+        val message = "필수 요청 파라미터가 누락되었습니다: ${exception.parameterName}"
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(message))
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException::class)
+    fun handleArgumentTypeMismatch(exception: MethodArgumentTypeMismatchException): ResponseEntity<ErrorResponse> {
+        val message = "요청 파라미터 타입이 올바르지 않습니다: ${exception.name}"
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ErrorResponse(message))
+    }
+
+    @ExceptionHandler(LogTailTimeoutException::class)
+    fun handleLogTailTimeoutException(exception: LogTailTimeoutException): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(ErrorResponse(exception.message.orEmpty()))
+
     @ExceptionHandler(Exception::class)
     fun handleGenericException(exception: Exception): ResponseEntity<ErrorResponse> {
         logger.error("예상치 못한 오류가 발생했습니다.", exception)
@@ -65,6 +85,8 @@ class BusinessException(message: String) : RuntimeException(message)
 
 class ResourceNotFoundException(message: String) : RuntimeException(message)
 
-class ConflictException(message: String) : RuntimeException(message)
+class ConflictException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
+
+class LogTailTimeoutException(message: String) : RuntimeException(message)
 
 class ForbiddenException(message: String) : RuntimeException(message)

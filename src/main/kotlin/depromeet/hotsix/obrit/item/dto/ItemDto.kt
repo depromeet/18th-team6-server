@@ -12,16 +12,41 @@ import jakarta.validation.constraints.Size
 import java.time.LocalDate
 
 @Schema(description = "소모품 등록 요청")
+@EitherCategoryIdOrNewCategoryName
 data class CreateItemRequest(
-    @field:Schema(description = "소모품 종류 ID", example = "200")
-    @field:NotNull(message = "소모품 종류는 필수입니다.")
-    val categoryId: Long,
+    @field:Schema(
+        description = "소모품 종류 ID. categoryId와 newCategoryName 중 정확히 하나만 제공해야 함. " +
+            "영수증 분석 시: AnalyzedItem.categoryId 가 not null 이면 이 필드에 그대로 전달.",
+        example = "200",
+    )
+    val categoryId: Long? = null,
 
-    @field:Schema(description = "소모품 이름", example = "사무실 제로콜라")
+    @field:Schema(
+        description = "새로 만들 카테고리 이름. categoryId가 null이면 필수. 15자 이내, 한글/영문만. " +
+            "영수증 분석 시: AnalyzedItem.categoryId 가 null 이면 AnalyzedItem.suggestedCategoryName 을 이 필드에 전달.",
+        example = "칫솔",
+    )
+    val newCategoryName: String? = null,
+
+    @field:Schema(
+        description = "새 카테고리의 기본 교체 주기(일). newCategoryName과 함께 제공. 미제공 시 카테고리 엔티티 기본값(1) 사용. 범위 1~365. " +
+            "영수증 분석 시: newCategoryName 사용 시 AnalyzedItem.suggestedReplacementIntervalDays 를 이 필드에 함께 전달.",
+        example = "90",
+    )
+    @field:Positive(message = "교체 주기는 1일 이상이어야 합니다.")
+    val newCategoryDefaultReplacementIntervalDays: Int? = null,
+
+    @field:Schema(
+        description = "소모품 이름. 영수증 분석 시: AnalyzedItem.suggestedName 을 그대로 전달.",
+        example = "사무실 제로콜라",
+    )
     @field:NotBlank(message = "소모품 이름은 필수입니다.")
     val name: String,
 
-    @field:Schema(description = "여분 수량", example = "12")
+    @field:Schema(
+        description = "여분 수량. 영수증 분석 시: AnalyzedItem.quantity 를 그대로 전달.",
+        example = "12",
+    )
     @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
     val spareQuantity: Int,
 
@@ -72,8 +97,18 @@ data class CreateReplacementRequest(
     val replacedDate: LocalDate? = null,
 )
 
-@Schema(description = "소모품 다건 등록 요청.")
+@Schema(
+    description = "소모품 다건 등록 요청. " +
+        "영수증 분석(POST /receipts/analyze) 결과를 그대로 매핑하여 사용할 수 있습니다. " +
+        "자세한 필드 매핑은 POST /receipts/analyze 의 description 을 참고하세요.",
+)
 data class BulkCreateItemRequest(
+    @field:Schema(
+        description = "영수증으로 등록한 경우 1단계 응답(AnalyzeReceiptResponse.receiptImageUrl)을 그대로 전달. 일반 등록은 null.",
+        example = "https://...",
+    )
+    val receiptImageUrl: String? = null,
+
     @field:Schema(description = "등록할 소모품 목록. 최소 1개, 최대 20개.")
     @field:NotNull(message = "소모품 목록은 필수입니다.")
     @field:Size(min = 1, max = 20, message = "소모품 목록은 1개 이상 20개 이하여야 합니다.")

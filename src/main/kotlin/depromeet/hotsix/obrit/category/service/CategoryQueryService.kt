@@ -12,6 +12,8 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
+private const val DEFAULT_CATEGORY_ICON_ID = 1L
+
 @Service
 @Transactional(readOnly = true)
 class CategoryQueryService(
@@ -92,5 +94,19 @@ class CategoryQueryService(
             ?: throw ResourceNotFoundException("존재하지 않는 소모품 카테고리입니다.")
 
         return category
+    }
+
+    fun getDefaultCategoryIconUrl(): String {
+        val icon = categoryIconRepository.findById(DEFAULT_CATEGORY_ICON_ID)
+            .orElseThrow { ResourceNotFoundException("기본 카테고리 아이콘이 없습니다.") }
+        return iconUrlResolver.resolve(icon.key)
+    }
+
+    @Transactional(readOnly = true)
+    fun findAccessibleCategoryNameToIdMap(userId: Long): Map<String, Long> {
+        userService.validateUserExist(userId)
+        val presetCategories = categoryRepository.findActivePresets()
+        val userCategories = categoryRepository.findActiveByUserId(userId)
+        return (presetCategories + userCategories).associate { it.name to requireNotNull(it.id) }
     }
 }

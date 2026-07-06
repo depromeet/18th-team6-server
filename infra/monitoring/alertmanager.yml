@@ -1,0 +1,27 @@
+global:
+  # slack_api_url인데 왜 디스코드? -> alertManager에 디스코드 처리가 없어서 슬랙 형식으로 우회하기 위함
+  slack_api_url_file: /run/secrets/discord_webhook_url    # 시크릿 파일 경로
+
+
+route:  # 알람 라우팅 트리
+  receiver: discord   # 매칭된 알람을 어느 recevier로 보낼지
+  group_by: ['alertname']   # 알림 그룹화 키 -> 같은 alertname(예: OrbitDown)끼리 한 그룹
+  group_wait: 10s     # 그룹의 첫 알람 받은 후 10초 더 기다리고 한꺼번에 보냄
+  group_interval: 1m       # 같은 그룹에서 추가 알람 발송 간 최소 간격
+  repeat_interval: 24h     # 같은 알림이 계속 안 읽힐 때 다시 알리는 주기
+
+receivers:
+  - name: discord
+    slack_configs:
+      - channel: "#alerts"
+        send_resolved: true   # 앱이 꺼졌다고 복구되면 복구 알람도 보냄
+        title: '[{{ .Status | toUpper }}] {{ .CommonAnnotations.summary }}'
+        text: |
+          {{ range .Alerts -}}
+          *Status*: {{ .Status }}
+          *Description*: {{ .Annotations.description }}
+          {{ end }}
+        # Discord의 Slack-호환 엔드포인트는 title_link가 비어 있으면 400을 반환한다.
+        title_link: '{{ .ExternalURL }}'
+        # 디폴트 색상 'danger'/'good' 문자열 대신 hex로 명시
+        color: '{{ if eq .Status "firing" }}#ff0000{{ else }}#00ff00{{ end }}'

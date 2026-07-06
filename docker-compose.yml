@@ -5,7 +5,7 @@ services:
       context: .
       dockerfile: Dockerfile
     container_name: orbit-server
-    restart: unless-stopped
+    restart: on-failure:3
     ports:
       - "${APP_PORT:-8080}:8080"
     environment:
@@ -19,6 +19,9 @@ services:
       ADMIN_PASSWORD: ${ADMIN_PASSWORD}
       S3_REGION: ${S3_REGION}
       S3_BUCKET: ${S3_BUCKET}
+      AI_API_KEY: ${AI_API_KEY}
+      AI_URL: ${AI_URL}
+      AI_AUTH_HEADER: ${AI_AUTH_HEADER}
     networks:
       - orbit
 

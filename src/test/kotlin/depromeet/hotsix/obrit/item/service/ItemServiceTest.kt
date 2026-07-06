@@ -5,6 +5,7 @@ import depromeet.hotsix.obrit.category.repository.CategoryFixture
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
+import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
@@ -144,6 +145,36 @@ class ItemServiceTest {
 
         assertEquals(1, result.recentReplacements.count { it.isCurrent })
         assertEquals(true, result.recentReplacements.last().isCurrent)
+    }
+
+    @Test
+    fun `소모품 교체를 기록하면 여분 수량을 1 차감한다`() {
+        val item = itemRepository.getReferenceById(itemId)
+        item.updateSpareCount(2)
+        val replacedDate = today
+
+        val result = itemService.replaceItem(
+            userId = userId,
+            itemId = itemId,
+            request = CreateReplacementRequest(replacedDate = replacedDate),
+        )
+
+        assertEquals(1, result.spareQuantity)
+        assertEquals(replacedDate, result.lastReplacedDate)
+        assertEquals(replacedDate.plusDays(30), result.nextReplacementDate)
+        assertEquals(1, itemRepository.getReferenceById(itemId).quantity)
+    }
+
+    @Test
+    fun `여분 수량이 0인 소모품을 교체해도 수량은 음수가 되지 않는다`() {
+        val result = itemService.replaceItem(
+            userId = userId,
+            itemId = itemId,
+            request = CreateReplacementRequest(replacedDate = today),
+        )
+
+        assertEquals(0, result.spareQuantity)
+        assertEquals(0, itemRepository.getReferenceById(itemId).quantity)
     }
 
     @Test

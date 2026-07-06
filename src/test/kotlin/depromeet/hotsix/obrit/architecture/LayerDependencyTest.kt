@@ -15,7 +15,7 @@ class LayerDependencyTest {
     @Test
     fun `프로덕션 도메인 클래스는 레이어 패키지 안에 있어야 한다`() {
         val layerPattern = Regex(
-            """^$BASE_PACKAGE\.[^.]+\.(controller|service|dto|entity|repository|config)(\..*)?$""",
+            """^$BASE_PACKAGE\.[^.]+\.(controller|service|dto|entity|repository|client|config)(\..*)?$""",
         )
         val violations = importedClasses
             .filter { it.packageName.startsWith("$BASE_PACKAGE.") }

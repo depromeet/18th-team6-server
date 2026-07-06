@@ -3,3 +3,19 @@ spring:
     active: dev
   flyway:
     enabled: false
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+  metrics:
+    distribution:
+      percentiles-histogram:
+        http.server.requests: true    # Duration p95/p99 계산을 위한 히스토그램 버킷 활성화
+    tags:
+      application: obrit

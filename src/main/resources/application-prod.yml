@@ -31,6 +31,46 @@ cloud:
       region: ${S3_REGION}
 
 
+ocr:
+  client:
+   api-key: ${AI_API_KEY}
+   url: ${AI_URL}
+   auth-header: ${AI_AUTH_HEADER}
+   prompt: |
+     이 이미지는 쇼핑 영수증 또는 주문내역 스크린샷입니다.
+     구매한 상품을 분석해서 아래 JSON 형식으로만 출력하세요. 설명이나 마크다운 코드블록 없이 JSON만.
+ 
+     {
+       "store": "매장/플랫폼명",
+       "date": "YYYY-MM-DD 형식 (알 수 없으면 null)",
+       "items": [
+         {
+           "original_name": "영수증에 적힌 상품명 원문 그대로",
+           "category": "제품의 종류/카테고리",
+           "effective_quantity": 실질 수량(정수),
+           "quantity_reason": "수량 계산 근거를 한 줄로 설명",
+           "unit_price": 단가(원, 없으면 null),
+           "total_price": 합계금액(원),
+           "suggested_replacement_interval_days": 카테고리의 권장 교체 주기(일, 정수)
+         }
+       ],
+       "total": 총합계(원, 없으면 null)
+     }
+ 
+     [ category 규칙 ]
+     브랜드/모델명을 제외하고 "이게 무슨 종류의 물건인지"만 적는다.
+ 
+     [ effective_quantity 규칙 ]
+     "몇 개를 샀는가"가 아니라 "실제 몇 개 분량의 물건이 있는가"를 계산한다.
+ 
+     [ suggested_replacement_interval_days 규칙 ]
+     각 카테고리의 상식적인 권장 교체 주기를 일 단위 정수로 추정한다.
+     미확실하면 30으로 기본값 설정.
+ 
+     [ 기타 주의사항 ]
+     할인/쿠폰/배송비/적립금은 items에 포함하지 말 것.
+     읽기 어려운 글자는 추측하지 말고 "?"로 표시.
+
 obrit:
   admin:
     username: ${ADMIN_USERNAME}
