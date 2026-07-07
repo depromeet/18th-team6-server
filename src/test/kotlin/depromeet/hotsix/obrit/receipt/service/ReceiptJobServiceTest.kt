@@ -15,9 +15,11 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @SpringBootTest
@@ -47,9 +49,7 @@ class ReceiptJobServiceTest {
 
     @Test
     fun `enqueue는_이미지를_저장하고_대기중_잡을_생성한다`() {
-        val file = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray())
-
-        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = file)
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
 
         val job = receiptJobRepository.findById(jobId).get()
         assertEquals(ReceiptJobStatus.PENDING, job.status)
@@ -58,16 +58,29 @@ class ReceiptJobServiceTest {
     }
 
     @Test
-    fun `processNextPending은_성공하면_잡을_완료_처리하고_결과를_저장한다`() {
+    fun `pickNextPending은_대기중_잡을_선점해_PROCESSING으로_바꾸고_id를_반환한다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+
+        val picked = receiptJobService.pickNextPending()
+
+        assertEquals(jobId, picked)
+        assertEquals(ReceiptJobStatus.PROCESSING, receiptJobRepository.findById(jobId).get().status)
+    }
+
+    @Test
+    fun `pickNextPending은_대기중_잡이_없으면_null을_반환한다`() {
+        assertNull(receiptJobService.pickNextPending())
+    }
+
+    @Test
+    fun `process는_성공하면_잡을_완료_처리하고_결과를_저장한다`() {
         seedDefaultIcon()
         val user = userRepository.save(UserFixture.user())
-        val jobId = receiptJobService.enqueue(
-            userId = user.id!!,
-            imageFile = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray()),
-        )
+        val jobId = receiptJobService.enqueue(userId = user.id!!, imageFile = image())
         stubReceiptOcrClient.response = OcrAnalysisResponse(date = "2026-01-01")
 
-        receiptJobService.processNextPending()
+        receiptJobService.pickNextPending()
+        receiptJobService.process(jobId)
 
         val job = receiptJobRepository.findById(jobId).get()
         assertEquals(ReceiptJobStatus.COMPLETED, job.status)
@@ -75,30 +88,51 @@ class ReceiptJobServiceTest {
     }
 
     @Test
-    fun `processNextPending은_OCR이_실패하면_잡을_실패_처리한다`() {
-        val jobId = receiptJobService.enqueue(
-            userId = 1L,
-            imageFile = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray()),
-        )
+    fun `process는_실패해도_재시도_한도가_남으면_다시_대기중으로_되돌린다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        receiptJobService.pickNextPending()
         stubReceiptOcrClient.error = RuntimeException("OCR 호출 실패")
 
-        receiptJobService.processNextPending()
+        receiptJobService.process(jobId)
+
+        val job = receiptJobRepository.findById(jobId).get()
+        assertEquals(ReceiptJobStatus.PENDING, job.status)
+        assertEquals(1, job.retryCount)
+        assertEquals("OCR 호출 실패", job.errorMessage)
+    }
+
+    @Test
+    fun `process는_재시도_한도를_초과하면_잡을_실패_처리한다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        receiptJobService.pickNextPending()
+        receiptJobRepository.findById(jobId).get().retryCount = MAX_RETRY
+        stubReceiptOcrClient.error = RuntimeException("OCR 호출 실패")
+
+        receiptJobService.process(jobId)
 
         val job = receiptJobRepository.findById(jobId).get()
         assertEquals(ReceiptJobStatus.FAILED, job.status)
-        assertEquals("OCR 호출 실패", job.errorMessage)
+        assertEquals(MAX_RETRY, job.retryCount)
+    }
+
+    @Test
+    fun `releaseToPending은_선점한_잡을_다시_대기중으로_되돌린다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        receiptJobService.pickNextPending()
+
+        receiptJobService.releaseToPending(jobId)
+
+        assertEquals(ReceiptJobStatus.PENDING, receiptJobRepository.findById(jobId).get().status)
     }
 
     @Test
     fun `getJob은_완료된_잡의_결과를_역직렬화해_반환한다`() {
         seedDefaultIcon()
         val user = userRepository.save(UserFixture.user())
-        val jobId = receiptJobService.enqueue(
-            userId = user.id!!,
-            imageFile = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray()),
-        )
+        val jobId = receiptJobService.enqueue(userId = user.id!!, imageFile = image())
         stubReceiptOcrClient.response = OcrAnalysisResponse(date = "2026-01-01")
-        receiptJobService.processNextPending()
+        receiptJobService.pickNextPending()
+        receiptJobService.process(jobId)
 
         val response = receiptJobService.getJob(jobId)
 
@@ -114,11 +148,46 @@ class ReceiptJobServiceTest {
         }
     }
 
+    @Test
+    fun `recoverStuckProcessing은_오래_PROCESSING_상태인_잡을_대기중으로_되돌린다`() {
+        val stuckId = insertProcessingJob(updatedAtMinutesAgo = 2)
+
+        receiptJobService.recoverStuckProcessing()
+
+        assertEquals(ReceiptJobStatus.PENDING, receiptJobRepository.findById(stuckId).get().status)
+    }
+
+    @Test
+    fun `recoverStuckProcessing은_최근_PROCESSING_잡은_건드리지_않는다`() {
+        val recentId = insertProcessingJob(updatedAtMinutesAgo = 0)
+
+        receiptJobService.recoverStuckProcessing()
+
+        assertEquals(ReceiptJobStatus.PROCESSING, receiptJobRepository.findById(recentId).get().status)
+    }
+
+    private fun image() = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray())
+
+    private fun insertProcessingJob(updatedAtMinutesAgo: Long): Long {
+        val timestamp = LocalDateTime.now().minusMinutes(updatedAtMinutesAgo)
+        jdbcTemplate.update(
+            "INSERT INTO receipt_jobs (user_id, image_key, mime_type, status, retry_count, created_at, updated_at) " +
+                "VALUES (1, 'receipts/stuck.jpg', 'image/jpeg', 'PROCESSING', 0, ?, ?)",
+            timestamp,
+            timestamp,
+        )
+        return jdbcTemplate.queryForObject("SELECT MAX(id) FROM receipt_jobs", Long::class.java)!!
+    }
+
     private fun seedDefaultIcon() {
         jdbcTemplate.update(
             "INSERT INTO icons (id, name, icon_key, url, created_at, updated_at) " +
                 "VALUES (1, 'default', 'icons/default.png', 'https://cdn.example.com/icons/default.png', " +
                 "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
         )
+    }
+
+    companion object {
+        private const val MAX_RETRY = 3
     }
 }

@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import tools.jackson.databind.ObjectMapper
+import java.time.Clock
+import java.time.Duration
+import java.time.LocalDateTime
 
 @Service
 class ReceiptJobService(
@@ -20,6 +23,7 @@ class ReceiptJobService(
     private val ocrService: OcrService,
     private val receiptService: ReceiptService,
     private val objectMapper: ObjectMapper,
+    private val clock: Clock,
 ) {
 
     /**
@@ -51,13 +55,24 @@ class ReceiptJobService(
     }
 
     /**
-     * 대기중 잡 하나를 처리한다. 저장된 이미지를 내려받아 OCR·조립 후 완료 처리하고,
-     * 실패 시 잡을 실패 상태로 남긴다. (Stage 1: 단건 처리, 재시도/멈춤 회수 없음)
+     * 대기중 잡 하나를 선점해 PROCESSING으로 표시하고 잡 ID를 반환한다. (pick 트랜잭션)
+     * 실제 처리는 [process]에서 별도 트랜잭션으로 수행하므로, 외부 폴링에서 PROCESSING이 관측되고
+     * Gemini 호출 동안 DB 트랜잭션을 잡지 않는다.
      */
     @Transactional
-    fun processNextPending() {
-        val job = receiptJobRepository.findFirstByStatusOrderByIdAsc(ReceiptJobStatus.PENDING) ?: return
+    fun pickNextPending(): Long? {
+        val job = receiptJobRepository.findFirstByStatusOrderByIdAsc(ReceiptJobStatus.PENDING) ?: return null
         job.markProcessing()
+        return job.id
+    }
+
+    /**
+     * 선점된 잡을 처리한다. 저장된 이미지를 내려받아 OCR·조립 후 완료 처리하고,
+     * 실패 시 잡을 실패 상태로 남긴다. (process 트랜잭션)
+     */
+    @Transactional
+    fun process(jobId: Long) {
+        val job = findJob(jobId)
 
         try {
             val imageBytes = fileUploader.download(job.imageKey)
@@ -65,7 +80,43 @@ class ReceiptJobService(
             val response = receiptService.assembleResponse(job.userId, ocrResult, job.imageKey)
             job.markCompleted(objectMapper.writeValueAsString(response))
         } catch (e: Exception) {
-            job.markFailed(e.message ?: "영수증 처리 중 오류가 발생했습니다.")
+            retryOrFail(job, e.message ?: "영수증 처리 중 오류가 발생했습니다.")
         }
+    }
+
+    /** 재시도 한도가 남았으면 다시 대기중으로 되돌리고, 소진되었으면 실패 처리한다. */
+    private fun retryOrFail(job: ReceiptJob, message: String) {
+        if (job.retryCount < MAX_RETRY) {
+            job.retry(message)
+        } else {
+            job.markFailed(message)
+        }
+    }
+
+    /**
+     * 선점했던 잡을 다시 대기중으로 되돌린다. (토큰 소비 실패 등 처리 진입 전 롤백용)
+     */
+    @Transactional
+    fun releaseToPending(jobId: Long) {
+        findJob(jobId).markPending()
+    }
+
+    /**
+     * 처리 도중 서버가 종료되는 등으로 일정 시간 이상 PROCESSING에 멈춘 잡을 대기중으로 회수한다.
+     * (SQS visibility timeout과 동일한 개념)
+     */
+    @Transactional
+    fun recoverStuckProcessing() {
+        val threshold = LocalDateTime.now(clock).minus(STUCK_TIMEOUT)
+        receiptJobRepository.findAllByStatusAndUpdatedAtBefore(ReceiptJobStatus.PROCESSING, threshold)
+            .forEach { it.markPending() }
+    }
+
+    private fun findJob(jobId: Long): ReceiptJob = receiptJobRepository.findById(jobId)
+        .orElseThrow { ResourceNotFoundException("영수증 분석 잡을 찾을 수 없습니다: $jobId") }
+
+    companion object {
+        private const val MAX_RETRY = 3
+        private val STUCK_TIMEOUT: Duration = Duration.ofMinutes(1)
     }
 }
