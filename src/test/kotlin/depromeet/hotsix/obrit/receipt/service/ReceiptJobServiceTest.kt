@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.receipt.service
 
+import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.receipt.client.StubReceiptOcrClient
 import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJobStatus
@@ -15,6 +16,7 @@ import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
 import kotlin.test.assertTrue
 
@@ -85,6 +87,31 @@ class ReceiptJobServiceTest {
         val job = receiptJobRepository.findById(jobId).get()
         assertEquals(ReceiptJobStatus.FAILED, job.status)
         assertEquals("OCR 호출 실패", job.errorMessage)
+    }
+
+    @Test
+    fun `getJob은_완료된_잡의_결과를_역직렬화해_반환한다`() {
+        seedDefaultIcon()
+        val user = userRepository.save(UserFixture.user())
+        val jobId = receiptJobService.enqueue(
+            userId = user.id!!,
+            imageFile = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray()),
+        )
+        stubReceiptOcrClient.response = OcrAnalysisResponse(date = "2026-01-01")
+        receiptJobService.processNextPending()
+
+        val response = receiptJobService.getJob(jobId)
+
+        assertEquals(ReceiptJobStatus.COMPLETED, response.status)
+        assertNotNull(response.result)
+        assertEquals("2026-01-01", response.result?.purchasedDate)
+    }
+
+    @Test
+    fun `getJob은_존재하지_않는_잡이면_예외를_던진다`() {
+        assertFailsWith<ResourceNotFoundException> {
+            receiptJobService.getJob(99_999L)
+        }
     }
 
     private fun seedDefaultIcon() {

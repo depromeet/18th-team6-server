@@ -1,6 +1,9 @@
 package depromeet.hotsix.obrit.receipt.service
 
 import depromeet.hotsix.obrit.global.common.storage.FileUploader
+import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
+import depromeet.hotsix.obrit.receipt.dto.AnalyzeReceiptResponse
+import depromeet.hotsix.obrit.receipt.dto.ReceiptJobResponse
 import depromeet.hotsix.obrit.receipt.entity.ReceiptImage
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJob
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJobStatus
@@ -28,6 +31,23 @@ class ReceiptJobService(
 
         val job = ReceiptJob(userId = userId, imageKey = imageKey, mimeType = image.mimeType)
         return receiptJobRepository.save(job).id!!
+    }
+
+    /**
+     * 분석 잡의 현재 상태와 결과를 조회한다. 완료된 잡은 저장된 결과를 역직렬화해 반환한다.
+     */
+    @Transactional(readOnly = true)
+    fun getJob(jobId: Long): ReceiptJobResponse {
+        val job = receiptJobRepository.findById(jobId)
+            .orElseThrow { ResourceNotFoundException("영수증 분석 잡을 찾을 수 없습니다: $jobId") }
+
+        val result = job.resultJson?.let { objectMapper.readValue(it, AnalyzeReceiptResponse::class.java) }
+        return ReceiptJobResponse(
+            jobId = job.id!!,
+            status = job.status,
+            result = result,
+            errorMessage = job.errorMessage,
+        )
     }
 
     /**
