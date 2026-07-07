@@ -76,7 +76,16 @@ class ReceiptJobService(
             val response = receiptService.assembleResponse(job.userId, ocrResult, job.imageKey)
             job.markCompleted(objectMapper.writeValueAsString(response))
         } catch (e: Exception) {
-            job.markFailed(e.message ?: "영수증 처리 중 오류가 발생했습니다.")
+            retryOrFail(job, e.message ?: "영수증 처리 중 오류가 발생했습니다.")
+        }
+    }
+
+    /** 재시도 한도가 남았으면 다시 대기중으로 되돌리고, 소진되었으면 실패 처리한다. */
+    private fun retryOrFail(job: ReceiptJob, message: String) {
+        if (job.retryCount < MAX_RETRY) {
+            job.retry(message)
+        } else {
+            job.markFailed(message)
         }
     }
 
@@ -90,4 +99,8 @@ class ReceiptJobService(
 
     private fun findJob(jobId: Long): ReceiptJob = receiptJobRepository.findById(jobId)
         .orElseThrow { ResourceNotFoundException("영수증 분석 잡을 찾을 수 없습니다: $jobId") }
+
+    companion object {
+        private const val MAX_RETRY = 3
+    }
 }

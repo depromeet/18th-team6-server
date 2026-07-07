@@ -87,7 +87,7 @@ class ReceiptJobServiceTest {
     }
 
     @Test
-    fun `process는_OCR이_실패하면_잡을_실패_처리한다`() {
+    fun `process는_실패해도_재시도_한도가_남으면_다시_대기중으로_되돌린다`() {
         val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
         receiptJobService.pickNextPending()
         stubReceiptOcrClient.error = RuntimeException("OCR 호출 실패")
@@ -95,8 +95,23 @@ class ReceiptJobServiceTest {
         receiptJobService.process(jobId)
 
         val job = receiptJobRepository.findById(jobId).get()
-        assertEquals(ReceiptJobStatus.FAILED, job.status)
+        assertEquals(ReceiptJobStatus.PENDING, job.status)
+        assertEquals(1, job.retryCount)
         assertEquals("OCR 호출 실패", job.errorMessage)
+    }
+
+    @Test
+    fun `process는_재시도_한도를_초과하면_잡을_실패_처리한다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        receiptJobService.pickNextPending()
+        receiptJobRepository.findById(jobId).get().retryCount = MAX_RETRY
+        stubReceiptOcrClient.error = RuntimeException("OCR 호출 실패")
+
+        receiptJobService.process(jobId)
+
+        val job = receiptJobRepository.findById(jobId).get()
+        assertEquals(ReceiptJobStatus.FAILED, job.status)
+        assertEquals(MAX_RETRY, job.retryCount)
     }
 
     @Test
@@ -140,5 +155,9 @@ class ReceiptJobServiceTest {
                 "VALUES (1, 'default', 'icons/default.png', 'https://cdn.example.com/icons/default.png', " +
                 "CURRENT_TIMESTAMP, CURRENT_TIMESTAMP)",
         )
+    }
+
+    companion object {
+        private const val MAX_RETRY = 3
     }
 }

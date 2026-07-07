@@ -41,6 +41,9 @@ class ReceiptJob(
 
     @Column(name = "error_message", length = 500)
     var errorMessage: String? = null,
+
+    @Column(name = "retry_count", nullable = false)
+    var retryCount: Int = 0,
 ) : BaseTimeEntity() {
 
     fun markProcessing() {
@@ -60,5 +63,12 @@ class ReceiptJob(
     fun markFailed(errorMessage: String) {
         this.errorMessage = errorMessage
         status = ReceiptJobStatus.FAILED
+    }
+
+    /** 재시도 횟수를 늘리고 다시 대기중으로 되돌린다. 마지막 실패 사유를 기록한다. */
+    fun retry(errorMessage: String) {
+        retryCount++
+        this.errorMessage = errorMessage
+        status = ReceiptJobStatus.PENDING
     }
 }
