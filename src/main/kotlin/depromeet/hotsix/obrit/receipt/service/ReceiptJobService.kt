@@ -2,12 +2,15 @@ package depromeet.hotsix.obrit.receipt.service
 
 import depromeet.hotsix.obrit.global.common.storage.FileUploader
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
+import depromeet.hotsix.obrit.receipt.client.BatchOcrImage
 import depromeet.hotsix.obrit.receipt.dto.AnalyzeReceiptResponse
+import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
 import depromeet.hotsix.obrit.receipt.dto.ReceiptJobResponse
 import depromeet.hotsix.obrit.receipt.entity.ReceiptImage
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJob
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJobStatus
 import depromeet.hotsix.obrit.receipt.repository.ReceiptJobRepository
+import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
@@ -55,32 +58,50 @@ class ReceiptJobService(
     }
 
     /**
-     * 대기중 잡 하나를 선점해 PROCESSING으로 표시하고 잡 ID를 반환한다. (pick 트랜잭션)
-     * 실제 처리는 [process]에서 별도 트랜잭션으로 수행하므로, 외부 폴링에서 PROCESSING이 관측되고
+     * 대기중 잡을 최대 [maxBatch]개 선점해 PROCESSING으로 표시하고 잡 ID 목록을 반환한다. (pick 트랜잭션)
+     * 실제 처리는 [processBatch]에서 별도 트랜잭션으로 수행하므로, 외부 폴링에서 PROCESSING이 관측되고
      * Gemini 호출 동안 DB 트랜잭션을 잡지 않는다.
      */
     @Transactional
-    fun pickNextPending(): Long? {
-        val job = receiptJobRepository.findFirstByStatusOrderByIdAsc(ReceiptJobStatus.PENDING) ?: return null
-        job.markProcessing()
-        return job.id
+    fun pickBatch(maxBatch: Int): List<Long> {
+        val jobs = receiptJobRepository.findByStatusOrderByIdAsc(
+            ReceiptJobStatus.PENDING,
+            PageRequest.of(0, maxBatch),
+        )
+        jobs.forEach { it.markProcessing() }
+        return jobs.map { it.id!! }
     }
 
     /**
-     * 선점된 잡을 처리한다. 저장된 이미지를 내려받아 OCR·조립 후 완료 처리하고,
-     * 실패 시 잡을 실패 상태로 남긴다. (process 트랜잭션)
+     * 선점된 잡들을 한 번의 배치 OCR 호출로 처리한다. 응답을 receipt_id(=잡 ID)로 매핑해
+     * 각 잡을 개별 완료/재시도한다. (process 트랜잭션)
+     *
+     * - 배치 호출 자체 실패(다운로드·API 오류): 전체 잡을 재시도/실패 처리.
+     * - 부분 실패(특정 잡의 결과 누락): 해당 잡만 재시도/실패, 나머지는 완료.
      */
     @Transactional
-    fun process(jobId: Long) {
-        val job = findJob(jobId)
+    fun processBatch(jobIds: List<Long>) {
+        val jobs = jobIds.map { findJob(it) }
 
-        try {
-            val imageBytes = fileUploader.download(job.imageKey)
-            val ocrResult = ocrService.analyzeReceiptImage(imageBytes, job.mimeType)
-            val response = receiptService.assembleResponse(job.userId, ocrResult, job.imageKey)
-            job.markCompleted(objectMapper.writeValueAsString(response))
+        val resultsByReceiptId = try {
+            val images = jobs.map { job ->
+                BatchOcrImage(job.id.toString(), fileUploader.download(job.imageKey), job.mimeType)
+            }
+            ocrService.analyzeReceiptImages(images).results.associateBy { it.receiptId }
         } catch (e: Exception) {
-            retryOrFail(job, e.message ?: "영수증 처리 중 오류가 발생했습니다.")
+            jobs.forEach { retryOrFail(it, e.message ?: "배치 처리 중 오류가 발생했습니다.") }
+            return
+        }
+
+        jobs.forEach { job ->
+            val result = resultsByReceiptId[job.id.toString()]
+            if (result == null) {
+                retryOrFail(job, "배치 응답에서 결과를 찾지 못했습니다. (receipt_id=${job.id})")
+            } else {
+                val ocrResult = OcrAnalysisResponse(result.store, result.date, result.items, result.total)
+                val response = receiptService.assembleResponse(job.userId, ocrResult, job.imageKey)
+                job.markCompleted(objectMapper.writeValueAsString(response))
+            }
         }
     }
 
@@ -94,11 +115,11 @@ class ReceiptJobService(
     }
 
     /**
-     * 선점했던 잡을 다시 대기중으로 되돌린다. (토큰 소비 실패 등 처리 진입 전 롤백용)
+     * 선점했던 잡들을 다시 대기중으로 되돌린다. (토큰 소비 실패 등 처리 진입 전 롤백용)
      */
     @Transactional
-    fun releaseToPending(jobId: Long) {
-        findJob(jobId).markPending()
+    fun releaseToPending(jobIds: List<Long>) {
+        jobIds.forEach { findJob(it).markPending() }
     }
 
     /**
