@@ -4,6 +4,7 @@ import depromeet.hotsix.obrit.global.common.storage.FileUploader
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.receipt.client.BatchOcrImage
 import depromeet.hotsix.obrit.receipt.dto.AnalyzeReceiptResponse
+import depromeet.hotsix.obrit.receipt.dto.BatchOcrResult
 import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
 import depromeet.hotsix.obrit.receipt.dto.ReceiptJobResponse
 import depromeet.hotsix.obrit.receipt.entity.ReceiptImage
@@ -93,11 +94,20 @@ class ReceiptJobService(
             return
         }
 
-        jobs.forEach { job ->
-            val result = resultsByReceiptId[job.id.toString()]
-            if (result == null) {
+        jobs.forEach { job -> handleResult(job, resultsByReceiptId[job.id.toString()]) }
+    }
+
+    private fun handleResult(job: ReceiptJob, result: BatchOcrResult?) {
+        when {
+            // 결과 누락: 배치 응답에 receipt_id가 없음 → 일시적일 수 있으므로 재시도
+            result == null ->
                 retryOrFail(job, "배치 응답에서 결과를 찾지 못했습니다. (receipt_id=${job.id})")
-            } else {
+
+            // 인식 실패: 결과는 있으나 구조적으로 영수증이 아님 → 재시도해도 동일하므로 즉시 실패
+            result.items.isEmpty() || result.store.isNullOrBlank() ->
+                job.markFailed("영수증을 인식하지 못했습니다. 직접 입력해 주세요.")
+
+            else -> {
                 val ocrResult = OcrAnalysisResponse(result.store, result.date, result.items, result.total)
                 val response = receiptService.assembleResponse(job.userId, ocrResult, job.imageKey)
                 job.markCompleted(objectMapper.writeValueAsString(response))

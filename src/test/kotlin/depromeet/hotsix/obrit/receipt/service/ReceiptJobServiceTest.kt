@@ -122,6 +122,38 @@ class ReceiptJobServiceTest {
     }
 
     @Test
+    fun `processBatch는_items가_비어있으면_재시도없이_인식_실패로_처리한다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(
+            listOf(BatchOcrResult(receiptId = jobId.toString(), store = "마트", items = emptyList())),
+        )
+
+        receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
+
+        val job = receiptJobRepository.findById(jobId).get()
+        assertEquals(ReceiptJobStatus.FAILED, job.status)
+        assertEquals(0, job.retryCount)
+    }
+
+    @Test
+    fun `processBatch는_가게명이_없으면_재시도없이_인식_실패로_처리한다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(
+            listOf(
+                BatchOcrResult(
+                    receiptId = jobId.toString(),
+                    store = null,
+                    items = listOf(OcrItem(original_name = "칫솔", category = "칫솔", effective_quantity = 1)),
+                ),
+            ),
+        )
+
+        receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
+
+        assertEquals(ReceiptJobStatus.FAILED, receiptJobRepository.findById(jobId).get().status)
+    }
+
+    @Test
     fun `releaseToPending은_선점한_잡들을_다시_대기중으로_되돌린다`() {
         receiptJobService.enqueue(userId = 1L, imageFile = image())
         receiptJobService.enqueue(userId = 1L, imageFile = image())
