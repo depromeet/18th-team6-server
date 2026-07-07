@@ -51,13 +51,24 @@ class ReceiptJobService(
     }
 
     /**
-     * 대기중 잡 하나를 처리한다. 저장된 이미지를 내려받아 OCR·조립 후 완료 처리하고,
-     * 실패 시 잡을 실패 상태로 남긴다. (Stage 1: 단건 처리, 재시도/멈춤 회수 없음)
+     * 대기중 잡 하나를 선점해 PROCESSING으로 표시하고 잡 ID를 반환한다. (pick 트랜잭션)
+     * 실제 처리는 [process]에서 별도 트랜잭션으로 수행하므로, 외부 폴링에서 PROCESSING이 관측되고
+     * Gemini 호출 동안 DB 트랜잭션을 잡지 않는다.
      */
     @Transactional
-    fun processNextPending() {
-        val job = receiptJobRepository.findFirstByStatusOrderByIdAsc(ReceiptJobStatus.PENDING) ?: return
+    fun pickNextPending(): Long? {
+        val job = receiptJobRepository.findFirstByStatusOrderByIdAsc(ReceiptJobStatus.PENDING) ?: return null
         job.markProcessing()
+        return job.id
+    }
+
+    /**
+     * 선점된 잡을 처리한다. 저장된 이미지를 내려받아 OCR·조립 후 완료 처리하고,
+     * 실패 시 잡을 실패 상태로 남긴다. (process 트랜잭션)
+     */
+    @Transactional
+    fun process(jobId: Long) {
+        val job = findJob(jobId)
 
         try {
             val imageBytes = fileUploader.download(job.imageKey)
@@ -68,4 +79,15 @@ class ReceiptJobService(
             job.markFailed(e.message ?: "영수증 처리 중 오류가 발생했습니다.")
         }
     }
+
+    /**
+     * 선점했던 잡을 다시 대기중으로 되돌린다. (토큰 소비 실패 등 처리 진입 전 롤백용)
+     */
+    @Transactional
+    fun releaseToPending(jobId: Long) {
+        findJob(jobId).markPending()
+    }
+
+    private fun findJob(jobId: Long): ReceiptJob = receiptJobRepository.findById(jobId)
+        .orElseThrow { ResourceNotFoundException("영수증 분석 잡을 찾을 수 없습니다: $jobId") }
 }

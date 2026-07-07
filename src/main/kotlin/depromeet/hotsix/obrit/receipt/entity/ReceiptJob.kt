@@ -47,6 +47,10 @@ class ReceiptJob(
         status = ReceiptJobStatus.PROCESSING
     }
 
+    fun markPending() {
+        status = ReceiptJobStatus.PENDING
+    }
+
     fun markCompleted(resultJson: String) {
         this.resultJson = resultJson
         this.errorMessage = null
