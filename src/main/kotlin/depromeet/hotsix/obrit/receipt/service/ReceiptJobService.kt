@@ -12,6 +12,9 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import org.springframework.web.multipart.MultipartFile
 import tools.jackson.databind.ObjectMapper
+import java.time.Clock
+import java.time.Duration
+import java.time.LocalDateTime
 
 @Service
 class ReceiptJobService(
@@ -20,6 +23,7 @@ class ReceiptJobService(
     private val ocrService: OcrService,
     private val receiptService: ReceiptService,
     private val objectMapper: ObjectMapper,
+    private val clock: Clock,
 ) {
 
     /**
@@ -97,10 +101,22 @@ class ReceiptJobService(
         findJob(jobId).markPending()
     }
 
+    /**
+     * 처리 도중 서버가 종료되는 등으로 일정 시간 이상 PROCESSING에 멈춘 잡을 대기중으로 회수한다.
+     * (SQS visibility timeout과 동일한 개념)
+     */
+    @Transactional
+    fun recoverStuckProcessing() {
+        val threshold = LocalDateTime.now(clock).minus(STUCK_TIMEOUT)
+        receiptJobRepository.findAllByStatusAndUpdatedAtBefore(ReceiptJobStatus.PROCESSING, threshold)
+            .forEach { it.markPending() }
+    }
+
     private fun findJob(jobId: Long): ReceiptJob = receiptJobRepository.findById(jobId)
         .orElseThrow { ResourceNotFoundException("영수증 분석 잡을 찾을 수 없습니다: $jobId") }
 
     companion object {
         private const val MAX_RETRY = 3
+        private val STUCK_TIMEOUT: Duration = Duration.ofMinutes(1)
     }
 }

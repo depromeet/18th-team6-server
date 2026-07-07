@@ -36,7 +36,14 @@ class ReceiptJobSchedulerService(
         receiptJobService.process(jobId)
     }
 
+    /** 일정 시간 이상 PROCESSING에 멈춘 잡을 주기적으로 대기중으로 회수한다. */
+    @Scheduled(fixedDelay = RECOVERY_INTERVAL_MS)
+    fun recoverStuck() {
+        receiptJobService.recoverStuckProcessing()
+    }
+
     companion object {
         private const val POLL_INTERVAL_MS = 500L
+        private const val RECOVERY_INTERVAL_MS = 60_000L
     }
 }

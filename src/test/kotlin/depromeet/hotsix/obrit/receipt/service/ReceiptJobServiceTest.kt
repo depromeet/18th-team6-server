@@ -15,6 +15,7 @@ import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
@@ -147,7 +148,36 @@ class ReceiptJobServiceTest {
         }
     }
 
+    @Test
+    fun `recoverStuckProcessing은_오래_PROCESSING_상태인_잡을_대기중으로_되돌린다`() {
+        val stuckId = insertProcessingJob(updatedAtMinutesAgo = 2)
+
+        receiptJobService.recoverStuckProcessing()
+
+        assertEquals(ReceiptJobStatus.PENDING, receiptJobRepository.findById(stuckId).get().status)
+    }
+
+    @Test
+    fun `recoverStuckProcessing은_최근_PROCESSING_잡은_건드리지_않는다`() {
+        val recentId = insertProcessingJob(updatedAtMinutesAgo = 0)
+
+        receiptJobService.recoverStuckProcessing()
+
+        assertEquals(ReceiptJobStatus.PROCESSING, receiptJobRepository.findById(recentId).get().status)
+    }
+
     private fun image() = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray())
+
+    private fun insertProcessingJob(updatedAtMinutesAgo: Long): Long {
+        val timestamp = LocalDateTime.now().minusMinutes(updatedAtMinutesAgo)
+        jdbcTemplate.update(
+            "INSERT INTO receipt_jobs (user_id, image_key, mime_type, status, retry_count, created_at, updated_at) " +
+                "VALUES (1, 'receipts/stuck.jpg', 'image/jpeg', 'PROCESSING', 0, ?, ?)",
+            timestamp,
+            timestamp,
+        )
+        return jdbcTemplate.queryForObject("SELECT MAX(id) FROM receipt_jobs", Long::class.java)!!
+    }
 
     private fun seedDefaultIcon() {
         jdbcTemplate.update(
