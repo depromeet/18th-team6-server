@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.MissingServletRequestParameterException
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
+import org.springframework.web.client.RestClientException
 import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
 
@@ -63,6 +64,13 @@ class GlobalExceptionHandler {
     @ExceptionHandler(LogTailTimeoutException::class)
     fun handleLogTailTimeoutException(exception: LogTailTimeoutException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.GATEWAY_TIMEOUT).body(ErrorResponse(exception.message.orEmpty()))
+
+    @ExceptionHandler(RestClientException::class)
+    fun handleRestClientException(exception: RestClientException): ResponseEntity<ErrorResponse> {
+        logger.warn("외부 AI API 호출에 실패했습니다.", exception)
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+            .body(ErrorResponse("AI API 오류: 잠시 후 다시 시도해주세요."))
+    }
 
     @ExceptionHandler(Exception::class)
     fun handleGenericException(exception: Exception): ResponseEntity<ErrorResponse> {

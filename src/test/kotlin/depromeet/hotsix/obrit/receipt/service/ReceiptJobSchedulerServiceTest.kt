@@ -1,7 +1,9 @@
 package depromeet.hotsix.obrit.receipt.service
 
 import depromeet.hotsix.obrit.receipt.client.StubReceiptOcrClient
-import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
+import depromeet.hotsix.obrit.receipt.dto.BatchOcrResponse
+import depromeet.hotsix.obrit.receipt.dto.BatchOcrResult
+import depromeet.hotsix.obrit.receipt.dto.OcrItem
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJobStatus
 import depromeet.hotsix.obrit.receipt.repository.ReceiptJobRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
@@ -45,14 +47,22 @@ class ReceiptJobSchedulerServiceTest {
     }
 
     @Test
-    fun `poll은_토큰이_있으면_대기중_잡을_선점_처리해_완료시킨다`() {
+    fun `poll은_토큰이_있으면_대기중_잡을_배치로_선점_처리해_완료시킨다`() {
         seedDefaultIcon()
         val user = userRepository.save(UserFixture.user())
         val jobId = receiptJobService.enqueue(
             userId = user.id!!,
             imageFile = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray()),
         )
-        stubReceiptOcrClient.response = OcrAnalysisResponse(date = "2026-01-01")
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(
+            listOf(
+                BatchOcrResult(
+                    receiptId = jobId.toString(),
+                    store = "마트",
+                    items = listOf(OcrItem(original_name = "칫솔", category = "칫솔", effective_quantity = 1)),
+                ),
+            ),
+        )
 
         receiptJobSchedulerService.poll()
 

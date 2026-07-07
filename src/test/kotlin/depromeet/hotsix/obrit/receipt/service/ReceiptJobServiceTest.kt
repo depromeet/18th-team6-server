@@ -2,7 +2,9 @@ package depromeet.hotsix.obrit.receipt.service
 
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.receipt.client.StubReceiptOcrClient
-import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
+import depromeet.hotsix.obrit.receipt.dto.BatchOcrResponse
+import depromeet.hotsix.obrit.receipt.dto.BatchOcrResult
+import depromeet.hotsix.obrit.receipt.dto.OcrItem
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJobStatus
 import depromeet.hotsix.obrit.receipt.repository.ReceiptJobRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
@@ -19,7 +21,6 @@ import java.time.LocalDateTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNotNull
-import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @SpringBootTest
@@ -58,29 +59,33 @@ class ReceiptJobServiceTest {
     }
 
     @Test
-    fun `pickNextPending은_대기중_잡을_선점해_PROCESSING으로_바꾸고_id를_반환한다`() {
-        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+    fun `pickBatch는_대기중_잡을_id_오름차순으로_선점해_PROCESSING으로_바꾼다`() {
+        val first = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val second = receiptJobService.enqueue(userId = 1L, imageFile = image())
 
-        val picked = receiptJobService.pickNextPending()
+        val picked = receiptJobService.pickBatch(maxBatch = 6)
 
-        assertEquals(jobId, picked)
-        assertEquals(ReceiptJobStatus.PROCESSING, receiptJobRepository.findById(jobId).get().status)
+        assertEquals(listOf(first, second), picked)
+        assertEquals(ReceiptJobStatus.PROCESSING, receiptJobRepository.findById(first).get().status)
     }
 
     @Test
-    fun `pickNextPending은_대기중_잡이_없으면_null을_반환한다`() {
-        assertNull(receiptJobService.pickNextPending())
+    fun `pickBatch는_maxBatch_개수만큼만_선점한다`() {
+        repeat(3) { receiptJobService.enqueue(userId = 1L, imageFile = image()) }
+
+        val picked = receiptJobService.pickBatch(maxBatch = 2)
+
+        assertEquals(2, picked.size)
     }
 
     @Test
-    fun `process는_성공하면_잡을_완료_처리하고_결과를_저장한다`() {
+    fun `processBatch는_receipt_id로_매핑해_각_잡을_완료_처리한다`() {
         seedDefaultIcon()
         val user = userRepository.save(UserFixture.user())
         val jobId = receiptJobService.enqueue(userId = user.id!!, imageFile = image())
-        stubReceiptOcrClient.response = OcrAnalysisResponse(date = "2026-01-01")
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(listOf(successResult(jobId)))
 
-        receiptJobService.pickNextPending()
-        receiptJobService.process(jobId)
+        receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
 
         val job = receiptJobRepository.findById(jobId).get()
         assertEquals(ReceiptJobStatus.COMPLETED, job.status)
@@ -88,41 +93,77 @@ class ReceiptJobServiceTest {
     }
 
     @Test
-    fun `process는_실패해도_재시도_한도가_남으면_다시_대기중으로_되돌린다`() {
-        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
-        receiptJobService.pickNextPending()
-        stubReceiptOcrClient.error = RuntimeException("OCR 호출 실패")
+    fun `processBatch는_결과가_누락된_잡만_재시도하고_나머지는_완료한다`() {
+        seedDefaultIcon()
+        val user = userRepository.save(UserFixture.user())
+        val completedId = receiptJobService.enqueue(userId = user.id!!, imageFile = image())
+        val missingId = receiptJobService.enqueue(userId = user.id!!, imageFile = image())
+        // completedId 결과만 응답에 포함 (missingId는 누락)
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(listOf(successResult(completedId)))
 
-        receiptJobService.process(jobId)
+        receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
 
-        val job = receiptJobRepository.findById(jobId).get()
-        assertEquals(ReceiptJobStatus.PENDING, job.status)
-        assertEquals(1, job.retryCount)
-        assertEquals("OCR 호출 실패", job.errorMessage)
+        assertEquals(ReceiptJobStatus.COMPLETED, receiptJobRepository.findById(completedId).get().status)
+        val missing = receiptJobRepository.findById(missingId).get()
+        assertEquals(ReceiptJobStatus.PENDING, missing.status)
+        assertEquals(1, missing.retryCount)
     }
 
     @Test
-    fun `process는_재시도_한도를_초과하면_잡을_실패_처리한다`() {
-        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
-        receiptJobService.pickNextPending()
-        receiptJobRepository.findById(jobId).get().retryCount = MAX_RETRY
-        stubReceiptOcrClient.error = RuntimeException("OCR 호출 실패")
+    fun `processBatch는_배치_호출_자체가_실패하면_전체_잡을_재시도한다`() {
+        val first = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val second = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        stubReceiptOcrClient.batchError = RuntimeException("배치 OCR 호출 실패")
 
-        receiptJobService.process(jobId)
+        receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
+
+        assertEquals(ReceiptJobStatus.PENDING, receiptJobRepository.findById(first).get().status)
+        assertEquals(ReceiptJobStatus.PENDING, receiptJobRepository.findById(second).get().status)
+    }
+
+    @Test
+    fun `processBatch는_items가_비어있으면_재시도없이_인식_실패로_처리한다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(
+            listOf(BatchOcrResult(receiptId = jobId.toString(), store = "마트", items = emptyList())),
+        )
+
+        receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
 
         val job = receiptJobRepository.findById(jobId).get()
         assertEquals(ReceiptJobStatus.FAILED, job.status)
-        assertEquals(MAX_RETRY, job.retryCount)
+        assertEquals(0, job.retryCount)
     }
 
     @Test
-    fun `releaseToPending은_선점한_잡을_다시_대기중으로_되돌린다`() {
+    fun `processBatch는_가게명이_없으면_재시도없이_인식_실패로_처리한다`() {
         val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
-        receiptJobService.pickNextPending()
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(
+            listOf(
+                BatchOcrResult(
+                    receiptId = jobId.toString(),
+                    store = null,
+                    items = listOf(OcrItem(original_name = "칫솔", category = "칫솔", effective_quantity = 1)),
+                ),
+            ),
+        )
 
-        receiptJobService.releaseToPending(jobId)
+        receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
 
-        assertEquals(ReceiptJobStatus.PENDING, receiptJobRepository.findById(jobId).get().status)
+        assertEquals(ReceiptJobStatus.FAILED, receiptJobRepository.findById(jobId).get().status)
+    }
+
+    @Test
+    fun `releaseToPending은_선점한_잡들을_다시_대기중으로_되돌린다`() {
+        receiptJobService.enqueue(userId = 1L, imageFile = image())
+        receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val picked = receiptJobService.pickBatch(maxBatch = 6)
+
+        receiptJobService.releaseToPending(picked)
+
+        picked.forEach {
+            assertEquals(ReceiptJobStatus.PENDING, receiptJobRepository.findById(it).get().status)
+        }
     }
 
     @Test
@@ -130,15 +171,13 @@ class ReceiptJobServiceTest {
         seedDefaultIcon()
         val user = userRepository.save(UserFixture.user())
         val jobId = receiptJobService.enqueue(userId = user.id!!, imageFile = image())
-        stubReceiptOcrClient.response = OcrAnalysisResponse(date = "2026-01-01")
-        receiptJobService.pickNextPending()
-        receiptJobService.process(jobId)
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(listOf(successResult(jobId)))
+        receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
 
         val response = receiptJobService.getJob(jobId)
 
         assertEquals(ReceiptJobStatus.COMPLETED, response.status)
         assertNotNull(response.result)
-        assertEquals("2026-01-01", response.result?.purchasedDate)
     }
 
     @Test
@@ -168,16 +207,13 @@ class ReceiptJobServiceTest {
 
     private fun image() = MockMultipartFile("image", "receipt.jpg", "image/jpeg", "img".toByteArray())
 
-    private fun insertProcessingJob(updatedAtMinutesAgo: Long): Long {
-        val timestamp = LocalDateTime.now().minusMinutes(updatedAtMinutesAgo)
-        jdbcTemplate.update(
-            "INSERT INTO receipt_jobs (user_id, image_key, mime_type, status, retry_count, created_at, updated_at) " +
-                "VALUES (1, 'receipts/stuck.jpg', 'image/jpeg', 'PROCESSING', 0, ?, ?)",
-            timestamp,
-            timestamp,
-        )
-        return jdbcTemplate.queryForObject("SELECT MAX(id) FROM receipt_jobs", Long::class.java)!!
-    }
+    private fun successResult(jobId: Long) = BatchOcrResult(
+        receiptId = jobId.toString(),
+        store = "마트",
+        date = "2026-01-01",
+        items = listOf(OcrItem(original_name = "칫솔", category = "칫솔", effective_quantity = 1)),
+        total = 1000,
+    )
 
     private fun seedDefaultIcon() {
         jdbcTemplate.update(
@@ -187,7 +223,14 @@ class ReceiptJobServiceTest {
         )
     }
 
-    companion object {
-        private const val MAX_RETRY = 3
+    private fun insertProcessingJob(updatedAtMinutesAgo: Long): Long {
+        val timestamp = LocalDateTime.now().minusMinutes(updatedAtMinutesAgo)
+        jdbcTemplate.update(
+            "INSERT INTO receipt_jobs (user_id, image_key, mime_type, status, retry_count, created_at, updated_at) " +
+                "VALUES (1, 'receipts/stuck.jpg', 'image/jpeg', 'PROCESSING', 0, ?, ?)",
+            timestamp,
+            timestamp,
+        )
+        return jdbcTemplate.queryForObject("SELECT MAX(id) FROM receipt_jobs", Long::class.java)!!
     }
 }

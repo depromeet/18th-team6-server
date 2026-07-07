@@ -4,6 +4,10 @@ spring:
   flyway:
     enabled: false
 
+receipt:
+  batch:
+    max-size: 6   # 한 번의 Gemini 호출에 묶을 최대 영수증 수
+
 management:
   endpoints:
     web:
