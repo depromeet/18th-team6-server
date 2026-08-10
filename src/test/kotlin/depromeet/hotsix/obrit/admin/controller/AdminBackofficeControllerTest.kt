@@ -4,6 +4,8 @@ import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.global.log.access.entity.ApiAccessLog
+import depromeet.hotsix.obrit.global.log.access.repository.ApiAccessLogRepository
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.entity.User
@@ -20,6 +22,8 @@ import java.net.http.HttpClient
 import java.net.http.HttpRequest
 import java.net.http.HttpResponse
 import java.time.LocalDate
+import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
 import java.util.Base64
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
@@ -48,21 +52,29 @@ class AdminBackofficeControllerTest {
     @Autowired
     private lateinit var itemRepository: ItemRepository
 
+    @Autowired
+    private lateinit var apiAccessLogRepository: ApiAccessLogRepository
+
     private var userId: Long = 0L
+    private lateinit var userCreatedAt: LocalDateTime
     private var iconId: Long = 0L
     private var categoryId: Long = 0L
     private var itemId: Long = 0L
 
     @BeforeEach
     fun setUp() {
+        apiAccessLogRepository.deleteAll()
         itemRepository.deleteAll()
         categoryRepository.deleteAll()
         categoryIconRepository.deleteAll()
         userRepository.deleteAll()
 
-        val user = userRepository.save(
+        val user = userRepository.saveAndFlush(
             User(uuid = "admin-controller-user", name = "Admin Controller User"),
         )
+        userId = requireNotNull(user.id)
+        userCreatedAt = requireNotNull(user.createdAt)
+
         val icon = categoryIconRepository.save(CategoryIcon(name = "default", key = "", url = "/icons/default.png"))
         val category = categoryRepository.save(
             Category(
@@ -83,8 +95,56 @@ class AdminBackofficeControllerTest {
                 nextReplacementDate = LocalDate.of(2026, 5, 31),
             ),
         )
+        apiAccessLogRepository.saveAll(
+            listOf(
+                ApiAccessLog(
+                    userId = userId,
+                    method = "GET",
+                    path = "/categories",
+                    pathTemplate = "/categories",
+                    statusCode = 200,
+                    durationMs = 8,
+                    occurredAt = userCreatedAt.plusSeconds(1),
+                ),
+                ApiAccessLog(
+                    userId = userId,
+                    method = "POST",
+                    path = "/items",
+                    pathTemplate = "/items",
+                    statusCode = 201,
+                    durationMs = 20,
+                    occurredAt = userCreatedAt.plusSeconds(8),
+                ),
+                ApiAccessLog(
+                    userId = userId,
+                    method = "GET",
+                    path = "/home/items",
+                    pathTemplate = "/home/items",
+                    statusCode = 200,
+                    durationMs = 12,
+                    occurredAt = userCreatedAt.plusSeconds(12),
+                ),
+                ApiAccessLog(
+                    userId = userId,
+                    method = "PATCH",
+                    path = "/items/1/spare-count",
+                    pathTemplate = "/items/{itemId}/spare-count",
+                    statusCode = 200,
+                    durationMs = 18,
+                    occurredAt = userCreatedAt.plusSeconds(20),
+                ),
+                ApiAccessLog(
+                    userId = userId,
+                    method = "POST",
+                    path = "/receipts/analyze",
+                    pathTemplate = "/receipts/analyze",
+                    statusCode = 200,
+                    durationMs = 120,
+                    occurredAt = userCreatedAt.plusSeconds(25),
+                ),
+            ),
+        )
 
-        userId = requireNotNull(user.id)
         iconId = icon.id
         categoryId = requireNotNull(category.id)
         itemId = requireNotNull(item.id)
@@ -148,6 +208,7 @@ class AdminBackofficeControllerTest {
 
         assertTrue(items.body().contains("Add item"))
         assertTrue(items.body().contains("/admin/items/$itemId/change"))
+        assertTrue(items.body().contains("/admin/analytics/signup-funnel"))
     }
 
     @Test
@@ -182,6 +243,22 @@ class AdminBackofficeControllerTest {
         assertEquals(HttpStatus.OK.value(), change.statusCode())
         assertTrue(add.body().contains("""src="/icons/default.png""""))
         assertTrue(change.body().contains("""src="/icons/default.png""""))
+    }
+
+    @Test
+    fun `admin signup funnel page renders journey timeline`() {
+        val startAt = userCreatedAt.minusMinutes(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val endAt = userCreatedAt.plusMinutes(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val response = authenticatedGet("/admin/analytics/signup-funnel?startAt=$startAt&endAt=$endAt&userId=$userId")
+
+        assertEquals(HttpStatus.OK.value(), response.statusCode())
+        assertTrue(response.body().contains("Signup Funnel Journey"))
+        assertTrue(response.body().contains("1_signup"))
+        assertTrue(response.body().contains("4_additional_action"))
+        assertTrue(response.body().contains("5_ocr_used"))
+        assertTrue(response.body().contains("/items/{itemId}/spare-count"))
+        assertTrue(response.body().contains("additional_action"))
+        assertTrue(response.body().contains("ocr_used"))
     }
 
     private fun authenticatedGet(path: String): HttpResponse<String> {

@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Obrit Admin - Signup Funnel</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header class="admin-header">
+    <a class="admin-brand" href="/admin/users">Obrit administration</a>
+    <nav class="admin-nav">
+        <a href="/admin/users">Users</a>
+        <a href="/admin/icons">Icons</a>
+        <a href="/admin/categories">Categories</a>
+        <a href="/admin/items">Items</a>
+        <a href="/admin/analytics/signup-funnel" class="active">Analytics</a>
+    </nav>
+</header>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; Analytics &rsaquo; Signup funnel</div>
+<main class="content">
+    <div class="content-header">
+        <h1>Signup Funnel Journey</h1>
+    </div>
+
+    <div class="changelist analytics-layout">
+        <section class="module results">
+            <h2>Funnel</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Step</th>
+                    <th>Users</th>
+                    <th>Previous conversion</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="row : ${analysis.summaryRows}">
+                    <td th:text="${row.step}"></td>
+                    <td th:text="${row.users}"></td>
+                    <td th:text="${row.previousConversionRate}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <aside class="module filters">
+            <h2>Filter</h2>
+            <form class="filter-body" method="get" action="/admin/analytics/signup-funnel">
+                <label>
+                    Start
+                    <input type="datetime-local" name="startAt"
+                           th:value="${#temporals.format(analysis.startAt, 'yyyy-MM-dd''T''HH:mm')}">
+                </label>
+                <label>
+                    End
+                    <input type="datetime-local" name="endAt"
+                           th:value="${#temporals.format(analysis.endAt, 'yyyy-MM-dd''T''HH:mm')}">
+                </label>
+                <label>
+                    User
+                    <select name="userId">
+                        <option value="">First cohort user</option>
+                        <option th:each="user : ${analysis.userRows}"
+                                th:value="${user.userId}"
+                                th:selected="${analysis.selectedUserId == user.userId}"
+                                th:text="|User ${user.userId} / step ${user.furthestStep}|"></option>
+                    </select>
+                </label>
+                <button type="submit">Apply</button>
+                <div class="row-count" th:text="|${#lists.size(analysis.userRows)} cohort users|"></div>
+            </form>
+        </aside>
+    </div>
+
+    <section class="module results">
+        <h2>Journey Timeline</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Seq</th>
+                <th>Elapsed</th>
+                <th>Method</th>
+                <th>Path</th>
+                <th>Status</th>
+                <th>Duration</th>
+                <th>Signal</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(analysis.timelineRows)}">
+                <td colspan="7">No journey events in the selected window.</td>
+            </tr>
+            <tr th:each="event : ${analysis.timelineRows}">
+                <td th:text="${event.seq}"></td>
+                <td th:text="|${event.elapsedSec}s|"></td>
+                <td th:text="${event.method}"></td>
+                <td th:text="${event.pathTemplate}"></td>
+                <td>
+                    <span class="status-pill"
+                          th:classappend="${event.statusCode >= 400} ? ' error-status' : ' ok-status'"
+                          th:text="${event.statusCode}"></span>
+                </td>
+                <td th:text="|${event.durationMs}ms|"></td>
+                <td>
+                    <span th:if="${event.signal != ''}" class="signal-pill" th:text="${event.signal}"></span>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <div class="analytics-grid">
+        <section class="module results">
+            <h2>Cohort Users</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>User</th>
+                    <th>Signed up</th>
+                    <th>First</th>
+                    <th>Home</th>
+                    <th>Additional</th>
+                    <th>OCR</th>
+                    <th>Furthest</th>
+                    <th>Events</th>
+                    <th>Last success</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:each="user : ${analysis.userRows}"
+                    th:classappend="${analysis.selectedUserId == user.userId} ? 'selected-row'">
+                    <td>
+                        <a th:href="@{/admin/analytics/signup-funnel(startAt=${#temporals.format(analysis.startAt, 'yyyy-MM-dd''T''HH:mm')}, endAt=${#temporals.format(analysis.endAt, 'yyyy-MM-dd''T''HH:mm')}, userId=${user.userId})}"
+                           th:text="${user.userId}"></a>
+                    </td>
+                    <td th:text="${user.signedUpAt}"></td>
+                    <td th:text="${user.reachedAddFirstItem ? 'Y' : '-'}"></td>
+                    <td th:text="${user.reachedViewHome ? 'Y' : '-'}"></td>
+                    <td th:text="${user.reachedAdditionalAction ? 'Y' : '-'}"></td>
+                    <td th:text="${user.reachedOcrUsed ? 'Y' : '-'}"></td>
+                    <td th:text="${user.furthestStep}"></td>
+                    <td th:text="${user.eventCount}"></td>
+                    <td th:text="${user.lastSuccessCall}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="module results">
+            <h2>Drop-off Last Success</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Step</th>
+                    <th>Method</th>
+                    <th>Path</th>
+                    <th>Status</th>
+                    <th>Users</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(analysis.dropOffRows)}">
+                    <td colspan="5">No drop-off users.</td>
+                </tr>
+                <tr th:each="row : ${analysis.dropOffRows}">
+                    <td th:text="${row.stepReached}"></td>
+                    <td th:text="${row.method}"></td>
+                    <td th:text="${row.pathTemplate}"></td>
+                    <td th:text="${row.statusCode}"></td>
+                    <td th:text="${row.users}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+</main>
+</body>
+</html>
