@@ -21,16 +21,30 @@ class FcmPushServiceAsyncTest {
 
     @Test
     fun `sendToUser는_비동기_스레드풀에서_실행된다`() {
-        // Given: 존재하지 않는 userId → 토큰 없음 → Firebase 호출 없이 종료
+        // Given: 등록 기기가 없는 userId → Firebase 호출 없이 종료
         val executor = taskExecutor as ThreadPoolTaskExecutor
         val beforeCount = executor.threadPoolExecutor.completedTaskCount
 
         // When
         fcmPushService.sendToUser(99999L, "test", "test")
-        Thread.sleep(500)
 
-        // Then: 동기면 메인 스레드에서 실행되어 스레드풀 작업 수가 변하지 않음
-        val afterCount = executor.threadPoolExecutor.completedTaskCount
-        assertTrue(afterCount > beforeCount, "비동기 스레드풀에서 작업이 실행되어야 합니다")
+        // Then: 동기 실행이면 스레드풀 작업 수가 끝까지 늘지 않는다
+        assertTrue(
+            awaitCompletedTaskIncrease(executor, beforeCount),
+            "비동기 스레드풀에서 작업이 실행되어야 합니다",
+        )
+    }
+
+    private fun awaitCompletedTaskIncrease(
+        executor: ThreadPoolTaskExecutor,
+        beforeCount: Long,
+        timeoutMillis: Long = 5_000,
+    ): Boolean {
+        val deadline = System.currentTimeMillis() + timeoutMillis
+        while (System.currentTimeMillis() < deadline) {
+            if (executor.threadPoolExecutor.completedTaskCount > beforeCount) return true
+            Thread.sleep(20)
+        }
+        return false
     }
 }

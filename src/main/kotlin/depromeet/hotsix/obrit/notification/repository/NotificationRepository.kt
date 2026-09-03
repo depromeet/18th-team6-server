@@ -7,11 +7,11 @@ import org.springframework.data.jpa.repository.Query
 import java.time.LocalDateTime
 
 interface NotificationRepository : JpaRepository<Notification, Long> {
-    fun findAllByUserId(userId: Long): List<Notification>
+    fun findAllByUserIdOrderByCreatedAtDesc(userId: Long): List<Notification>
 
     fun findByIdAndUserId(id: Long, userId: Long): Notification?
 
-    @Modifying
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query(
         "UPDATE Notification n SET n.isRead = true, n.readAt = :readAt WHERE n.userId = :userId AND n.isRead = false",
     )

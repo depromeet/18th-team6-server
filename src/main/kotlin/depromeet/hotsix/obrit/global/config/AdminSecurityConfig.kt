@@ -90,7 +90,6 @@ class AdminSecurityConfig {
             "/categories", "/categories/**",
             "/receipts", "/receipts/**",
             "/home", "/home/**",
-            "/fcm-tokens", "/fcm-tokens/**",
             "/notifications", "/notifications/**",
             "/h2-console", "/h2-console/**",
             "/swagger-ui/**", "/swagger-ui.html",

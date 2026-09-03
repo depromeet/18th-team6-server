@@ -28,10 +28,6 @@ class GlobalExceptionHandler {
     fun handleConflictException(exception: ConflictException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.CONFLICT).body(ErrorResponse(exception.message.orEmpty()))
 
-    @ExceptionHandler(ForbiddenException::class)
-    fun handleForbiddenException(exception: ForbiddenException): ResponseEntity<ErrorResponse> =
-        ResponseEntity.status(HttpStatus.FORBIDDEN).body(ErrorResponse(exception.message.orEmpty()))
-
     @ExceptionHandler(MethodArgumentNotValidException::class)
     fun handleValidationException(exception: MethodArgumentNotValidException): ResponseEntity<ErrorResponse> {
         val message = exception.bindingResult.fieldErrors.firstOrNull()?.defaultMessage ?: "Invalid request."
@@ -88,5 +84,3 @@ class ResourceNotFoundException(message: String) : RuntimeException(message)
 class ConflictException(message: String, cause: Throwable? = null) : RuntimeException(message, cause)
 
 class LogTailTimeoutException(message: String) : RuntimeException(message)
-
-class ForbiddenException(message: String) : RuntimeException(message)

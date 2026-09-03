@@ -6,11 +6,15 @@ import jakarta.persistence.Entity
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
+import jakarta.persistence.Index
 import jakarta.persistence.Table
 import java.time.LocalDateTime
 
 @Entity
-@Table(name = "notifications")
+@Table(
+    name = "notifications",
+    indexes = [Index(name = "idx_notifications_user_created", columnList = "user_id, created_at")],
+)
 class Notification(
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -31,8 +35,6 @@ class Notification(
     @Column(name = "read_at")
     var readAt: LocalDateTime? = null,
 ) : BaseTimeEntity() {
-
-    fun isOwnedBy(userId: Long): Boolean = this.userId == userId
 
     fun markAsRead() {
         if (isRead) return

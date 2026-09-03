@@ -15,14 +15,13 @@ spring:
     hibernate:
       ddl-auto: validate
     open-in-view: false
-
-firebase:
-  credentials-path: ${FIREBASE_CREDENTIALS_PATH}
-
-flyway:
+  flyway:
     enabled: true
     baseline-on-migrate: true
     baseline-version: 1
+
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH}
 
 cloud:
   aws:

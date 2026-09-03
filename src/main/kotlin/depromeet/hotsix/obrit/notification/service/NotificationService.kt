@@ -10,20 +10,18 @@ import java.time.LocalDateTime
 
 @Service
 class NotificationService(private val notificationRepository: NotificationRepository) {
+
+    @Transactional(readOnly = true)
     fun listAllNotification(userId: Long): List<ListNotificationResponse> =
-        notificationRepository.findAllByUserId(userId).map {
+        notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).map {
             ListNotificationResponse(
                 id = it.id!!,
                 title = it.title,
                 content = it.body,
                 isRead = it.isRead,
+                createdAt = it.createdAt!!,
             )
         }
-
-    @Transactional
-    fun sendNotification(userId: Long) {
-        // TODO: 알림 전송 PRD 구현 시 작성
-    }
 
     @Transactional
     fun markAsRead(userId: Long, notificationId: Long): MarkReadNotificationResponse {
