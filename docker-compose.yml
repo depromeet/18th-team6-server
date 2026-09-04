@@ -14,6 +14,8 @@ services:
       TZ: ${TZ:-Asia/Seoul}
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
+    volumes:
+      - ${FIREBASE_CREDENTIALS_HOST_PATH}:/app/secrets/firebase-credentials.json:ro
     networks:
       - orbit
 
