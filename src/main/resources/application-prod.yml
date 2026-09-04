@@ -20,6 +20,9 @@ spring:
     baseline-on-migrate: true
     baseline-version: 1
 
+firebase:
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH}
+
 cloud:
   aws:
     s3:

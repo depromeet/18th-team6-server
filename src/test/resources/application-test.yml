@@ -5,6 +5,9 @@ spring:
   jpa:
     defer-datasource-initialization: false
 
+firebase:
+  credentials-path: dummy-for-test
+
 obrit:
   admin:
     username: admin
