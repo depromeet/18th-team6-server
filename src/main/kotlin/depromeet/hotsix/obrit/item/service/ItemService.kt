@@ -18,6 +18,7 @@ import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
 import depromeet.hotsix.obrit.item.entity.ItemListSnapshot
+import depromeet.hotsix.obrit.item.entity.ItemNotificationSnapshot
 import depromeet.hotsix.obrit.item.entity.ItemOrder
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
 import depromeet.hotsix.obrit.item.entity.ItemSnapshot
@@ -65,6 +66,22 @@ class ItemService(
     @Transactional(readOnly = true)
     fun findActiveSnapshotsByUserId(userId: Long): List<ItemSnapshot> =
         itemRepository.findActiveByUserId(userId).map { it.toSnapshot() }
+
+    @Transactional(readOnly = true)
+    fun findActiveNotificationSnapshots(): List<ItemNotificationSnapshot> =
+        itemRepository.findAllByDeletedAtIsNull().map { it.toNotificationSnapshot() }
+
+    @Transactional
+    fun recordOverdueNotification(itemId: Long, notifiedAt: LocalDate) {
+        val item = itemRepository.findById(itemId).orElseThrow { ResourceNotFoundException("Item not found.") }
+        item.recordOverdueNotification(notifiedAt)
+    }
+
+    @Transactional
+    fun recordLowStockNotification(itemId: Long, notifiedAt: LocalDate) {
+        val item = itemRepository.findById(itemId).orElseThrow { ResourceNotFoundException("Item not found.") }
+        item.recordLowStockNotification(notifiedAt)
+    }
 
     @Transactional(readOnly = true)
     fun getItemDetail(userId: Long, itemId: Long): ItemDetailResponse {
@@ -350,6 +367,16 @@ class ItemService(
         categoryId = categoryId,
         nextReplacementDate = nextReplacementDate,
         quantity = quantity,
+    )
+
+    private fun Item.toNotificationSnapshot(): ItemNotificationSnapshot = ItemNotificationSnapshot(
+        id = requireNotNull(id),
+        userId = userId,
+        name = name,
+        quantity = quantity,
+        nextReplacementDate = nextReplacementDate,
+        overdueNotifiedCount = overdueNotifiedCount,
+        lowStockNotifiedAt = lowStockNotifiedAt,
     )
 
     private fun Item.toItemListSnapshot(): ItemListSnapshot = ItemListSnapshot(

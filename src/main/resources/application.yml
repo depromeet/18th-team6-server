@@ -4,6 +4,13 @@ spring:
   flyway:
     enabled: false
 
+notification:
+  schedule:
+    # 기기 등록(FID) 커버리지 확인 및 공지 발송 이후 운영에서 직접 켠다.
+    enabled: false
+    cron: "0 0 9 * * *"
+    zone: "Asia/Seoul"
+
 management:
   endpoints:
     web:

@@ -3,6 +3,8 @@ package depromeet.hotsix.obrit.notification.entity
 import depromeet.hotsix.obrit.global.common.BaseTimeEntity
 import jakarta.persistence.Column
 import jakarta.persistence.Entity
+import jakarta.persistence.EnumType
+import jakarta.persistence.Enumerated
 import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
@@ -22,6 +24,10 @@ class Notification(
 
     @Column(name = "user_id", nullable = false)
     var userId: Long,
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    var type: NotificationType,
 
     @Column(nullable = false)
     var title: String = "",
