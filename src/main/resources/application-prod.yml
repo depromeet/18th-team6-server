@@ -21,7 +21,7 @@ spring:
     baseline-version: 1
 
 firebase:
-  credentials-path: ${FIREBASE_CREDENTIALS_PATH}
+  credentials-path: ${FIREBASE_CREDENTIALS_PATH:/app/secrets/firebase-credentials.json}
 
 cloud:
   aws:
