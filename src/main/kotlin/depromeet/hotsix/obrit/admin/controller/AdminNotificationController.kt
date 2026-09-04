@@ -4,6 +4,7 @@ import depromeet.hotsix.obrit.admin.dto.AdminNoticeForm
 import depromeet.hotsix.obrit.admin.dto.AdminNotificationSettingsForm
 import depromeet.hotsix.obrit.admin.service.AdminNotificationService
 import depromeet.hotsix.obrit.global.exception.BusinessException
+import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Controller
@@ -69,9 +70,13 @@ class AdminNotificationController(private val adminNotificationService: AdminNot
     } catch (e: ResourceNotFoundException) {
         redirectAttributes.addFlashAttribute("error", e.message ?: "관리자 작업에 실패했습니다.")
         REDIRECT_TO
-    } catch (e: IllegalArgumentException) {
-        log.warn("알림 관리자 작업 실패", e)
+    } catch (e: ConflictException) {
         redirectAttributes.addFlashAttribute("error", e.message ?: "관리자 작업에 실패했습니다.")
+        REDIRECT_TO
+    } catch (e: Exception) {
+        // 예상 못한 예외로 흰 오류 페이지를 띄우면 관리 화면 자체를 못 쓰게 된다.
+        log.error("알림 관리자 작업 실패", e)
+        redirectAttributes.addFlashAttribute("error", "관리자 작업에 실패했습니다.")
         REDIRECT_TO
     }
 

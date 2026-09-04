@@ -165,4 +165,13 @@ class AdminNotificationServiceTest {
             adminNotificationService.sendNotice(AdminNoticeForm(title = "  ", body = "내용", userId = userId))
         }
     }
+
+    @Test
+    fun `연속 실행해도 이미 발송한 대상은 다시 발송하지 않는다`() {
+        saveOverdueItem()
+
+        assertEquals(1, adminNotificationService.dispatchNow())
+        assertEquals(0, adminNotificationService.dispatchNow())
+        assertEquals(1, notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).size)
+    }
 }
