@@ -46,10 +46,12 @@ class FcmPushService(private val deviceRegistrationRepository: DeviceRegistratio
 
     private fun handleFailure(fid: String, e: FirebaseMessagingException) {
         if (e.messagingErrorCode == MessagingErrorCode.UNREGISTERED) {
-            log.info("만료된 기기 등록 삭제. fid={}", fid)
+            log.info("만료된 기기 등록 삭제. fid={}", maskFid(fid))
             deviceRegistrationRepository.findByFid(fid)?.let { deviceRegistrationRepository.delete(it) }
         } else {
-            log.error("FCM 전송 실패. fid={}, error={}", fid, e.messagingErrorCode, e)
+            log.error("FCM 전송 실패. fid={}, error={}", maskFid(fid), e.messagingErrorCode, e)
         }
     }
+
+    private fun maskFid(fid: String): String = fid.take(6) + "***"
 }
