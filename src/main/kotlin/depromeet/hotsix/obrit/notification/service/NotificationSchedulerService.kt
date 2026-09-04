@@ -1,22 +1,30 @@
 package depromeet.hotsix.obrit.notification.service
 
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
+import org.slf4j.LoggerFactory
 import org.springframework.scheduling.annotation.Scheduled
 import org.springframework.stereotype.Service
 
 /**
  * 정책 알림 배치의 자동 실행 진입점.
  *
- * `notification.schedule.enabled=true`일 때만 빈으로 등록된다. 기본값은 꺼짐이며,
- * 기기 등록(FID) 커버리지를 확인하고 공지를 먼저 내보낸 뒤 수동으로 켜는 것을 전제한다.
- * 스위치가 꺼져 있어도 [NotificationDispatchService]는 살아 있으므로 어드민에서 수동 실행할 수 있다.
+ * 실제 발송 여부는 실행 시점에 `notification_settings.auto_dispatch_enabled`로 판단한다.
+ * 설정을 DB에 둔 이유는 재배포 없이 어드민에서 켜고 끄기 위해서다. 기본값은 꺼짐이며,
+ * 기기 등록(FID) 커버리지 확인과 공지 발송이 선행되는 것을 전제한다.
+ * 꺼져 있어도 [NotificationDispatchService]는 어드민에서 수동으로 실행할 수 있다.
  */
 @Service
-@ConditionalOnProperty(name = ["notification.schedule.enabled"], havingValue = "true")
-class NotificationSchedulerService(private val notificationDispatchService: NotificationDispatchService) {
+class NotificationSchedulerService(
+    private val notificationDispatchService: NotificationDispatchService,
+    private val notificationSettingsService: NotificationSettingsService,
+) {
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Scheduled(cron = "\${notification.schedule.cron:0 0 9 * * *}", zone = "\${notification.schedule.zone:Asia/Seoul}")
     fun run() {
+        if (!notificationSettingsService.current().autoDispatchEnabled) {
+            log.info("자동 발송이 꺼져 있어 알림 배치를 건너뛴다.")
+            return
+        }
         notificationDispatchService.dispatch()
     }
 }
