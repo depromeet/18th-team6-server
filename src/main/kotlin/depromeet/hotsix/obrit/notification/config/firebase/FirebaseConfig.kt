@@ -16,8 +16,11 @@ class FirebaseConfig(private val firebaseProperties: FirebaseProperties) {
     @PostConstruct
     fun initialize() {
         if (FirebaseApp.getApps().isEmpty()) {
+            val credentials = FileInputStream(firebaseProperties.credentialsPath).use {
+                GoogleCredentials.fromStream(it)
+            }
             val options = FirebaseOptions.builder()
-                .setCredentials(GoogleCredentials.fromStream(FileInputStream(firebaseProperties.credentialsPath)))
+                .setCredentials(credentials)
                 .build()
             FirebaseApp.initializeApp(options)
         }
