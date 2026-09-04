@@ -40,7 +40,11 @@ class NotificationSettings(
     var lowStockEnabled: Boolean = true,
 ) : BaseTimeEntity() {
 
-    fun overdueSteps(): List<Int> = overdueStepDays.split(",").map { it.trim().toInt() }
+    /**
+     * 저장 시 검증하지만, 값이 직접 수정되어 깨져 있어도 조회는 실패하지 않아야 한다.
+     * 파싱할 수 없는 값은 버린다. 전부 버려지면 지연 알림이 나가지 않을 뿐 배치와 관리 화면은 계속 동작한다.
+     */
+    fun overdueSteps(): List<Int> = overdueStepDays.split(",").mapNotNull { it.trim().toIntOrNull() }
 
     fun isEnabled(type: NotificationType): Boolean = when (type) {
         NotificationType.PRE_REPLACEMENT -> preReplacementEnabled

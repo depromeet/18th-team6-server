@@ -156,4 +156,13 @@ class NotificationSettingsServiceTest {
 
         assertEquals("2,6,9", settings.overdueStepDays)
     }
+
+    @Test
+    fun `저장된 스텝 값이 깨져 있어도 조회와 판정이 실패하지 않는다`() {
+        saveItem(quantity = 2, nextReplacementDate = today.minusDays(1))
+        notificationSettingsService.current().overdueStepDays = "1,깨진값,7"
+
+        assertEquals(listOf(1, 7), notificationSettingsService.current().overdueSteps())
+        assertEquals(NotificationType.OVERDUE, notificationPolicyService.evaluate().firstOrNull()?.type)
+    }
 }

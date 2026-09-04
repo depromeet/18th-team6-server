@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.notification.service
 
+import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.item.service.ItemService
 import depromeet.hotsix.obrit.notification.entity.Notification
 import depromeet.hotsix.obrit.notification.entity.NotificationCandidate
@@ -11,6 +12,7 @@ import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.support.TransactionTemplate
 import java.time.Clock
 import java.time.LocalDate
+import java.util.concurrent.locks.ReentrantLock
 
 /**
  * 알림 판정 결과를 유저 단위로 묶어 발송한다.
@@ -31,11 +33,49 @@ class NotificationDispatchService(
     private val log = LoggerFactory.getLogger(javaClass)
     private val transaction = TransactionTemplate(transactionManager)
 
-    fun dispatch() {
+    /**
+     * 단일 인스턴스 기준으로 배치 중복 실행을 막는다.
+     * 인스턴스를 늘리면 DB 잠금 등 클러스터 단위 수단으로 바꿔야 한다.
+     */
+    private val dispatchLock = ReentrantLock()
+
+    /**
+     * 실제 발송한 사용자 수를 반환한다.
+     *
+     * 배치가 겹쳐 실행되면 같은 후보를 두 번 계산해 중복 발송되고
+     * 지연 알림 단계가 한 번에 두 칸 넘어간다. 그래서 동시 실행을 막는다.
+     */
+    fun dispatch(): Int {
+        if (!dispatchLock.tryLock()) {
+            throw BusinessException("알림 배치가 이미 실행 중입니다. 잠시 후 다시 시도해주세요.")
+        }
+
+        return try {
+            runDispatch()
+        } finally {
+            dispatchLock.unlock()
+        }
+    }
+
+    private fun runDispatch(): Int {
         val today = LocalDate.now(clock)
         val candidatesByUser = notificationPolicyService.evaluate().groupBy { it.userId }
         log.info("알림 배치 시작. 대상 유저 수={}", candidatesByUser.size)
-        candidatesByUser.forEach { (userId, candidates) -> dispatchToUser(userId, candidates, today) }
+
+        var sent = 0
+        var failed = 0
+        candidatesByUser.forEach { (userId, candidates) ->
+            // 한 사용자의 실패가 남은 사용자의 발송까지 막지 않도록 격리한다.
+            runCatching { dispatchToUser(userId, candidates, today) }
+                .onSuccess { sent++ }
+                .onFailure {
+                    failed++
+                    log.error("알림 발송 실패. userId={}", userId, it)
+                }
+        }
+
+        log.info("알림 배치 종료. 발송={}, 실패={}", sent, failed)
+        return sent
     }
 
     private fun dispatchToUser(userId: Long, candidates: List<NotificationCandidate>, today: LocalDate) {

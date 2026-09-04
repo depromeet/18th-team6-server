@@ -25,6 +25,9 @@ class NotificationSchedulerService(
             log.info("자동 발송이 꺼져 있어 알림 배치를 건너뛴다.")
             return
         }
-        notificationDispatchService.dispatch()
+
+        // 예외가 스케줄러 밖으로 나가면 다음 실행까지 조용히 멈춘 것처럼 보이므로 여기서 삼키고 남긴다.
+        runCatching { notificationDispatchService.dispatch() }
+            .onFailure { log.error("알림 배치 실행 실패", it) }
     }
 }
