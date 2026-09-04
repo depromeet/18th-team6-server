@@ -50,6 +50,8 @@ class NotificationSettings(
         NotificationType.PRE_REPLACEMENT -> preReplacementEnabled
         NotificationType.OVERDUE -> overdueEnabled
         NotificationType.LOW_STOCK -> lowStockEnabled
+        // 공지는 정책 판정을 거치지 않으므로 유형별 on/off 대상이 아니다.
+        NotificationType.NOTICE -> true
     }
 
     companion object {

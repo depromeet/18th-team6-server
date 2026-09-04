@@ -4,6 +4,7 @@ import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.item.service.ItemService
 import depromeet.hotsix.obrit.notification.entity.Notification
 import depromeet.hotsix.obrit.notification.entity.NotificationCandidate
+import depromeet.hotsix.obrit.notification.entity.NotificationPreviewSnapshot
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
 import org.slf4j.LoggerFactory
@@ -78,6 +79,37 @@ class NotificationDispatchService(
         return sent
     }
 
+    /**
+     * 발송하지 않고 대상만 집계한다.
+     *
+     * 260명 규모에 한 번에 나가는 발송이라 규모를 눈으로 확인한 뒤 실행할 수 있어야 한다.
+     */
+    fun preview(): NotificationPreviewSnapshot {
+        val candidatesByUser = notificationPolicyService.evaluate().groupBy { it.userId }
+
+        return NotificationPreviewSnapshot(
+            targetUserCount = candidatesByUser.size,
+            targetItemCount = candidatesByUser.values.sumOf { it.size },
+            bundledUserCount = candidatesByUser.count { (_, candidates) -> candidates.size > 1 },
+            countByType = candidatesByUser.values.flatten()
+                .groupingBy { it.type }
+                .eachCount(),
+            samples = candidatesByUser.entries
+                .sortedBy { (_, candidates) -> candidates.minOf { it.daysUntil } }
+                .take(SAMPLE_SIZE)
+                .map { (userId, candidates) ->
+                    val sorted = candidates.sortedBy { it.daysUntil }
+                    val message = buildMessage(sorted)
+                    NotificationPreviewSnapshot.Sample(
+                        userId = userId,
+                        itemCount = sorted.size,
+                        title = message.title,
+                        body = message.body,
+                    )
+                },
+        )
+    }
+
     private fun dispatchToUser(userId: Long, candidates: List<NotificationCandidate>, today: LocalDate) {
         val sorted = candidates.sortedBy { it.daysUntil }
         val message = buildMessage(sorted)
@@ -97,6 +129,7 @@ class NotificationDispatchService(
             NotificationType.OVERDUE -> itemService.recordOverdueNotification(candidate.itemId, today)
             NotificationType.LOW_STOCK -> itemService.recordLowStockNotification(candidate.itemId, today)
             NotificationType.PRE_REPLACEMENT -> Unit
+            NotificationType.NOTICE -> error("공지는 정책 판정 대상이 아니다.")
         }
     }
 
@@ -116,6 +149,7 @@ class NotificationDispatchService(
             title = "여분이 부족해요",
             body = "${candidate.itemName} 여분이 없어요. 지금 준비해두세요",
         )
+        NotificationType.NOTICE -> error("공지는 정책 판정 대상이 아니다.")
     }
 
     private fun bundleMessage(sorted: List<NotificationCandidate>): NotificationMessage {
@@ -128,4 +162,8 @@ class NotificationDispatchService(
     }
 
     private data class NotificationMessage(val title: String, val body: String)
+
+    companion object {
+        private const val SAMPLE_SIZE = 5
+    }
 }
