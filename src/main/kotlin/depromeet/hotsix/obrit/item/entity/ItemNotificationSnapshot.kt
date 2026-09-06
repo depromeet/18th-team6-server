@@ -9,7 +9,7 @@ data class ItemNotificationSnapshot(
     val id: Long,
     val userId: Long,
     val name: String,
-    val quantity: Int,
+    val quantity: Int?,
     val nextReplacementDate: LocalDate,
     val overdueNotifiedCount: Int,
     val lowStockNotifiedAt: LocalDate?,

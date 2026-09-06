@@ -77,6 +77,7 @@ class NotificationPolicyService(
         leadDays: Int,
         overdueSteps: List<Int>,
     ): List<NotificationType> {
+        // 미입력(null)은 대상이 아니다. 0은 사용자가 "여분 없음"을 명시한 값이라 대상이 된다.
         val isLowStock = item.quantity == 0 && daysUntil <= leadDays && item.lowStockNotifiedAt == null
 
         return buildList {

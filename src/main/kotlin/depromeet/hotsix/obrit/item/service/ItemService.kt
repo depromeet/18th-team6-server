@@ -327,7 +327,8 @@ class ItemService(
         }
     }
 
-    private fun detailStatus(dday: Int, spareCount: Int): ItemDetailStatus = when {
+    // 여분 미입력(null)은 LOW_STOCK으로 보지 않는다. 여분이 없다고 단정할 근거가 없다.
+    private fun detailStatus(dday: Int, spareCount: Int?): ItemDetailStatus = when {
         dday <= 0 -> ItemDetailStatus.DANGER
         dday <= REPLACEMENT_WARNING_DAYS -> ItemDetailStatus.WARNING
         spareCount == 0 -> ItemDetailStatus.LOW_STOCK
