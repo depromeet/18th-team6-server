@@ -136,4 +136,30 @@ class NotificationPolicyServiceTest {
 
         assertNull(candidateFor(item.id))
     }
+
+    @Test
+    fun `지연 알림 스텝에 해당하지 않는 날이어도 여분이 0이면 여분 부족 알림 후보가 된다`() {
+        val item = saveItem(name = "수건", quantity = 0, nextReplacementDate = today.minusDays(2))
+
+        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+    }
+
+    @Test
+    fun `지연 알림 상한에 도달해도 여분이 0이면 여분 부족 알림 후보가 된다`() {
+        val item = saveItem(
+            name = "행주",
+            quantity = 0,
+            nextReplacementDate = today.minusDays(7),
+            overdueNotifiedCount = 3,
+        )
+
+        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+    }
+
+    @Test
+    fun `교체일이 지났고 지연 스텝에 해당하면 여분이 0이어도 지연 알림이 우선한다`() {
+        val item = saveItem(name = "수건", quantity = 0, nextReplacementDate = today.minusDays(1))
+
+        assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+    }
 }
