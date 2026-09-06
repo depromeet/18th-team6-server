@@ -11,6 +11,8 @@ interface ItemRepository :
 
     fun findAllByOrderByIdAsc(): List<Item>
 
+    fun findAllByDeletedAtIsNull(): List<Item>
+
     @Query(
         """
         select i

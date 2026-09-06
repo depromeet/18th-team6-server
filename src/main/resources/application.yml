@@ -4,6 +4,12 @@ spring:
   flyway:
     enabled: false
 
+notification:
+  schedule:
+    # 자동 발송 on/off는 notification_settings 테이블에서 관리한다(어드민에서 변경).
+    cron: "0 0 9 * * *"
+    zone: "Asia/Seoul"
+
 management:
   endpoints:
     web:
