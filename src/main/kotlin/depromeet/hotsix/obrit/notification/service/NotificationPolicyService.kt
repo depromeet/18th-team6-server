@@ -15,7 +15,9 @@ import java.time.temporal.ChronoUnit
  *
  * 우선순위: 지연 > 여분 부족 > 사전. 여분 부족이 사전보다 앞서는 것은 여분이 없다는 정보가 더 구체적인 행동을 지시하기 때문이다.
  * 지연 알림은 설정된 스텝 수만큼만 발송하고, 여분 부족 알림은 재입고 전까지 한 번만 발송한다.
- * 교체일이 지났지만 그날이 지연 스텝이 아니면 여분 부족으로 내려간다. 가장 급한 상태가 가장 조용해지면 안 되기 때문이다.
+ *
+ * 상위 유형이 성립하지 않거나 꺼져 있으면 그 아래 유형으로 내려간다. 교체일이 지났는데 그날이 지연 스텝이
+ * 아니면 여분 부족으로, 여분 부족이 꺼져 있으면 사전으로 내려가는 식이다. 가장 급한 상태가 가장 조용해지면 안 된다.
  *
  * 선행 일수와 지연 스텝은 [NotificationSettings]에서 읽는다. 판정 구조 자체는 설정으로 바꿀 수 없다.
  */
@@ -28,32 +30,22 @@ class NotificationPolicyService(
     fun evaluate(): List<NotificationCandidate> {
         val today = LocalDate.now(clock)
         val settings = notificationSettingsService.current()
-        val leadDays = settings.leadDays
         val overdueSteps = settings.overdueSteps()
 
         return itemService.findActiveNotificationSnapshots()
-            .mapNotNull { evaluate(it, today, leadDays, overdueSteps) }
-            .filter { settings.isEnabled(it.type) }
+            .mapNotNull { evaluate(it, today, settings, overdueSteps) }
     }
 
     private fun evaluate(
         item: ItemNotificationSnapshot,
         today: LocalDate,
-        leadDays: Int,
+        settings: NotificationSettings,
         overdueSteps: List<Int>,
     ): NotificationCandidate? {
         val daysUntil = ChronoUnit.DAYS.between(today, item.nextReplacementDate).toInt()
-
-        val isLowStock = item.quantity == 0 && daysUntil <= leadDays && item.lowStockNotifiedAt == null
-        val type = when {
-            // 지연 스텝에 걸리지 않는 날이라도 여분이 없으면 알려야 한다.
-            // 폴백이 없으면 스텝을 소진했거나 스텝 사이에 낀 소모품이 여분 0인 채로 조용해진다.
-            daysUntil < 0 -> overdueType(item, daysUntil, overdueSteps)
-                ?: NotificationType.LOW_STOCK.takeIf { isLowStock }
-            isLowStock -> NotificationType.LOW_STOCK
-            daysUntil == leadDays -> NotificationType.PRE_REPLACEMENT
-            else -> null
-        } ?: return null
+        val type = applicableTypes(item, daysUntil, settings.leadDays, overdueSteps)
+            .firstOrNull { settings.isEnabled(it) }
+            ?: return null
 
         return NotificationCandidate(
             itemId = item.id,
@@ -64,15 +56,32 @@ class NotificationPolicyService(
         )
     }
 
-    private fun overdueType(
+    /**
+     * 이 소모품에 성립하는 알림 유형을 우선순위 순으로 돌려준다. 성립하지 않으면 비어 있다.
+     *
+     * 유형별 on/off는 호출부가 이 목록을 훑으며 적용한다. 판정을 먼저 끝내고 나중에 거르면
+     * 상위 유형이 꺼져 있을 때 아래 유형까지 같이 사라진다.
+     */
+    private fun applicableTypes(
         item: ItemNotificationSnapshot,
         daysUntil: Int,
+        leadDays: Int,
         overdueSteps: List<Int>,
-    ): NotificationType? {
-        val stepIndex = item.overdueNotifiedCount
-        if (stepIndex >= overdueSteps.size) return null
+    ): List<NotificationType> {
+        val isLowStock = item.quantity == 0 && daysUntil <= leadDays && item.lowStockNotifiedAt == null
 
-        val daysOverdue = -daysUntil
-        return if (daysOverdue == overdueSteps[stepIndex]) NotificationType.OVERDUE else null
+        return buildList {
+            if (daysUntil < 0 && isOverdueStep(item, daysUntil, overdueSteps)) add(NotificationType.OVERDUE)
+            if (isLowStock) add(NotificationType.LOW_STOCK)
+            if (daysUntil == leadDays) add(NotificationType.PRE_REPLACEMENT)
+        }
+    }
+
+    /** 오늘이 이 소모품의 다음 지연 알림 스텝인지. 스텝을 모두 소진했으면 false. */
+    private fun isOverdueStep(item: ItemNotificationSnapshot, daysUntil: Int, overdueSteps: List<Int>): Boolean {
+        val stepIndex = item.overdueNotifiedCount
+        if (stepIndex >= overdueSteps.size) return false
+
+        return -daysUntil == overdueSteps[stepIndex]
     }
 }

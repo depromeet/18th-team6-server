@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.notification.service
 
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
+import depromeet.hotsix.obrit.notification.entity.NotificationSettings
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
@@ -23,6 +24,9 @@ class NotificationPolicyServiceTest {
 
     @Autowired
     private lateinit var notificationPolicyService: NotificationPolicyService
+
+    @Autowired
+    private lateinit var notificationSettingsService: NotificationSettingsService
 
     @Autowired
     private lateinit var itemRepository: ItemRepository
@@ -161,5 +165,43 @@ class NotificationPolicyServiceTest {
         val item = saveItem(name = "수건", quantity = 0, nextReplacementDate = today.minusDays(1))
 
         assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+    }
+
+    @Test
+    fun `지연 알림이 꺼져 있으면 여분 부족 알림으로 내려간다`() {
+        disableTypes(overdueEnabled = false)
+        val item = saveItem(name = "수건", quantity = 0, nextReplacementDate = today.minusDays(1))
+
+        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+    }
+
+    @Test
+    fun `여분 부족 알림이 꺼져 있으면 사전 알림으로 내려간다`() {
+        disableTypes(lowStockEnabled = false)
+        val item = saveItem(name = "면도날", quantity = 0, nextReplacementDate = today.plusDays(3))
+
+        assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(item.id)?.type)
+    }
+
+    @Test
+    fun `상위 유형이 꺼져 있어도 아래 유형이 성립하지 않으면 후보가 아니다`() {
+        disableTypes(overdueEnabled = false)
+        val item = saveItem(name = "수건", quantity = 2, nextReplacementDate = today.minusDays(1))
+
+        assertNull(candidateFor(item.id))
+    }
+
+    private fun disableTypes(
+        preReplacementEnabled: Boolean = true,
+        overdueEnabled: Boolean = true,
+        lowStockEnabled: Boolean = true,
+    ) {
+        notificationSettingsService.update(
+            leadDays = NotificationSettings.DEFAULT_LEAD_DAYS,
+            overdueStepDays = NotificationSettings.DEFAULT_OVERDUE_STEP_DAYS,
+            preReplacementEnabled = preReplacementEnabled,
+            overdueEnabled = overdueEnabled,
+            lowStockEnabled = lowStockEnabled,
+        )
     }
 }
