@@ -5,8 +5,8 @@ import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
 import org.springframework.stereotype.Service
 
 @Service
-class OcrService(private val receiptOcrClient: ReceiptOcrClient) {
+open class OcrService(private val receiptOcrClient: ReceiptOcrClient) {
 
-    fun analyzeReceiptImage(imageBytes: ByteArray, mimeType: String): OcrAnalysisResponse =
+    open fun analyzeReceiptImage(imageBytes: ByteArray, mimeType: String): OcrAnalysisResponse =
         receiptOcrClient.analyzeImage(imageBytes, mimeType)
 }

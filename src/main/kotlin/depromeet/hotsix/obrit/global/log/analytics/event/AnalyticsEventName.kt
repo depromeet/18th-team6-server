@@ -7,4 +7,5 @@ package depromeet.hotsix.obrit.global.log.analytics.event
  */
 enum class AnalyticsEventName(val value: String) {
     SIGNUP_COMPLETED("signup_completed"),
+    RECEIPT_ANALYSIS_FINISHED("receipt_analysis_finished"),
 }
