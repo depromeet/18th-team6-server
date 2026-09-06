@@ -23,7 +23,11 @@ class AdminNotificationService(
     private val userRepository: UserRepository,
 ) {
 
-    @Transactional(readOnly = true)
+    /**
+     * readOnly를 걸지 않는다. [NotificationSettingsService.current]가 설정 행이 없으면 만드는데,
+     * readOnly 트랜잭션에 참여하면 flush가 일어나지 않아 INSERT가 예외 없이 사라진다.
+     */
+    @Transactional
     fun getDashboard(): AdminNotificationDashboard = AdminNotificationDashboard(
         coverage = getCoverage(),
         settings = notificationSettingsService.current().toRow(),
