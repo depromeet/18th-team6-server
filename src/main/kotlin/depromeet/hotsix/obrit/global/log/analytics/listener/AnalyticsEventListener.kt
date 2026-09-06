@@ -14,12 +14,9 @@ class AnalyticsEventListener(private val analyticsEventService: AnalyticsEventSe
     @TransactionalEventListener(phase = TransactionPhase.AFTER_COMMIT)
     fun handleSignupCompleted(event: SignupCompletedDomainEvent) {
         try {
-            analyticsEventService.publishSignupCompleted(
-                userId = event.userId,
-                signupMethod = event.signupMethod,
-            )
+            analyticsEventService.publish(event)
         } catch (t: Throwable) {
-            log.error("signup_completed 이벤트 발행에 실패했습니다.", t)
+            log.error("${event.eventName.value} 이벤트 발행에 실패했습니다.", t)
         }
     }
 }
