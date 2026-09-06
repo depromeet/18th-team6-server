@@ -1,0 +1,186 @@
+<!doctype html>
+<html lang="ko" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Obrit Admin - User Journey</title>
+    <link rel="stylesheet" href="/admin/admin.css">
+</head>
+<body>
+<header class="admin-header">
+    <a class="admin-brand" href="/admin/users">Obrit administration</a>
+    <nav class="admin-nav">
+        <a href="/admin/users">Users</a>
+        <a href="/admin/icons">Icons</a>
+        <a href="/admin/categories">Categories</a>
+        <a href="/admin/items">Items</a>
+        <a href="/admin/notifications">Notifications</a>
+        <a href="/admin/analytics/user-journey" class="active">Analytics</a>
+    </nav>
+</header>
+<div class="breadcrumbs"><a href="/admin/users">Home</a> &rsaquo; Analytics &rsaquo; User journey</div>
+<main class="content">
+    <div class="content-header">
+        <h1>User Journey</h1>
+        <a href="/admin/analytics/signup-funnel">Signup funnel &rsaquo;</a>
+    </div>
+
+    <div class="changelist analytics-layout">
+        <section class="module results">
+            <h2>Core Action Reach</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Action</th>
+                    <th>Users</th>
+                    <th>Rate</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(analysis.coreActionRows)}">
+                    <td colspan="3">No activity in the selected window.</td>
+                </tr>
+                <tr th:each="row : ${analysis.coreActionRows}">
+                    <td th:text="${row.label}"></td>
+                    <td th:text="${row.users}"></td>
+                    <td th:text="${row.userRate}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <aside class="module filters">
+            <h2>Filter</h2>
+            <form class="filter-body" method="get" action="/admin/analytics/user-journey">
+                <label>
+                    Start
+                    <input type="datetime-local" name="startAt"
+                           th:value="${#temporals.format(analysis.startAt, 'yyyy-MM-dd''T''HH:mm')}">
+                </label>
+                <label>
+                    End
+                    <input type="datetime-local" name="endAt"
+                           th:value="${#temporals.format(analysis.endAt, 'yyyy-MM-dd''T''HH:mm')}">
+                </label>
+                <button type="submit">Apply</button>
+                <div class="row-count" th:text="|${analysis.activeUsers} active users|"></div>
+            </form>
+        </aside>
+    </div>
+
+    <div class="analytics-grid">
+        <section class="module results">
+            <h2>Receipt Analysis</h2>
+            <table>
+                <tbody>
+                <tr>
+                    <th>Total</th>
+                    <td th:text="${analysis.receipt.total}"></td>
+                </tr>
+                <tr>
+                    <th>Success</th>
+                    <td th:text="|${analysis.receipt.success} (${analysis.receipt.successRate})|"></td>
+                </tr>
+                <tr>
+                    <th>Failure</th>
+                    <td th:text="${analysis.receipt.failure}"></td>
+                </tr>
+                <tr>
+                    <th>Avg success time</th>
+                    <td th:text="${analysis.receipt.avgSuccessMs}"></td>
+                </tr>
+                <tr>
+                    <th>Avg failure time</th>
+                    <td th:text="${analysis.receipt.avgFailureMs}"></td>
+                </tr>
+                <tr>
+                    <th>Avg OCR time</th>
+                    <td th:text="${analysis.receipt.avgOcrMs}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+
+        <section class="module results">
+            <h2>Receipt Failure Reasons</h2>
+            <table>
+                <thead>
+                <tr>
+                    <th>Reason</th>
+                    <th>Count</th>
+                    <th>Rate</th>
+                </tr>
+                </thead>
+                <tbody>
+                <tr th:if="${#lists.isEmpty(analysis.receiptFailureRows)}">
+                    <td colspan="3">No failures in the selected window.</td>
+                </tr>
+                <tr th:each="row : ${analysis.receiptFailureRows}">
+                    <td><span class="signal-pill" th:text="${row.reason}"></span></td>
+                    <td th:text="${row.count}"></td>
+                    <td th:text="${row.rate}"></td>
+                </tr>
+                </tbody>
+            </table>
+        </section>
+    </div>
+
+    <section class="module results">
+        <h2>30-day Revisit</h2>
+        <table>
+            <tbody>
+            <tr>
+                <th>Cohort users (signed up in window)</th>
+                <td th:text="${analysis.revisit.cohortUsers}"></td>
+            </tr>
+            <tr>
+                <th>Revisited</th>
+                <td th:text="${analysis.revisit.revisitedUsers}"></td>
+            </tr>
+            <tr>
+                <th>Revisit rate</th>
+                <td th:text="${analysis.revisit.revisitRate}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="module results">
+        <h2>Per-user Actions</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>User</th>
+                <th>Signed up</th>
+                <th>Register</th>
+                <th>Edit</th>
+                <th>Replace</th>
+                <th>Spare</th>
+                <th>Delete</th>
+                <th>Receipt</th>
+                <th>Revisited</th>
+                <th>Last seen</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr th:if="${#lists.isEmpty(analysis.userRows)}">
+                <td colspan="10">No users in the selected window.</td>
+            </tr>
+            <tr th:each="user : ${analysis.userRows}">
+                <td th:text="${user.userId}"></td>
+                <td th:text="${user.signedUpAt != null ? user.signedUpAt : '-'}"></td>
+                <td th:text="${user.registered ? 'Y' : '-'}"></td>
+                <td th:text="${user.edited ? 'Y' : '-'}"></td>
+                <td th:text="${user.replaced ? 'Y' : '-'}"></td>
+                <td th:text="${user.spareUpdated ? 'Y' : '-'}"></td>
+                <td th:text="${user.deleted ? 'Y' : '-'}"></td>
+                <td th:text="${user.usedReceipt ? 'Y' : '-'}"></td>
+                <td th:text="${user.revisited ? 'Y' : '-'}"></td>
+                <td th:text="${user.lastSeenAt != null ? user.lastSeenAt : '-'}"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+</main>
+</body>
+</html>
