@@ -55,5 +55,12 @@ class UserNotificationSettings(
 
     companion object {
         val DEFAULT_DISPATCH_TIME: LocalTime = LocalTime.of(9, 0)
+
+        /** 조용 시간(22:00~08:00)에는 발송하지 않으므로 그 구간의 값은 저장을 막는다. */
+        val MIN_DISPATCH_TIME: LocalTime = LocalTime.of(8, 0)
+        val MAX_DISPATCH_TIME_EXCLUSIVE: LocalTime = LocalTime.of(22, 0)
+
+        /** 발송 시각은 30분 단위 슬롯 배치로 처리한다. */
+        const val DISPATCH_TIME_UNIT_MINUTES = 30
     }
 }
