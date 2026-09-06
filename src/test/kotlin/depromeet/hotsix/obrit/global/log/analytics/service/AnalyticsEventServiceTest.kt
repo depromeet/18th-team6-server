@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.global.log.analytics.service
 
+import depromeet.hotsix.obrit.global.log.analytics.event.SignupCompletedDomainEvent
 import depromeet.hotsix.obrit.global.log.analytics.repository.AnalyticsEventRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
@@ -26,8 +27,8 @@ class AnalyticsEventServiceTest {
     }
 
     @Test
-    fun `publishSignupCompleted_시_analytics_events_테이블에_저장된다`() {
-        analyticsEventService.publishSignupCompleted(userId = 1L, signupMethod = "uuid")
+    fun `publish_시_analytics_events_테이블에_저장된다`() {
+        analyticsEventService.publish(SignupCompletedDomainEvent(userId = 1L, signupMethod = "uuid"))
 
         val saved = analyticsEventRepository.findAll()
         assertEquals(1, saved.size)
@@ -40,9 +41,9 @@ class AnalyticsEventServiceTest {
     }
 
     @Test
-    fun `publishSignupCompleted_를_두_번_호출하면_서로_다른_event_id로_저장된다`() {
-        analyticsEventService.publishSignupCompleted(userId = 2L, signupMethod = "uuid")
-        analyticsEventService.publishSignupCompleted(userId = 2L, signupMethod = "uuid")
+    fun `publish_를_두_번_호출하면_서로_다른_event_id로_저장된다`() {
+        analyticsEventService.publish(SignupCompletedDomainEvent(userId = 2L, signupMethod = "uuid"))
+        analyticsEventService.publish(SignupCompletedDomainEvent(userId = 2L, signupMethod = "uuid"))
 
         val saved = analyticsEventRepository.findAll()
         assertEquals(2, saved.size)
