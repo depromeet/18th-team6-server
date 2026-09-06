@@ -92,6 +92,21 @@ class UserNotificationSettingsService(
             ?.let { EffectiveNotificationSettings.from(it) }
             ?: EffectiveNotificationSettings.fallback(notificationSettingsService.current())
 
+    /**
+     * 여러 사용자의 설정을 한 번에 읽는다. 설정 행이 없는 사용자도 기본값으로 채워 반환한다.
+     *
+     * 배치는 소모품 전체를 훑으므로 건별로 조회하면 그만큼 쿼리가 늘어난다.
+     */
+    fun effectiveSettingsByUserIds(userIds: Set<Long>): Map<Long, EffectiveNotificationSettings> {
+        if (userIds.isEmpty()) return emptyMap()
+
+        val fallback = EffectiveNotificationSettings.fallback(notificationSettingsService.current())
+        val saved = userNotificationSettingsRepository.findByUserIdIn(userIds)
+            .associate { it.userId to EffectiveNotificationSettings.from(it) }
+
+        return userIds.associateWith { saved[it] ?: fallback }
+    }
+
     private fun EffectiveNotificationSettings.toResponse() = NotificationSettingsResponse(
         enabled = enabled,
         preReplacementEnabled = preReplacementEnabled,
