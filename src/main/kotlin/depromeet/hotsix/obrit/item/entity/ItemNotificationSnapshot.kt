@@ -12,5 +12,6 @@ data class ItemNotificationSnapshot(
     val quantity: Int?,
     val nextReplacementDate: LocalDate,
     val overdueNotifiedCount: Int,
+    val lastOverdueNotifiedAt: LocalDate?,
     val lowStockNotifiedAt: LocalDate?,
 )
