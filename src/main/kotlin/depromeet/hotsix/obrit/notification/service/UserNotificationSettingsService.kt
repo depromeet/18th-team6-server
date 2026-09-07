@@ -1,10 +1,13 @@
 package depromeet.hotsix.obrit.notification.service
 
+import depromeet.hotsix.obrit.notification.dto.request.ReportNotificationPermissionRequest
 import depromeet.hotsix.obrit.notification.dto.response.NotificationSettingsResponse
 import depromeet.hotsix.obrit.notification.entity.EffectiveNotificationSettings
+import depromeet.hotsix.obrit.notification.entity.UserNotificationSettings
 import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.user.service.UserService
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 
 /** 유저별 알림 설정 조회. 유저 설정이 없으면 전역 기본값으로 내려간다. */
 @Service
@@ -19,6 +22,21 @@ class UserNotificationSettingsService(
 
         return effectiveSettings(userId).toResponse()
     }
+
+    /** 기기 알림 권한 상태를 기록한다. 설정 행이 없으면 만든다. */
+    @Transactional
+    fun reportPermission(userId: Long, request: ReportNotificationPermissionRequest): NotificationSettingsResponse {
+        userService.validateUserExist(userId)
+
+        val settings = userNotificationSettingsRepository.findByUserId(userId)
+            .let { it ?: UserNotificationSettings(userId = userId, leadDays = defaultLeadDays()) }
+            .apply { permissionStatus = request.permissionStatus }
+
+        return EffectiveNotificationSettings.from(userNotificationSettingsRepository.save(settings)).toResponse()
+    }
+
+    /** 권한만 보고한 사용자의 선행 일수가 보고 전후로 달라지지 않도록 전역 값을 가져온다. */
+    private fun defaultLeadDays() = notificationSettingsService.current().leadDays
 
     /**
      * 이 사용자에게 적용되는 설정값. 배치 판정도 같은 경로를 쓴다.
