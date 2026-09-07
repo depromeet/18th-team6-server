@@ -261,6 +261,23 @@ class AdminBackofficeControllerTest {
         assertTrue(response.body().contains("ocr_used"))
     }
 
+    @Test
+    fun `admin user journey page renders core actions`() {
+        val startAt = userCreatedAt.minusMinutes(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val endAt = userCreatedAt.plusMinutes(1).format(DateTimeFormatter.ISO_LOCAL_DATE_TIME)
+        val response = authenticatedGet("/admin/analytics/user-journey?startAt=$startAt&endAt=$endAt")
+
+        assertEquals(HttpStatus.OK.value(), response.statusCode())
+        assertTrue(response.body().contains("User Journey"))
+        assertTrue(response.body().contains("Core Action Reach"))
+        assertTrue(response.body().contains("소모품 등록"))
+        assertTrue(response.body().contains("여분 수정"))
+        assertTrue(response.body().contains("Receipt Analysis"))
+        assertTrue(response.body().contains("30-day Revisit"))
+        // setUp의 접근 로그가 등록·여분수정·영수증을 모두 남기므로 1명 도달로 잡힌다
+        assertTrue(response.body().contains("1 active users"))
+    }
+
     private fun authenticatedGet(path: String): HttpResponse<String> {
         val credentials = Base64.getEncoder().encodeToString("admin:admin".toByteArray())
         val request = HttpRequest.newBuilder()

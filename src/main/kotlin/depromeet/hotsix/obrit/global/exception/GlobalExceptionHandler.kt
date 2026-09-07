@@ -77,7 +77,7 @@ data class ErrorResponse(
     val message: String,
 )
 
-class BusinessException(message: String) : RuntimeException(message)
+open class BusinessException(message: String) : RuntimeException(message)
 
 class ResourceNotFoundException(message: String) : RuntimeException(message)
 

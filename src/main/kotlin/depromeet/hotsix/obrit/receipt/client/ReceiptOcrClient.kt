@@ -1,11 +1,11 @@
 package depromeet.hotsix.obrit.receipt.client
 
-import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
 import org.springframework.http.MediaType
 import org.springframework.http.client.SimpleClientHttpRequestFactory
 import org.springframework.stereotype.Component
 import org.springframework.web.client.HttpServerErrorException
+import org.springframework.web.client.ResourceAccessException
 import org.springframework.web.client.RestClient
 import tools.jackson.databind.ObjectMapper
 import java.util.Base64
@@ -39,27 +39,31 @@ class ReceiptOcrClient(
                 .body(aiRequest)
                 .retrieve()
                 .body(ReceiptOcrClientResponse::class.java)
-                ?: throw BusinessException("API 응답이 비어있습니다.")
+                ?: throw OcrFailedException(OcrFailureReason.EMPTY_RESPONSE, "API 응답이 비어있습니다.")
 
             val jsonText = response.candidates?.firstOrNull()?.content?.parts?.firstOrNull()?.text
-                ?: throw BusinessException("API 응답에서 분석 결과를 찾을 수 없습니다.")
+                ?: throw OcrFailedException(OcrFailureReason.EMPTY_RESPONSE, "API 응답에서 분석 결과를 찾을 수 없습니다.")
 
             objectMapper.readValue(jsonText, OcrAnalysisResponse::class.java)
         } catch (e: HttpServerErrorException) {
             // 5xx 서버 에러 (503 등)
-            throw BusinessException(
+            throw OcrFailedException(
+                OcrFailureReason.UPSTREAM_5XX,
                 "AI API 서버 오류 (${e.statusCode}): 잠시 후 다시 시도해주세요.",
             )
-        } catch (e: BusinessException) {
+        } catch (e: ResourceAccessException) {
+            // 연결·읽기 타임아웃, 네트워크 단절
+            throw OcrFailedException(OcrFailureReason.TIMEOUT, "AI API 응답 시간이 초과되었습니다. 잠시 후 다시 시도해주세요.")
+        } catch (e: OcrFailedException) {
             throw e
         } catch (e: Exception) {
-            // 4xx, 네트워크 오류 등
+            // 4xx, 응답 파싱 실패 등
             val message = when {
                 "503" in (e.message ?: "") -> "AI API 일시적 오류: 잠시 후 다시 시도해주세요."
                 "Service Unavailable" in (e.message ?: "") -> "AI API 일시적 오류: 잠시 후 다시 시도해주세요."
                 else -> "AI API 호출 실패: ${e.message}"
             }
-            throw BusinessException(message)
+            throw OcrFailedException(OcrFailureReason.UNKNOWN, message)
         }
     }
 
