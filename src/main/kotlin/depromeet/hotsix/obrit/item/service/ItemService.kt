@@ -377,6 +377,7 @@ class ItemService(
         quantity = quantity,
         nextReplacementDate = nextReplacementDate,
         overdueNotifiedCount = overdueNotifiedCount,
+        lastOverdueNotifiedAt = lastOverdueNotifiedAt,
         lowStockNotifiedAt = lowStockNotifiedAt,
     )
 
