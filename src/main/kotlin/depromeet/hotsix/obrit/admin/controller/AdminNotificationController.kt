@@ -27,6 +27,7 @@ class AdminNotificationController(private val adminNotificationService: AdminNot
         val dashboard = adminNotificationService.getDashboard()
         model.addAttribute("activeMenu", "notifications")
         model.addAttribute("coverage", dashboard.coverage)
+        model.addAttribute("firebase", dashboard.firebase)
         model.addAttribute("settings", dashboard.settings)
         model.addAttribute("preview", dashboard.preview)
         return "admin/notifications"

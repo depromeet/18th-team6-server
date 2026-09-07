@@ -28,6 +28,30 @@
     </div>
 
     <section class="module">
+        <h2>Firebase 초기화 상태</h2>
+        <p class="readonly">
+            초기화에 실패해도 서버는 정상 기동합니다. 대신 알림이 조용히 나가지 않으므로 여기서 확인해야 합니다.
+        </p>
+        <table>
+            <thead>
+            <tr>
+                <th>상태</th>
+                <th>실패 원인</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td>
+                    <span th:class="${firebase.healthy} ? 'ok-status' : 'error-status'"
+                          th:text="${firebase.state}"></span>
+                </td>
+                <td th:text="${firebase.failureReason} ?: '-'"></td>
+            </tr>
+            </tbody>
+        </table>
+    </section>
+
+    <section class="module">
         <h2>기기 등록 현황</h2>
         <p class="readonly">
             푸시는 기기(FID)가 등록된 사용자에게만 닿습니다. 커버리지가 낮으면 발송해도 대부분 전달되지 않습니다.

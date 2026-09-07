@@ -12,12 +12,21 @@ import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
 @Service
-class FcmPushService(private val deviceRegistrationRepository: DeviceRegistrationRepository) {
+class FcmPushService(
+    private val deviceRegistrationRepository: DeviceRegistrationRepository,
+    private val firebaseStatusService: FirebaseStatusService,
+) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Async
     @Transactional
     fun sendToUser(userId: Long, title: String, body: String) {
+        // 초기화에 실패했으면 FirebaseMessaging.getInstance()가 배치마다 예외를 던진다. 먼저 끊는다.
+        if (!firebaseStatusService.canSend) {
+            log.warn("Firebase가 초기화되지 않아 알림을 보내지 않습니다. state={}", firebaseStatusService.state)
+            return
+        }
+
         val devices = deviceRegistrationRepository.findAllByUserId(userId)
         if (devices.isEmpty()) {
             log.warn("등록된 알림 기기가 없습니다. userId={}", userId)

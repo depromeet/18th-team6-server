@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.admin.dto
 
+import depromeet.hotsix.obrit.notification.entity.FirebaseInitializationState
 import depromeet.hotsix.obrit.notification.entity.NotificationPreviewSnapshot
 
 /** 푸시가 닿을 수 있는 사용자 비율. 발송 전에 이 값이 충분한지 먼저 확인한다. */
@@ -17,8 +18,17 @@ data class AdminNotificationSettingsRow(
     val lowStockEnabled: Boolean,
 )
 
+/**
+ * Firebase 초기화 상태. 실패해도 기동은 되므로, 알림이 조용히 안 나가는 상황을 여기서 알아채야 한다.
+ */
+data class AdminFirebaseStatusRow(val state: FirebaseInitializationState, val failureReason: String?) {
+    val healthy: Boolean
+        get() = state == FirebaseInitializationState.INITIALIZED
+}
+
 data class AdminNotificationDashboard(
     val coverage: AdminDeviceCoverageRow,
+    val firebase: AdminFirebaseStatusRow,
     val settings: AdminNotificationSettingsRow,
     val preview: NotificationPreviewSnapshot,
 )
