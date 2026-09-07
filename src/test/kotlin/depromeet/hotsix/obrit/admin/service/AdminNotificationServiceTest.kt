@@ -110,9 +110,10 @@ class AdminNotificationServiceTest {
         saveOverdueItem()
         notificationSettingsService.updateAutoDispatch(enabled = false)
 
-        val count = adminNotificationService.dispatchNow()
+        val result = adminNotificationService.dispatchNow()
 
-        assertEquals(1, count)
+        // 기기가 등록돼 있지 않아 푸시는 닿지 않지만, 재시도해도 결과가 같으므로 상태는 확정된다.
+        assertEquals(1, result.skippedUserCount)
         assertEquals(1, notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).size)
     }
 
@@ -170,8 +171,8 @@ class AdminNotificationServiceTest {
     fun `연속 실행해도 이미 발송한 대상은 다시 발송하지 않는다`() {
         saveOverdueItem()
 
-        assertEquals(1, adminNotificationService.dispatchNow())
-        assertEquals(0, adminNotificationService.dispatchNow())
+        assertEquals(1, adminNotificationService.dispatchNow().skippedUserCount)
+        assertEquals(0, adminNotificationService.dispatchNow().skippedUserCount)
         assertEquals(1, notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).size)
     }
 }
