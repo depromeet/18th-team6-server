@@ -18,6 +18,7 @@ import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.mock.web.MockMultipartFile
 import org.springframework.test.context.ActiveProfiles
+import org.springframework.test.context.transaction.AfterTransaction
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -27,7 +28,10 @@ private const val DEFAULT_CATEGORY_ICON_ID = 1L
 
 /**
  * 이벤트 적재는 REQUIRES_NEW라 테스트 트랜잭션 롤백에 걸리지 않는다.
- * 셋업 데이터만 롤백되고 이벤트는 남으므로 [tearDown]에서 이벤트만 지운다.
+ * 셋업 데이터만 롤백되고 이벤트는 커밋된 채 남으므로 정리를 두 군데서 한다.
+ *
+ * - [setUp]: 남의 이벤트가 이 테스트의 findAll()에 섞이지 않게 가린다(롤백돼도 무방).
+ * - [deleteCommittedEvents]: 커밋된 이벤트를 실제로 지워 다음 테스트로 넘기지 않는다.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -56,6 +60,8 @@ class ReceiptAnalysisEventTest {
 
     @BeforeEach
     fun setUp() {
+        // 앞선 테스트가 남긴 이벤트를 이 트랜잭션 안에서 안 보이게 한다.
+        // 롤백되더라도 singleEvent()의 findAll()이 남의 이벤트를 세지 않게 하는 용도.
         analyticsEventRepository.deleteAll()
         stubOcrService.reset()
 
@@ -78,8 +84,16 @@ class ReceiptAnalysisEventTest {
 
     @AfterEach
     fun tearDown() {
-        analyticsEventRepository.deleteAll()
         stubOcrService.reset()
+    }
+
+    /**
+     * 이벤트는 REQUIRES_NEW로 이미 커밋됐으므로 테스트 트랜잭션 안에서 지우면 롤백된다.
+     * 트랜잭션이 끝난 뒤에 지워야 다음 테스트로 넘어가지 않는다.
+     */
+    @AfterTransaction
+    fun deleteCommittedEvents() {
+        analyticsEventRepository.deleteAll()
     }
 
     @Test
