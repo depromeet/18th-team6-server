@@ -51,6 +51,7 @@ class NotificationPolicyServiceTest {
         quantity: Int,
         nextReplacementDate: LocalDate,
         overdueNotifiedCount: Int = 0,
+        lastOverdueNotifiedAt: LocalDate? = null,
         lowStockNotifiedAt: LocalDate? = null,
     ): Item = itemRepository.save(
         Item(
@@ -62,11 +63,20 @@ class NotificationPolicyServiceTest {
             lastReplacedDate = nextReplacementDate.minusDays(30),
             nextReplacementDate = nextReplacementDate,
             overdueNotifiedCount = overdueNotifiedCount,
+            lastOverdueNotifiedAt = lastOverdueNotifiedAt,
             lowStockNotifiedAt = lowStockNotifiedAt,
         ),
     )
 
     private fun candidateFor(itemId: Long?) = notificationPolicyService.evaluate().find { it.itemId == itemId }
+
+    private fun updateOverdueSteps(overdueStepDays: String) = notificationSettingsService.update(
+        leadDays = NotificationSettings.DEFAULT_LEAD_DAYS,
+        overdueStepDays = overdueStepDays,
+        preReplacementEnabled = true,
+        overdueEnabled = true,
+        lowStockEnabled = true,
+    )
 
     @Test
     fun `선행 일수 이내로 진입한 당일이면 사전 알림 후보가 된다`() {
@@ -123,7 +133,8 @@ class NotificationPolicyServiceTest {
     }
 
     @Test
-    fun `지연 알림 스텝에 해당하지 않는 날짜는 후보가 아니다`() {
+    fun `첫 스텝에 도달하기 전에는 지연 알림 후보가 아니다`() {
+        updateOverdueSteps("5,10,15")
         val item = saveItem(name = "수건", quantity = 2, nextReplacementDate = today.minusDays(2))
 
         assertNull(candidateFor(item.id))
@@ -142,8 +153,14 @@ class NotificationPolicyServiceTest {
     }
 
     @Test
-    fun `지연 알림 스텝에 해당하지 않는 날이어도 여분이 0이면 여분 부족 알림 후보가 된다`() {
-        val item = saveItem(name = "수건", quantity = 0, nextReplacementDate = today.minusDays(2))
+    fun `지연 알림이 최소 간격에 막힌 날이어도 여분이 0이면 여분 부족 알림 후보가 된다`() {
+        val item = saveItem(
+            name = "수건",
+            quantity = 0,
+            nextReplacementDate = today.minusDays(5),
+            overdueNotifiedCount = 1,
+            lastOverdueNotifiedAt = today,
+        )
 
         assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
     }

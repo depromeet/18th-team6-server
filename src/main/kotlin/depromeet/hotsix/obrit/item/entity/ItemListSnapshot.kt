@@ -6,7 +6,7 @@ data class ItemListSnapshot(
     val id: Long,
     val name: String,
     val categoryId: Long,
-    val quantity: Int,
+    val quantity: Int?,
     val lastReplacedDate: LocalDate,
     val nextReplacementDate: LocalDate,
 ) {
