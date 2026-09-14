@@ -1,10 +1,12 @@
 package depromeet.hotsix.obrit.admin.service
 
 import depromeet.hotsix.obrit.admin.dto.AdminDeviceCoverageRow
+import depromeet.hotsix.obrit.admin.dto.AdminDispatchResultRow
 import depromeet.hotsix.obrit.admin.dto.AdminNoticeForm
 import depromeet.hotsix.obrit.admin.dto.AdminNotificationDashboard
 import depromeet.hotsix.obrit.admin.dto.AdminNotificationSettingsForm
 import depromeet.hotsix.obrit.admin.dto.AdminNotificationSettingsRow
+import depromeet.hotsix.obrit.notification.entity.NotificationDispatchResult
 import depromeet.hotsix.obrit.notification.entity.NotificationSettings
 import depromeet.hotsix.obrit.notification.repository.DeviceRegistrationRepository
 import depromeet.hotsix.obrit.notification.service.NotificationDispatchService
@@ -56,7 +58,7 @@ class AdminNotificationService(
     }
 
     /** 정책 배치를 지금 실행한다. 자동 발송 스위치와 무관하게 동작한다. */
-    fun dispatchNow(): Int = notificationDispatchService.dispatch()
+    fun dispatchNow(): AdminDispatchResultRow = notificationDispatchService.dispatch().toRow()
 
     fun sendNotice(form: AdminNoticeForm): Int {
         val userId = form.userId
@@ -66,6 +68,12 @@ class AdminNotificationService(
         }
         return notificationNoticeService.sendToAll(form.title.trim(), form.body.trim())
     }
+
+    private fun NotificationDispatchResult.toRow(): AdminDispatchResultRow = AdminDispatchResultRow(
+        sentUserCount = sentUserCount,
+        failedUserCount = failedUserCount,
+        skippedUserCount = skippedUserCount,
+    )
 
     private fun NotificationSettings.toRow(): AdminNotificationSettingsRow = AdminNotificationSettingsRow(
         autoDispatchEnabled = autoDispatchEnabled,

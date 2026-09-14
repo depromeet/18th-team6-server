@@ -81,13 +81,7 @@ class ItemQueryRepositoryImpl(
         return when (order) {
             ItemOrder.REPLACEMENT_URGENT -> item.nextReplacementDate.gt(cursor.nextReplacementDate)
                 .or(item.nextReplacementDate.eq(cursor.nextReplacementDate).and(item.id.gt(cursorId)))
-            ItemOrder.SPARE_LOW -> item.quantity.gt(cursor.quantity)
-                .or(item.quantity.eq(cursor.quantity).and(item.nextReplacementDate.gt(cursor.nextReplacementDate)))
-                .or(
-                    item.quantity.eq(cursor.quantity)
-                        .and(item.nextReplacementDate.eq(cursor.nextReplacementDate))
-                        .and(item.id.gt(cursorId)),
-                )
+            ItemOrder.SPARE_LOW -> spareLowCursorPredicate(item, cursor, cursorId)
             ItemOrder.USED_OLD -> item.lastReplacedDate.gt(cursor.lastReplacedDate)
                 .or(item.lastReplacedDate.eq(cursor.lastReplacedDate).and(item.id.gt(cursorId)))
             ItemOrder.ITEM_NAME -> item.name.gt(cursor.name)
@@ -95,9 +89,40 @@ class ItemQueryRepositoryImpl(
         }
     }
 
+    /**
+     * 여분 적은 순 커서 조건.
+     *
+     * 미입력(null)은 정렬 마지막 구간이라 숫자 비교로는 이어지지 않는다. NULL과의 비교는 결과가 NULL이라
+     * 어떤 행도 통과하지 못해, 커서가 미입력 항목에 닿는 순간 페이징이 끊긴다. 구간을 나눠 처리한다.
+     */
+    private fun spareLowCursorPredicate(item: QItem, cursor: Item, cursorId: Long): BooleanExpression {
+        val cursorQuantity = cursor.quantity
+            ?: // 이미 미입력 구간이므로 같은 구간 안에서 보조 키로만 진행한다.
+            return item.quantity.isNull
+                .and(
+                    item.nextReplacementDate.gt(cursor.nextReplacementDate)
+                        .or(item.nextReplacementDate.eq(cursor.nextReplacementDate).and(item.id.gt(cursorId))),
+                )
+
+        return item.quantity.gt(cursorQuantity)
+            // 미입력은 어떤 숫자보다 뒤에 오므로 항상 다음 페이지에 포함된다.
+            .or(item.quantity.isNull)
+            .or(item.quantity.eq(cursorQuantity).and(item.nextReplacementDate.gt(cursor.nextReplacementDate)))
+            .or(
+                item.quantity.eq(cursorQuantity)
+                    .and(item.nextReplacementDate.eq(cursor.nextReplacementDate))
+                    .and(item.id.gt(cursorId)),
+            )
+    }
+
     private fun orderSpecifiers(item: QItem, order: ItemOrder): List<OrderSpecifier<*>> = when (order) {
         ItemOrder.REPLACEMENT_URGENT -> listOf(item.nextReplacementDate.asc(), item.id.asc())
-        ItemOrder.SPARE_LOW -> listOf(item.quantity.asc(), item.nextReplacementDate.asc(), item.id.asc())
+        // 미입력은 여분이 적은 것이 아니므로 뒤로 보낸다. DB 기본 NULL 정렬 순서에 기대지 않는다.
+        ItemOrder.SPARE_LOW -> listOf(
+            item.quantity.asc().nullsLast(),
+            item.nextReplacementDate.asc(),
+            item.id.asc(),
+        )
         ItemOrder.USED_OLD -> listOf(item.lastReplacedDate.asc(), item.id.asc())
         ItemOrder.ITEM_NAME -> listOf(item.name.asc(), item.id.asc())
     }

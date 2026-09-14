@@ -32,7 +32,7 @@ data class ItemBucketResponse(val bucket: HomeRiskBucket, val count: Int, val it
 data class BucketItemResponse(
     val itemId: Long,
     val name: String,
-    val spareQuantity: Int,
+    val spareQuantity: Int?,
     @field:Schema(description = "아이템 카테고리의 아이콘 URL", example = "https://cdn.example.com/icons/toothbrush.png")
     val iconUrl: String,
     val nextReplacementDate: LocalDate,
@@ -74,8 +74,8 @@ data class HomeItemCard(
         example = "교체 D-3",
     )
     val replacementDday: String,
-    @field:Schema(description = "여분 수량", example = "2")
-    val spareQuantity: Int,
+    @field:Schema(description = "여분 수량. null은 미입력을 뜻하며 0(여분 없음)과 다릅니다.", example = "2")
+    val spareQuantity: Int?,
     @field:Schema(
         description = "아이템 세부 상태 버킷(여분 유무 × 교체 시기 조합, 6종). 클라이언트 카드 배경 등 UI 분기 용도\n" +
             "- NONE_OVERDUE: 여분 없음 + 교체 지남\n" +
