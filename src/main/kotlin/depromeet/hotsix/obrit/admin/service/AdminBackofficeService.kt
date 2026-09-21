@@ -423,7 +423,8 @@ class AdminBackofficeService(
         if (form.name.isBlank()) {
             throw BusinessException("아이템 이름은 필수입니다.")
         }
-        if (form.spareQuantity < 0) {
+        // 비우면 미입력으로 저장된다. 값을 넣었다면 음수는 막는다.
+        if ((form.spareQuantity ?: 0) < 0) {
             throw BusinessException("수량은 0 이상이어야 합니다.")
         }
         if (form.replacementIntervalDays <= 0) {

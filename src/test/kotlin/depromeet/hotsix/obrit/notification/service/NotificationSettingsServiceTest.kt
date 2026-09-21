@@ -96,6 +96,7 @@ class NotificationSettingsServiceTest {
 
     @Test
     fun `지연 스텝을 바꾸면 지연 알림 판정 기준이 함께 바뀐다`() {
+        update(overdueStepDays = "5,10,15")
         val item = saveItem(quantity = 2, nextReplacementDate = today.minusDays(2))
         assertNull(candidateFor(item.id))
 

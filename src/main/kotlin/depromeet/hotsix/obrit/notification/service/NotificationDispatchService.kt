@@ -2,8 +2,10 @@ package depromeet.hotsix.obrit.notification.service
 
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.item.service.ItemService
+import depromeet.hotsix.obrit.notification.entity.FcmSendOutcome
 import depromeet.hotsix.obrit.notification.entity.Notification
 import depromeet.hotsix.obrit.notification.entity.NotificationCandidate
+import depromeet.hotsix.obrit.notification.entity.NotificationDispatchResult
 import depromeet.hotsix.obrit.notification.entity.NotificationPreviewSnapshot
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
@@ -41,12 +43,12 @@ class NotificationDispatchService(
     private val dispatchLock = ReentrantLock()
 
     /**
-     * 실제 발송한 사용자 수를 반환한다.
+     * 발송 결과를 사용자 수 기준으로 집계해 반환한다.
      *
      * 배치가 겹쳐 실행되면 같은 후보를 두 번 계산해 중복 발송되고
      * 지연 알림 단계가 한 번에 두 칸 넘어간다. 그래서 동시 실행을 막는다.
      */
-    fun dispatch(): Int {
+    fun dispatch(): NotificationDispatchResult {
         if (!dispatchLock.tryLock()) {
             throw BusinessException("알림 배치가 이미 실행 중입니다. 잠시 후 다시 시도해주세요.")
         }
@@ -58,25 +60,32 @@ class NotificationDispatchService(
         }
     }
 
-    private fun runDispatch(): Int {
+    private fun runDispatch(): NotificationDispatchResult {
         val today = LocalDate.now(clock)
         val candidatesByUser = notificationPolicyService.evaluate().groupBy { it.userId }
         log.info("알림 배치 시작. 대상 유저 수={}", candidatesByUser.size)
 
         var sent = 0
         var failed = 0
+        var skipped = 0
         candidatesByUser.forEach { (userId, candidates) ->
             // 한 사용자의 실패가 남은 사용자의 발송까지 막지 않도록 격리한다.
             runCatching { dispatchToUser(userId, candidates, today) }
-                .onSuccess { sent++ }
+                .onSuccess {
+                    when (it) {
+                        FcmSendOutcome.SENT -> sent++
+                        FcmSendOutcome.FAILED -> failed++
+                        FcmSendOutcome.NO_DEVICE -> skipped++
+                    }
+                }
                 .onFailure {
                     failed++
                     log.error("알림 발송 실패. userId={}", userId, it)
                 }
         }
 
-        log.info("알림 배치 종료. 발송={}, 실패={}", sent, failed)
-        return sent
+        log.info("알림 배치 종료. 발송={}, 실패={}, 기기없음={}", sent, failed, skipped)
+        return NotificationDispatchResult(sentUserCount = sent, failedUserCount = failed, skippedUserCount = skipped)
     }
 
     /**
@@ -110,9 +119,28 @@ class NotificationDispatchService(
         )
     }
 
-    private fun dispatchToUser(userId: Long, candidates: List<NotificationCandidate>, today: LocalDate) {
+    /**
+     * 한 사용자에게 발송하고 결과를 돌려준다.
+     *
+     * 전송을 먼저 하고 성공한 뒤에만 상태를 확정한다. 순서를 뒤집으면 전송이 실패해도 지연 스텝이
+     * 소진되고 여분 부족 기록이 남아 재발송 기회가 사라진다. 특히 여분 부족은 재입고 전까지 복구되지 않는다.
+     *
+     * 기기가 없는 사용자도 상태는 확정한다. 재시도해도 결과가 같은데 상태를 미루면 매 배치마다 후보로
+     * 다시 계산되고, 기기를 등록하는 순간 밀린 알림이 한꺼번에 나간다. 푸시가 닿지 않을 뿐 인앱 알림 목록에는 남는다.
+     */
+    private fun dispatchToUser(
+        userId: Long,
+        candidates: List<NotificationCandidate>,
+        today: LocalDate,
+    ): FcmSendOutcome {
         val sorted = candidates.sortedBy { it.daysUntil }
         val message = buildMessage(sorted)
+
+        val result = fcmPushService.sendToUser(userId, message.title, message.body)
+        if (result.outcome == FcmSendOutcome.FAILED) {
+            log.warn("전송에 실패해 알림 상태를 확정하지 않는다. userId={}, 실패 기기 수={}", userId, result.failedCount)
+            return result.outcome
+        }
 
         transaction.executeWithoutResult {
             notificationRepository.save(
@@ -121,7 +149,7 @@ class NotificationDispatchService(
             sorted.forEach { recordSent(it, today) }
         }
 
-        fcmPushService.sendToUser(userId, message.title, message.body)
+        return result.outcome
     }
 
     private fun recordSent(candidate: NotificationCandidate, today: LocalDate) {

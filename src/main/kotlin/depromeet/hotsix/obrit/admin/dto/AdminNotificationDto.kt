@@ -41,4 +41,7 @@ data class AdminNotificationSettingsForm(
     val lowStockEnabled: Boolean = false,
 )
 
+/** 배치 1회 결과. 실패와 기기없음을 나눠 본다. 합치면 커버리지 문제인지 전송 문제인지 구분되지 않는다. */
+data class AdminDispatchResultRow(val sentUserCount: Int, val failedUserCount: Int, val skippedUserCount: Int)
+
 data class AdminNoticeForm(val title: String = "", val body: String = "", val userId: Long? = null)

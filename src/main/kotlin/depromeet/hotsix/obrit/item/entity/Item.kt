@@ -32,8 +32,9 @@ class Item(
     @Column(nullable = false)
     var name: String,
 
-    @Column(name = "count", nullable = false)
-    var quantity: Int,
+    /** 여분 수량. null은 미입력이고 0은 사용자가 명시한 "여분 없음"이다. 둘은 알림 판정에서 다르게 다룬다. */
+    @Column(name = "count")
+    var quantity: Int? = null,
 
     @Column(name = "replacement_interval_days", nullable = false)
     var replacementIntervalDays: Int,
@@ -61,7 +62,7 @@ class Item(
         userId = 0,
         categoryId = 0,
         name = "",
-        quantity = 0,
+        quantity = null,
         replacementIntervalDays = 1,
         lastReplacedDate = LocalDate.EPOCH,
         nextReplacementDate = LocalDate.EPOCH,
@@ -86,14 +87,15 @@ class Item(
         }
     }
 
-    fun updateSpareCount(quantity: Int) {
+    fun updateSpareCount(quantity: Int?) {
         this.quantity = quantity
         resetLowStockNotificationIfRestocked()
     }
 
     fun replace(replacedDate: LocalDate) {
         lastReplacedDate = replacedDate
-        quantity = (quantity - 1).coerceAtLeast(0)
+        // 미입력은 차감하지 않고 미입력으로 둔다. 모르는 값을 0으로 확정하면 안 된다.
+        quantity = quantity?.let { (it - 1).coerceAtLeast(0) }
         recalculateNextReplacementDate()
         resetOverdueNotification()
         resetLowStockNotificationIfRestocked()
@@ -116,7 +118,9 @@ class Item(
     }
 
     private fun resetLowStockNotificationIfRestocked() {
-        if (quantity > 0) {
+        // 미입력으로 되돌아간 경우도 알림 대상이 아니므로 함께 초기화한다.
+        val current = quantity
+        if (current == null || current > 0) {
             lowStockNotifiedAt = null
         }
     }
