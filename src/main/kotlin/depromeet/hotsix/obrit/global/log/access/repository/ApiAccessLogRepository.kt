@@ -23,4 +23,19 @@ interface ApiAccessLogRepository : JpaRepository<ApiAccessLog, Long> {
         @Param("startAt") startAt: LocalDateTime,
         @Param("endAt") endAt: LocalDateTime,
     ): List<ApiAccessLog>
+
+    @Query(
+        """
+        select l
+        from ApiAccessLog l
+        where l.userId is not null
+          and l.occurredAt >= :startAt
+          and l.occurredAt < :endAt
+        order by l.userId asc, l.occurredAt asc, l.id asc
+        """,
+    )
+    fun findLoggedInByOccurredAtWindow(
+        @Param("startAt") startAt: LocalDateTime,
+        @Param("endAt") endAt: LocalDateTime,
+    ): List<ApiAccessLog>
 }

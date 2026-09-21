@@ -8,6 +8,8 @@ import jakarta.persistence.Id
 import jakarta.persistence.Index
 import jakarta.persistence.Table
 import jakarta.persistence.UniqueConstraint
+import org.hibernate.annotations.JdbcTypeCode
+import org.hibernate.type.SqlTypes
 import java.time.LocalDateTime
 
 @Entity
@@ -38,6 +40,9 @@ class AnalyticsEventEntity(
     @Column(name = "occurred_at", nullable = false)
     var occurredAt: LocalDateTime,
 
+    // JdbcTypeCode 없이 String을 JSON 컬럼에 넣으면 JSON 문자열 리터럴로 한 번 더 감싸져서
+    // properties->'$.key' 같은 조회가 불가능해진다.
+    @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "properties", nullable = false, columnDefinition = "JSON")
     var properties: String,
 

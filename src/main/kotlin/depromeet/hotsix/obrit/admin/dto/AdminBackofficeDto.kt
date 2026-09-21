@@ -32,7 +32,7 @@ data class AdminItemRow(
     val categoryId: Long,
     val categoryName: String,
     val name: String,
-    val spareQuantity: Int,
+    val spareQuantity: Int?,
     val replacementIntervalDays: Int,
     val lastReplacedDate: LocalDate,
     val nextReplacementDate: LocalDate,
@@ -69,7 +69,7 @@ data class AdminItemForm(
     val userId: Long = 0,
     val categoryId: Long = 0,
     val name: String = "",
-    val spareQuantity: Int = 0,
+    val spareQuantity: Int? = null,
     val lastReplacedDate: LocalDate? = null,
     val replacementIntervalDays: Int = 1,
 )
@@ -121,4 +121,45 @@ data class AdminSignupFunnelDropOffRow(
     val pathTemplate: String,
     val statusCode: String,
     val users: Int,
+)
+
+data class AdminUserJourneyView(
+    val startAt: LocalDateTime,
+    val endAt: LocalDateTime,
+    val activeUsers: Int,
+    val coreActionRows: List<AdminCoreActionRow>,
+    val receipt: AdminReceiptAnalysisSummary,
+    val receiptFailureRows: List<AdminReceiptFailureRow>,
+    val revisit: AdminRevisitSummary,
+    val userRows: List<AdminUserJourneyUserRow>,
+)
+
+/** 기간 내 해당 액션을 한 번이라도 수행한 사용자 수와 비율 */
+data class AdminCoreActionRow(val action: String, val label: String, val users: Int, val userRate: String)
+
+data class AdminReceiptAnalysisSummary(
+    val total: Int,
+    val success: Int,
+    val failure: Int,
+    val successRate: String,
+    val avgSuccessMs: String,
+    val avgFailureMs: String,
+    val avgOcrMs: String,
+)
+
+data class AdminReceiptFailureRow(val reason: String, val count: Int, val rate: String)
+
+data class AdminRevisitSummary(val cohortUsers: Int, val revisitedUsers: Int, val revisitRate: String)
+
+data class AdminUserJourneyUserRow(
+    val userId: Long,
+    val signedUpAt: LocalDateTime?,
+    val registered: Boolean,
+    val edited: Boolean,
+    val replaced: Boolean,
+    val spareUpdated: Boolean,
+    val deleted: Boolean,
+    val usedReceipt: Boolean,
+    val revisited: Boolean,
+    val lastSeenAt: LocalDateTime?,
 )

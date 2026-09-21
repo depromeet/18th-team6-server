@@ -6,6 +6,7 @@ import depromeet.hotsix.obrit.admin.dto.AdminItemForm
 import depromeet.hotsix.obrit.admin.dto.AdminReplacementForm
 import depromeet.hotsix.obrit.admin.dto.AdminUserForm
 import depromeet.hotsix.obrit.admin.service.AdminBackofficeService
+import depromeet.hotsix.obrit.admin.service.AdminUserJourneyService
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
@@ -24,7 +25,10 @@ import java.time.LocalDateTime
 
 @Controller
 @RequestMapping("/admin")
-class AdminBackofficeController(private val adminBackofficeService: AdminBackofficeService) {
+class AdminBackofficeController(
+    private val adminBackofficeService: AdminBackofficeService,
+    private val adminUserJourneyService: AdminUserJourneyService,
+) {
 
     private val log = LoggerFactory.getLogger(AdminBackofficeController::class.java)
 
@@ -215,6 +219,21 @@ class AdminBackofficeController(private val adminBackofficeService: AdminBackoff
         model.addAttribute("activeMenu", "analytics")
         model.addAttribute("analysis", adminBackofficeService.getSignupFunnelJourney(startAt, endAt, userId))
         return "admin/signup-funnel"
+    }
+
+    @GetMapping("/analytics/user-journey")
+    fun userJourney(
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        startAt: LocalDateTime?,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        endAt: LocalDateTime?,
+        model: Model,
+    ): String {
+        model.addAttribute("activeMenu", "analytics")
+        model.addAttribute("analysis", adminUserJourneyService.getUserJourney(startAt, endAt))
+        return "admin/user-journey"
     }
 
     @GetMapping("/items/{itemId}/change")
