@@ -19,6 +19,7 @@ class NotificationNoticeService(
     private val notificationRepository: NotificationRepository,
     private val deviceRegistrationRepository: DeviceRegistrationRepository,
     private val fcmPushService: FcmPushService,
+    private val notificationDeepLinkService: NotificationDeepLinkService,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
@@ -47,10 +48,18 @@ class NotificationNoticeService(
     }
 
     private fun send(userId: Long, title: String, body: String) {
-        notificationRepository.save(
+        val notification = notificationRepository.save(
             Notification(userId = userId, type = NotificationType.NOTICE, title = title, body = body),
         )
-        fcmPushService.sendToUser(userId, title, body)
+        fcmPushService.sendToUser(
+            userId,
+            title,
+            body,
+            mapOf(
+                "notificationId" to requireNotNull(notification.id).toString(),
+                "deepLink" to notificationDeepLinkService.resolve(null),
+            ),
+        )
     }
 
     private fun validate(title: String, body: String) {

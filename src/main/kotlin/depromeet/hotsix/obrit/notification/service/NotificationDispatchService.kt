@@ -31,6 +31,7 @@ class NotificationDispatchService(
     private val fcmPushService: FcmPushService,
     private val itemService: ItemService,
     private val clock: Clock,
+    private val notificationDeepLinkService: NotificationDeepLinkService,
     transactionManager: PlatformTransactionManager,
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
@@ -136,7 +137,13 @@ class NotificationDispatchService(
         val sorted = candidates.sortedBy { it.daysUntil }
         val message = buildMessage(sorted)
 
-        val result = fcmPushService.sendToUser(userId, message.title, message.body)
+        val single = sorted.singleOrNull()
+        val result = fcmPushService.sendToUser(
+            userId,
+            message.title,
+            message.body,
+            mapOf("deepLink" to notificationDeepLinkService.resolve(single?.itemId)),
+        )
         if (result.outcome == FcmSendOutcome.FAILED) {
             log.warn("전송에 실패해 알림 상태를 확정하지 않는다. userId={}, 실패 기기 수={}", userId, result.failedCount)
             return result.outcome
@@ -144,7 +151,15 @@ class NotificationDispatchService(
 
         transaction.executeWithoutResult {
             notificationRepository.save(
-                Notification(userId = userId, type = sorted.first().type, title = message.title, body = message.body),
+                Notification(
+                    userId = userId,
+                    type = sorted.first().type,
+                    title = message.title,
+                    body = message.body,
+                    itemId = single?.itemId,
+                    label = single?.label(),
+                    nextReplacementDate = single?.nextReplacementDate,
+                ),
             )
             sorted.forEach { recordSent(it, today) }
         }
