@@ -18,7 +18,8 @@ interface NotificationControllerApi {
 
     @Operation(
         summary = "알림 목록 조회",
-        description = "사용자의 전체 알림 목록을 조회합니다.",
+        description = "사용자의 전체 알림 목록을 조회합니다. 단건 알림은 발송 당시 라벨·다음 교체 예상일과 " +
+            "소모품 상세 딥링크를 제공합니다. 묶음·공지·기존 알림은 홈 딥링크를 제공합니다.",
     )
     @ApiResponses(
         value = [
@@ -41,7 +42,7 @@ interface NotificationControllerApi {
 
     @Operation(
         summary = "알림 읽음 처리",
-        description = "특정 알림을 읽음 상태로 변경합니다.",
+        description = "특정 알림을 읽음 상태로 변경하고 이동할 딥링크를 반환합니다. 반복 요청에도 읽음 시각은 유지됩니다.",
     )
     @ApiResponses(
         value = [

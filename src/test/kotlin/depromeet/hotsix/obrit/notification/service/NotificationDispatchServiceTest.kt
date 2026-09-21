@@ -1,7 +1,9 @@
 package depromeet.hotsix.obrit.notification.service
 
+import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
+import depromeet.hotsix.obrit.notification.entity.Notification
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
@@ -15,6 +17,8 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @SpringBootTest
@@ -36,6 +40,9 @@ class NotificationDispatchServiceTest {
 
     @Autowired
     private lateinit var clock: Clock
+
+    @Autowired
+    private lateinit var notificationService: NotificationService
 
     private val today: LocalDate
         get() = LocalDate.now(clock)
@@ -68,6 +75,19 @@ class NotificationDispatchServiceTest {
         assertEquals(1, notifications.size)
         assertEquals(NotificationType.OVERDUE, notifications.single().type)
         assertTrue(notifications.single().body.contains("수건"))
+        assertEquals(item.id, notifications.single().itemId)
+        assertEquals("교체 D+1", notifications.single().label)
+        assertEquals(today.minusDays(1), notifications.single().nextReplacementDate)
+        val response = notificationService.listAllNotification(userId).single()
+        assertEquals("교체 D+1", response.label)
+        assertEquals(today.minusDays(1), response.nextReplacementDate)
+        assertEquals(item.id, response.itemId)
+        assertEquals("obrit://items/${item.id}", response.deepLink)
+        val read = notificationService.markAsRead(userId, response.id)
+        assertEquals(response.deepLink, read.deepLink)
+        assertEquals(response.itemId, read.itemId)
+        assertTrue(read.isRead)
+        assertEquals(read.readAt, notificationService.markAsRead(userId, response.id).readAt)
 
         val updated = itemRepository.getReferenceById(requireNotNull(item.id))
         assertEquals(1, updated.overdueNotifiedCount)
@@ -85,6 +105,12 @@ class NotificationDispatchServiceTest {
         assertEquals(1, notifications.size)
         assertTrue(notifications.single().body.contains("치실"))
         assertTrue(notifications.single().body.contains("외 1건"))
+        val response = notificationService.listAllNotification(userId).single()
+        assertNull(response.itemId)
+        assertNull(response.label)
+        assertNull(response.nextReplacementDate)
+        assertEquals("obrit://home", response.deepLink)
+        assertEquals("obrit://home", notificationService.markAsRead(userId, response.id).deepLink)
 
         assertEquals(today, itemRepository.getReferenceById(requireNotNull(urgent.id)).lowStockNotifiedAt)
         assertEquals(today, itemRepository.getReferenceById(requireNotNull(other.id)).lowStockNotifiedAt)
@@ -97,5 +123,40 @@ class NotificationDispatchServiceTest {
         notificationDispatchService.dispatch()
 
         assertEquals(0, notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).size)
+    }
+
+    @Test
+    fun `여분 부족 알림은 소모품 변경 후에도 발송 당시 정보를 반환한다`() {
+        val item = saveItem("치실", 0, today.plusDays(1))
+        notificationDispatchService.dispatch()
+        item.nextReplacementDate = today.plusDays(30)
+        item.quantity = 5
+        itemRepository.flush()
+
+        val response = notificationService.listAllNotification(userId).single()
+        assertEquals("여분 부족", response.label)
+        assertEquals(today.plusDays(1), response.nextReplacementDate)
+        assertEquals(item.id, response.itemId)
+    }
+
+    @Test
+    fun `사전 알림은 교체 D 마이너스 라벨을 반환한다`() {
+        saveItem("칫솔", 2, today.plusDays(3))
+        notificationDispatchService.dispatch()
+        assertEquals("교체 D-3", notificationService.listAllNotification(userId).single().label)
+    }
+
+    @Test
+    fun `기존 알림과 공지는 홈으로 이동하고 다른 사용자는 읽을 수 없다`() {
+        val notification = notificationRepository.save(Notification(userId = userId, type = NotificationType.NOTICE))
+        val response = notificationService.listAllNotification(userId).single()
+        assertNull(response.label)
+        assertNull(response.nextReplacementDate)
+        assertNull(response.itemId)
+        assertEquals("obrit://home", response.deepLink)
+        assertEquals("obrit://home", notificationService.markAsRead(userId, response.id).deepLink)
+        assertFailsWith<ResourceNotFoundException> {
+            notificationService.markAsRead(userId + 10000, requireNotNull(notification.id))
+        }
     }
 }

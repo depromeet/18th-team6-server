@@ -10,6 +10,7 @@ import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Index
 import jakarta.persistence.Table
+import java.time.LocalDate
 import java.time.LocalDateTime
 
 @Entity
@@ -40,6 +41,15 @@ class Notification(
 
     @Column(name = "read_at")
     var readAt: LocalDateTime? = null,
+    // 단건 알림의 발송 시점 정보. 묶음·공지·기존 알림은 null이다.
+    @Column(name = "item_id")
+    val itemId: Long? = null,
+
+    @Column(length = 50)
+    val label: String? = null,
+
+    @Column(name = "next_replacement_date")
+    val nextReplacementDate: LocalDate? = null,
 ) : BaseTimeEntity() {
 
     fun markAsRead() {

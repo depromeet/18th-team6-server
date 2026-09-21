@@ -26,7 +26,7 @@ class FcmPushService(
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
-    fun sendToUser(userId: Long, title: String, body: String): FcmSendResult {
+    fun sendToUser(userId: Long, title: String, body: String, data: Map<String, String> = emptyMap()): FcmSendResult {
         val devices = deviceRegistrationRepository.findAllByUserId(userId)
         if (devices.isEmpty()) {
             log.warn("등록된 알림 기기가 없습니다. userId={}", userId)
@@ -42,7 +42,7 @@ class FcmPushService(
         var sentCount = 0
         var failedCount = 0
         devices.forEach { device ->
-            when (sendToFid(device.fid, title, body)) {
+            when (sendToFid(device.fid, title, body, data)) {
                 SendOutcome.SENT -> sentCount++
                 SendOutcome.FAILED -> failedCount++
                 // 만료된 기기는 삭제했으므로 재시도 대상이 아니다.
@@ -53,8 +53,8 @@ class FcmPushService(
         return FcmSendResult.of(sentCount = sentCount, failedCount = failedCount)
     }
 
-    private fun sendToFid(fid: String, title: String, body: String): SendOutcome = try {
-        FirebaseMessaging.getInstance().send(buildMessage(fid, title, body))
+    private fun sendToFid(fid: String, title: String, body: String, data: Map<String, String>): SendOutcome = try {
+        FirebaseMessaging.getInstance().send(buildMessage(fid, title, body, data))
         SendOutcome.SENT
     } catch (e: FirebaseMessagingException) {
         handleFailure(fid, e)
@@ -65,15 +65,17 @@ class FcmPushService(
         SendOutcome.FAILED
     }
 
-    private fun buildMessage(fid: String, title: String, body: String): Message = Message.builder()
-        .setFid(fid)
-        .setNotification(
-            Notification.builder()
-                .setTitle(title)
-                .setBody(body)
-                .build(),
-        )
-        .build()
+    internal fun buildMessage(fid: String, title: String, body: String, data: Map<String, String>): Message =
+        Message.builder()
+            .setFid(fid)
+            .putAllData(data)
+            .setNotification(
+                Notification.builder()
+                    .setTitle(title)
+                    .setBody(body)
+                    .build(),
+            )
+            .build()
 
     private fun handleFailure(fid: String, e: FirebaseMessagingException): SendOutcome =
         if (e.messagingErrorCode == MessagingErrorCode.UNREGISTERED) {

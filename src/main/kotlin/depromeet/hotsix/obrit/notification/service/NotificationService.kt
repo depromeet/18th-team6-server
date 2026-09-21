@@ -9,7 +9,10 @@ import org.springframework.transaction.annotation.Transactional
 import java.time.LocalDateTime
 
 @Service
-class NotificationService(private val notificationRepository: NotificationRepository) {
+class NotificationService(
+    private val notificationRepository: NotificationRepository,
+    private val notificationDeepLinkService: NotificationDeepLinkService,
+) {
 
     @Transactional(readOnly = true)
     fun listAllNotification(userId: Long): List<ListNotificationResponse> =
@@ -20,6 +23,10 @@ class NotificationService(private val notificationRepository: NotificationReposi
                 content = it.body,
                 isRead = it.isRead,
                 createdAt = it.createdAt!!,
+                label = it.label,
+                nextReplacementDate = it.nextReplacementDate,
+                itemId = it.itemId,
+                deepLink = notificationDeepLinkService.resolve(it.itemId),
             )
         }
 
@@ -34,6 +41,8 @@ class NotificationService(private val notificationRepository: NotificationReposi
             id = notification.id!!,
             isRead = notification.isRead,
             readAt = notification.readAt!!,
+            itemId = notification.itemId,
+            deepLink = notificationDeepLinkService.resolve(notification.itemId),
         )
     }
 

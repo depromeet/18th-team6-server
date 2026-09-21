@@ -62,6 +62,7 @@ class NotificationPolicyService(
             itemName = item.name,
             type = type,
             daysUntil = daysUntil,
+            nextReplacementDate = item.nextReplacementDate,
         )
     }
 
