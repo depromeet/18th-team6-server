@@ -29,7 +29,7 @@ class UserNotificationSettingsService(
     /** 유저 설정을 저장한다. 행이 없으면 만든다. 권한 상태는 이 경로로 바꾸지 않는다. */
     @Transactional
     fun updateSettings(userId: Long, request: UpdateNotificationSettingsRequest): NotificationSettingsResponse {
-        userService.validateUserExist(userId)
+        userService.lockForSettingsUpdate(userId)
         validateLeadDays(request.leadDays)
         validateDispatchTime(request.dispatchTime)
 

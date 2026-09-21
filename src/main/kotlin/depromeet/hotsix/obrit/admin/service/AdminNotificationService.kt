@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.admin.service
 
 import depromeet.hotsix.obrit.admin.dto.AdminDeviceCoverageRow
 import depromeet.hotsix.obrit.admin.dto.AdminDispatchResultRow
+import depromeet.hotsix.obrit.admin.dto.AdminFirebaseStatusRow
 import depromeet.hotsix.obrit.admin.dto.AdminNoticeForm
 import depromeet.hotsix.obrit.admin.dto.AdminNotificationDashboard
 import depromeet.hotsix.obrit.admin.dto.AdminNotificationSettingsForm
@@ -9,6 +10,7 @@ import depromeet.hotsix.obrit.admin.dto.AdminNotificationSettingsRow
 import depromeet.hotsix.obrit.notification.entity.NotificationDispatchResult
 import depromeet.hotsix.obrit.notification.entity.NotificationSettings
 import depromeet.hotsix.obrit.notification.repository.DeviceRegistrationRepository
+import depromeet.hotsix.obrit.notification.service.FirebaseStatusService
 import depromeet.hotsix.obrit.notification.service.NotificationDispatchService
 import depromeet.hotsix.obrit.notification.service.NotificationNoticeService
 import depromeet.hotsix.obrit.notification.service.NotificationSettingsService
@@ -23,6 +25,7 @@ class AdminNotificationService(
     private val notificationNoticeService: NotificationNoticeService,
     private val deviceRegistrationRepository: DeviceRegistrationRepository,
     private val userRepository: UserRepository,
+    private val firebaseStatusService: FirebaseStatusService,
 ) {
 
     /**
@@ -32,8 +35,14 @@ class AdminNotificationService(
     @Transactional
     fun getDashboard(): AdminNotificationDashboard = AdminNotificationDashboard(
         coverage = getCoverage(),
+        firebase = getFirebaseStatus(),
         settings = notificationSettingsService.current().toRow(),
         preview = notificationDispatchService.preview(),
+    )
+
+    fun getFirebaseStatus(): AdminFirebaseStatusRow = AdminFirebaseStatusRow(
+        state = firebaseStatusService.state,
+        failureReason = firebaseStatusService.failureReason,
     )
 
     @Transactional(readOnly = true)

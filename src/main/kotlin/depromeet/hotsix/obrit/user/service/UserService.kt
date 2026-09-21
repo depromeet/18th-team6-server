@@ -11,6 +11,7 @@ import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.springframework.context.ApplicationEventPublisher
 import org.springframework.dao.DataIntegrityViolationException
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Propagation
 import org.springframework.transaction.annotation.Transactional
 
 private val UUID_REGEX =
@@ -21,6 +22,14 @@ private val UUID_REGEX =
 class UserService(private val userRepository: UserRepository, private val eventPublisher: ApplicationEventPublisher) {
     fun validateUserExist(userId: Long) {
         if (!userRepository.existsById(userId)) {
+            throw ResourceNotFoundException("존재하지 않는 사용자입니다.")
+        }
+    }
+
+    /** 호출자의 쓰기 트랜잭션이 끝날 때까지 사용자별 설정 변경을 직렬화한다. */
+    @Transactional(propagation = Propagation.MANDATORY)
+    fun lockForSettingsUpdate(userId: Long) {
+        if (userRepository.findByIdForUpdate(userId) == null) {
             throw ResourceNotFoundException("존재하지 않는 사용자입니다.")
         }
     }

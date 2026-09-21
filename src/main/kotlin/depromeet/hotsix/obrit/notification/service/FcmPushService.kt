@@ -19,7 +19,10 @@ import org.springframework.transaction.annotation.Transactional
  * 여기서 비동기를 둘 이유가 없다.
  */
 @Service
-class FcmPushService(private val deviceRegistrationRepository: DeviceRegistrationRepository) {
+class FcmPushService(
+    private val deviceRegistrationRepository: DeviceRegistrationRepository,
+    private val firebaseStatusService: FirebaseStatusService,
+) {
     private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional
@@ -28,6 +31,12 @@ class FcmPushService(private val deviceRegistrationRepository: DeviceRegistratio
         if (devices.isEmpty()) {
             log.warn("등록된 알림 기기가 없습니다. userId={}", userId)
             return FcmSendResult.noDevice()
+        }
+
+        // 기기 없음과 초기화 실패를 구분해야 실패한 알림의 재시도 기회가 유지된다.
+        if (!firebaseStatusService.canSend) {
+            log.warn("Firebase가 초기화되지 않아 알림을 보내지 않습니다. state={}", firebaseStatusService.state)
+            return FcmSendResult.of(sentCount = 0, failedCount = devices.size)
         }
 
         var sentCount = 0
