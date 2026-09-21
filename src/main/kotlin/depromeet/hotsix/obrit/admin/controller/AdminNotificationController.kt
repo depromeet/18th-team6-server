@@ -51,8 +51,9 @@ class AdminNotificationController(private val adminNotificationService: AdminNot
 
     @PostMapping("/dispatch")
     fun dispatchNow(redirectAttributes: RedirectAttributes): String = runAdminAction(redirectAttributes) {
-        val count = adminNotificationService.dispatchNow()
-        "정책 배치를 실행했습니다. 발송 사용자 ${count}명."
+        val result = adminNotificationService.dispatchNow()
+        "정책 배치를 실행했습니다. 발송 ${result.sentUserCount}명, " +
+            "실패 ${result.failedUserCount}명, 기기없음 ${result.skippedUserCount}명."
     }
 
     @PostMapping("/notice")
