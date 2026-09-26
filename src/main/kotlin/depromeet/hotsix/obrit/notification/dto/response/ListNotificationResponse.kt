@@ -32,4 +32,10 @@ data class ListNotificationResponse(
 
     @field:Schema(description = "알림 클릭 시 이동할 딥링크")
     val deepLink: String,
+
+    @field:Schema(description = "묶음 알림 여부")
+    val isBundled: Boolean,
+
+    @field:Schema(description = "알림함에 표시할 카드 목록")
+    val cards: List<NotificationCardResponse>,
 )

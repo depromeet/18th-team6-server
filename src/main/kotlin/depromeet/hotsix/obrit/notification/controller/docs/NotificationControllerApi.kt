@@ -19,7 +19,7 @@ interface NotificationControllerApi {
     @Operation(
         summary = "알림 목록 조회",
         description = "사용자의 전체 알림 목록을 조회합니다. 단건 알림은 발송 당시 라벨·다음 교체 예상일과 " +
-            "소모품 상세 딥링크를 제공합니다. 묶음·공지·기존 알림은 홈 딥링크를 제공합니다.",
+            "소모품 상세 딥링크를 제공합니다. 묶음 알림은 포함된 소모품별 카드를 함께 제공합니다.",
     )
     @ApiResponses(
         value = [
