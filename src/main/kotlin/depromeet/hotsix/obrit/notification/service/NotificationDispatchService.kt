@@ -6,8 +6,10 @@ import depromeet.hotsix.obrit.notification.entity.FcmSendOutcome
 import depromeet.hotsix.obrit.notification.entity.Notification
 import depromeet.hotsix.obrit.notification.entity.NotificationCandidate
 import depromeet.hotsix.obrit.notification.entity.NotificationDispatchResult
+import depromeet.hotsix.obrit.notification.entity.NotificationEntry
 import depromeet.hotsix.obrit.notification.entity.NotificationPreviewSnapshot
 import depromeet.hotsix.obrit.notification.entity.NotificationType
+import depromeet.hotsix.obrit.notification.repository.NotificationEntryRepository
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -28,6 +30,7 @@ import java.util.concurrent.locks.ReentrantLock
 class NotificationDispatchService(
     private val notificationPolicyService: NotificationPolicyService,
     private val notificationRepository: NotificationRepository,
+    private val notificationEntryRepository: NotificationEntryRepository,
     private val fcmPushService: FcmPushService,
     private val itemService: ItemService,
     private val clock: Clock,
@@ -150,7 +153,7 @@ class NotificationDispatchService(
         }
 
         transaction.executeWithoutResult {
-            notificationRepository.save(
+            val notification = notificationRepository.save(
                 Notification(
                     userId = userId,
                     type = sorted.first().type,
@@ -160,6 +163,9 @@ class NotificationDispatchService(
                     label = single?.label(),
                     nextReplacementDate = single?.nextReplacementDate,
                 ),
+            )
+            notificationEntryRepository.saveAll(
+                sorted.mapIndexed { index, candidate -> candidate.toEntry(notification, index) },
             )
             sorted.forEach { recordSent(it, today) }
         }
@@ -178,6 +184,21 @@ class NotificationDispatchService(
 
     private fun buildMessage(sorted: List<NotificationCandidate>): NotificationMessage =
         if (sorted.size == 1) singleMessage(sorted.single()) else bundleMessage(sorted)
+
+    private fun NotificationCandidate.toEntry(notification: Notification, displayOrder: Int): NotificationEntry {
+        val message = singleMessage(this)
+        return NotificationEntry(
+            notification = notification,
+            type = type,
+            itemId = itemId,
+            title = message.title,
+            body = message.body,
+            itemName = itemName,
+            label = label(),
+            nextReplacementDate = nextReplacementDate,
+            displayOrder = displayOrder,
+        )
+    }
 
     private fun singleMessage(candidate: NotificationCandidate): NotificationMessage = when (candidate.type) {
         NotificationType.PRE_REPLACEMENT -> NotificationMessage(

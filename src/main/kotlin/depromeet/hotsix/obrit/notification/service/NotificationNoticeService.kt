@@ -2,8 +2,10 @@ package depromeet.hotsix.obrit.notification.service
 
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.notification.entity.Notification
+import depromeet.hotsix.obrit.notification.entity.NotificationEntry
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.notification.repository.DeviceRegistrationRepository
+import depromeet.hotsix.obrit.notification.repository.NotificationEntryRepository
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional
 @Service
 class NotificationNoticeService(
     private val notificationRepository: NotificationRepository,
+    private val notificationEntryRepository: NotificationEntryRepository,
     private val deviceRegistrationRepository: DeviceRegistrationRepository,
     private val fcmPushService: FcmPushService,
     private val notificationDeepLinkService: NotificationDeepLinkService,
@@ -50,6 +53,15 @@ class NotificationNoticeService(
     private fun send(userId: Long, title: String, body: String) {
         val notification = notificationRepository.save(
             Notification(userId = userId, type = NotificationType.NOTICE, title = title, body = body),
+        )
+        notificationEntryRepository.save(
+            NotificationEntry(
+                notification = notification,
+                type = NotificationType.NOTICE,
+                title = title,
+                body = body,
+                displayOrder = 0,
+            ),
         )
         fcmPushService.sendToUser(
             userId,

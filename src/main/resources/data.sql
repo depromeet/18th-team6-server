@@ -17,4 +17,4 @@ VALUES (200, NULL, '제로콜라', 1, 7, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 INSERT INTO categories (id, user_id, name, icon_id, default_replacement_interval_days, created_at, updated_at)
 VALUES (300, NULL, '칫솔', 1, 90, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
--- notifications의 item_id, label, next_replacement_date는 발송 시 생성하므로 시드하지 않는다.
+-- notifications와 notification_entries는 발송 시 생성하므로 시드하지 않는다.
