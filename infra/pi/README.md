@@ -9,6 +9,7 @@
 SSH 연결은 `SERVER_HOST`, `SERVER_USER`, `SERVER_PORT`, `SERVER_SSH_KEY` Secret을 사용한다. Docker Hub에는 `DOCKER_USERNAME`, `DOCKER_REPO`, `DOCKER_PWD`가 필요하다. 앱·MySQL 설정은 `ENV_FILE`, Firebase 서비스 계정 JSON 원문은 `FIREBASE_CREDENTIALS_JSON`, 모니터링은 `MONITORING_ENV_FILE`과 `MONITORING_DISCORD_WEBHOOK_URL`에서 받는다.
 
 `infra/pi/env.example`은 `ENV_FILE`의 키 예시다. 워크플로는 `DB_ROOT_PASSWORD`를 MySQL 전용 `.env.mysql`로 옮기고 앱 `.env`에서 제거한 뒤, `APP_IMAGE`와 `FIREBASE_CREDENTIALS_HOST_PATH`를 추가한다. Firebase JSON은 `umask 077`을 적용해 `~/deploy/firebase-credentials.json`에 저장하고, 앱 이미지의 사용자에게 파일 소유권을 넘겨 `0600` 권한으로 읽을 수 있게 한다.
+`DB_ROOT_PASSWORD`는 `ENV_FILE`에서 따옴표 없는 `KEY=value` 형식으로 입력한다. Pi의 Compose는 MySQL 전용 파일을 `raw` 형식으로 읽어 `$` 등의 문자를 보간하지 않는다(Compose 2.30 이상 필요; 확인한 Pi 버전은 5.5.1).
 
 ## Compose 설정
 

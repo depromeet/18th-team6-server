@@ -11,7 +11,8 @@ services:
     container_name: orbit-mysql
     restart: unless-stopped
     env_file:
-      - .env.mysql
+      - path: .env.mysql
+        format: raw
     environment:
       MYSQL_DATABASE: ${DB_DATABASE:-orbit}
       MYSQL_USER: ${DB_USERNAME}
