@@ -1,6 +1,6 @@
 # #196 / 01: Pi용 앱·MySQL Compose
 
-상태: Compose 구현 및 설정 검사 완료, 현재 CI/CD 커밋의 실제 배포 검증 대기
+상태: Compose 구현 및 Actions 배포 검증 완료, 기존 데이터 유지 검증 대기
 
 ## 목표
 
@@ -30,12 +30,12 @@ CI/CD와 모니터링 배포 절차는 [02-ci-cd.md](02-ci-cd.md)에 정리한�
 
 - Pi의 Docker Compose에서 두 파일을 합친 `config --quiet` 통과
 - 이전 버전의 Actions 실행에서 Pi 앱 기동, MySQL `healthy`, `/actuator/health` `UP` 확인
-- 현재 커밋의 Docker Hub pull 및 두 Compose 파일을 사용한 배포는 아직 실행하지 않음
+- [현재 워크플로의 Actions 배포](https://github.com/depromeet/18th-team6-server/actions/runs/36987283270) 성공: Docker Hub pull, 두 Compose 파일의 설정 검사, MySQL `healthy`, 앱 헬스 체크 `UP`
+- 배포 후 읽기 전용 SSH에서 MySQL 컨테이너의 기존 기동 시각과 `healthy` 상태 확인
 
 ## 완료 기준
 
-- 현재 커밋의 Actions 배포에서 MySQL `healthy`와 앱 헬스 체크 `UP` 확인
-- 앱 재배포 전후 MySQL 컨테이너와 `orbit-mysql-data` 데이터 유지 확인
+- 앱 재배포 전후 `orbit-mysql-data` 데이터 내용 유지 확인
 - 앱의 `mysql:3306` 접속과 MySQL 호스트 포트 미공개 확인
 - RDS MySQL 버전 및 기존 데이터 복원 호환성 별도 확인
 

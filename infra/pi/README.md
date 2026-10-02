@@ -22,4 +22,4 @@ docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml co
 
 현재 `DB_ROOT_PASSWORD`도 `ENV_FILE`에 있어 기본 Compose의 `app.env_file`을 통해 앱에 전달된다. 앱 환경에서 root 암호를 분리하는 작업이 남아 있다. RDS 데이터 복원, 외부 백업, MinIO 이전도 후속 작업이다.
 
-현재 커밋의 Actions 배포는 아직 재실행하지 않았다. 이전 Actions 성공은 더미 Firebase를 사용한 앱·MySQL 기동 확인이므로, 실제 Firebase Secret과 모니터링까지 새 워크플로에서 검증해야 한다.
+[Firebase Secret을 사용한 Actions 배포](https://github.com/depromeet/18th-team6-server/actions/runs/36987283270)가 성공했다. 배포 후 앱·모니터링 실행과 기존 MySQL 컨테이너 유지 및 `healthy` 상태를 읽기 전용으로 확인했다. Firebase 알림 실제 발송, 모니터링 데이터 수집, DB 데이터 유지 검증은 남아 있다.

@@ -1,6 +1,6 @@
 # #196 / 02: Pi CI/CD 및 모니터링 배포
 
-상태: 워크플로 구현 및 설정 검사 완료, 현재 커밋의 Actions 배포 검증 대기
+상태: Firebase Secret을 사용한 Pi Actions 배포 검증 완료
 
 ## 목표
 
@@ -37,8 +37,9 @@ MySQL 설정이나 이미지 변경은 일반 앱 배포에서 적용되지 않�
 
 - 워크플로 YAML과 셸 문법 검사 통과
 - Pi에서 두 Compose 파일의 병합 `config --quiet` 통과
-- Pi에서 Docker Hub 이미지 manifest 접근 확인
 - 이전 워크플로의 Actions 배포 성공은 더미 Firebase 파일과 앱·MySQL만 확인한 결과임
-- 현재 커밋은 Actions 재실행 전이므로 실제 Docker Hub pull, Firebase 초기화, 모니터링 기동은 미검증
+- 첫 실제 Firebase Secret 배포는 호스트 파일의 소유자가 앱 사용자와 달라 초기화에 실패함. 읽기 전용 SSH에서 `Permission denied`를 확인하고 파일 소유권을 수정함
+- [수정 후 Actions 배포](https://github.com/depromeet/18th-team6-server/actions/runs/36987283270) 성공: Docker Hub pull, Firebase 파일 읽기 검사, MySQL `healthy`, 앱 `/actuator/health` `UP`, 모니터링 기동 명령 통과
+- 배포 후 읽기 전용 SSH 확인: Firebase 파일은 앱 사용자 소유 `0600`, 앱·모니터링 컨테이너 실행 중, MySQL 컨테이너는 기존 기동 시각 유지
 
-실제 배포 후 앱·MySQL·모니터링 컨테이너 상태와 Firebase 알림을 확인한다. MinIO 배포, RDS/S3 데이터 이전, SHA 이미지 태그와 롤백은 후속 범위다.
+Firebase 알림 실제 발송, 모니터링 데이터 수집, DB 읽기·쓰기와 데이터 유지 검증은 남아 있다. MinIO 배포, RDS/S3 데이터 이전, SHA 이미지 태그와 롤백은 후속 범위다.

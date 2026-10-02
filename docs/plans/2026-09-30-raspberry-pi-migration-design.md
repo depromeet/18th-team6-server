@@ -16,18 +16,18 @@
 
 | 영역 | 현재 구현 | 이전 시 영향 |
 | --- | --- | --- |
-| 앱 배포 | 기존 `docker-compose.yml`의 앱 정의에 `docker-compose.pi.yml`을 겹쳐 Pi에서 실행한다. Firebase JSON은 GitHub Secret에서 호스트 파일로 만들도록 변경했다. | 현재 커밋의 Actions 배포와 실제 Firebase 초기화는 아직 검증하지 않았다. |
+| 앱 배포 | 기존 `docker-compose.yml`의 앱 정의에 `docker-compose.pi.yml`을 겹쳐 Pi에서 실행한다. Firebase JSON은 GitHub Secret에서 호스트 파일로 만든다. | Actions 배포와 파일 읽기 검사 및 초기화 실패 로그 부재를 확인했다. 실제 알림 발송은 추가 확인이 필요하다. |
 | DB | Pi 오버레이에 MySQL `8.4.11`, `orbit-mysql-data` 볼륨, `mysql:3306` 앱 연결과 healthcheck가 있다. `application-prod.yml`은 Flyway와 JPA `validate`를 사용한다. | RDS 데이터와 `flyway_schema_history` 복원, MySQL 버전 호환성, 외부 백업은 아직 확인해야 한다. |
 | 스키마 | `V1`은 기존 운영 DB를 위한 baseline 설명이 있고 `baseline-on-migrate: true`, `baseline-version: 1`이다. 현재 V11까지 있다. | 빈 DB와 기존 덤프 복원 DB의 Flyway 동작을 각각 검증해야 한다. 기존 V1을 수정하지 않는다. |
 | 객체 저장 | `S3Config`, `S3Uploader`, 두 URL resolver가 `prod`에 고정되어 있다. 업로드는 AWS SDK 기본 자격 증명 체인을 쓴다. | MinIO 내부 endpoint, 인증, path-style 접근, 브라우저용 URL을 분리해야 한다. |
 | 아이콘 | `icons.icon_key`와 `icons.url`이 저장된다. API는 주로 `icon_key`로 S3 공개 URL을 만들고, 백오피스 화면은 저장된 `icons.url`을 직접 읽는다. | 기존 키의 객체 이전과 저장된 AWS URL의 변환을 모두 설계해야 한다. |
 | 영수증 | 업로더는 `receipts/...` **객체 키**를 반환한다. `AnalyzeReceiptResponse.receiptImageUrl`과 `items.receipt_image_url`에 이 값이 전달/저장된다. | 필드명은 URL이지만 현재 값은 키다. 데이터 변환 없이 일괄 URL 치환하면 안 된다. 조회 API의 실제 사용처를 확인해야 한다. |
-| CI/CD | ARM 러너의 Docker Hub `latest` 푸시와 모니터링 배포를 유지한다. Pi에는 기존 Compose와 오버레이를 복사하고 앱 이미지를 pull한다. `down`과 전체 `--force-recreate`는 제거했다. | 현재 커밋의 실제 Actions 배포, SHA 태그, 롤백과 검증 게이트가 남아 있다. |
+| CI/CD | ARM 러너의 Docker Hub `latest` 푸시와 모니터링 배포를 유지한다. Pi에는 기존 Compose와 오버레이를 복사하고 앱 이미지를 pull한다. `down`과 전체 `--force-recreate`는 제거했다. | 실제 Actions 배포는 성공했다. SHA 태그, 롤백과 검증 게이트가 남아 있다. |
 | 검증 | `.github/workflows/harness.yml`은 PR/main에서 `./gradlew build`를 실행한다. 배포 워크플로에는 검증 통과 의존성이 없다. | 배포 전에 검증이 통과하도록 워크플로 의존 관계 또는 브랜치 보호 규칙을 정해야 한다. |
-| 모니터링 | 기존 `infra/monitoring/docker-compose.yml`과 Secrets 생성 단계를 유지하고 Pi의 `orbit-network`에 연결한다. | 새 워크플로에서 세 컨테이너 기동과 `app:8080` 수집을 확인해야 한다. |
+| 모니터링 | 기존 `infra/monitoring/docker-compose.yml`과 Secrets 생성 단계를 유지하고 Pi의 `orbit-network`에 연결한다. | 새 워크플로에서 세 컨테이너 실행을 확인했다. `app:8080` 수집은 추가 확인이 필요하다. |
 | 설정 예시 | 루트의 미추적 `.env.example`은 현재 운영 설정과 다른 항목이 있다. Pi용 설정 계약은 `infra/pi/env.example`에 별도로 기록한다. | 실제 `ENV_FILE` 값과 서비스 환경 변수의 차이를 확인해야 한다. |
 
-현재 커밋에서 두 Compose 파일의 `config --quiet`는 Pi에서 통과했다. 이전 Actions 실행은 앱·MySQL 기동만 확인했으며 더미 Firebase를 사용했다. 현재 커밋의 Docker Hub pull, 실제 Firebase 자격증명, 모니터링 배포는 아직 실행하지 않았다.
+[Firebase Secret을 사용한 Actions 배포](https://github.com/depromeet/18th-team6-server/actions/runs/36987283270)에서 Docker Hub pull, 앱 헬스 체크, 모니터링 기동이 통과했다. 배포 후 MySQL 컨테이너의 기존 기동 시각과 `healthy` 상태를 확인했다. 실제 Firebase 알림 발송과 모니터링 수집은 아직 확인하지 않았다.
 
 ### 권장 구성
 
@@ -66,8 +66,8 @@ Pi 저장 장치 ── MySQL 데이터 / MinIO 객체 / 모니터링 데이터
 
 1. 현재 ARM 러너에서 앱 이미지를 Docker Hub에 `latest`로 푸시하고 Pi에서 pull한다. Docker Hub 이미지 manifest는 Pi에서 접근 가능함을 확인했다. `bootJar` 후 Dockerfile에서 다시 빌드하는 중복은 남아 있다.
 2. 기존 Compose와 Pi 오버레이를 함께 복사한다. `SERVER_PORT`는 Secret으로만 받으며, `ENV_FILE`과 모니터링 Secrets도 기존 방식을 유지한다. 새 `FIREBASE_CREDENTIALS_JSON` Secret은 서비스 계정 JSON을 검증한 뒤 Pi의 파일로 저장한다. 원격 heredoc에 Secret을 넣는 방식의 인용·로그 노출 위험은 별도 검토가 필요하다.
-3. 앱 배포에서 Compose 설정 검사와 이미지 pull 후 MySQL `up -d`, 앱 `up -d --no-build`를 실행한다. `down`과 전체 `--force-recreate`는 사용하지 않는다. 기존 모니터링 설정을 복사하고 앱 확인 후 모니터링 Compose를 기동한다.
-4. 현재 성공 조건은 앱 `/actuator/health`의 `UP`과 Firebase 초기화 실패 로그 부재다. 실제 DB 읽기/쓰기, Firebase 알림 발송, 모니터링 수집 및 객체 업로드 확인은 추가한다. Firebase Secret이 없으면 빌드 전에 실패한다.
+3. 앱 배포에서 Compose 설정 검사와 이미지 pull 후 Firebase 파일의 앱 사용자 읽기 권한을 확인한다. MySQL은 `--no-recreate --wait`로 유지·검사하고 앱은 `--no-deps`로 갱신한다. `down`과 전체 `--force-recreate`는 사용하지 않는다. 기존 모니터링 설정을 복사하고 앱 확인 후 모니터링 Compose를 기동한다.
+4. 현재 성공 조건은 실제 호스트 포트의 앱 `/actuator/health` `UP`과 Firebase 초기화 실패 로그 부재다. [Firebase Secret을 사용한 Actions 배포](https://github.com/depromeet/18th-team6-server/actions/runs/36987283270)가 성공했고 기존 MySQL 컨테이너가 유지됨을 확인했다. 실제 DB 읽기/쓰기, Firebase 알림 발송, 모니터링 수집 및 객체 업로드 확인은 추가한다. Firebase Secret이 없으면 빌드 전에 실패한다.
 5. 다음 CI 개선에서 커밋 SHA 이미지 태그와 롤백 경로를 마련한다. 실패 시 이전 앱으로 복귀하려면 Flyway 스키마 변경과 데이터 호환성도 함께 판단한다.
 6. `harness.yml` 검증과 배포 워크플로는 여전히 분리되어 있다. 검증 완료 후 배포되도록 의존 관계 또는 브랜치 보호 규칙을 확정한다.
 
@@ -92,7 +92,7 @@ Pi 저장 장치 ── MySQL 데이터 / MinIO 객체 / 모니터링 데이터
 | 순서 | 스펙 | 주요 산출물·완료 기준 |
 | --- | --- | --- |
 | 0 | 호스트·데이터 조사 및 결정 기록 | Pi 사양, 저장 장치, 외부 접속 방식, 데이터 크기/URL 값 샘플, 중단 허용 시간과 복귀 기준 확정 |
-| 1 | Compose MySQL 기반 | Pi 오버레이와 healthcheck 구현; 현재 커밋의 배포 및 데이터 유지 확인 필요 |
+| 1 | Compose MySQL 기반 | Pi 오버레이와 healthcheck 구현, Actions 배포 성공 및 MySQL 컨테이너 유지 확인; 데이터 내용 검증 필요 |
 | 2 | 객체 저장소 어댑터와 URL 계약 | MinIO 업로드/읽기, 아이콘 공개 경로, 영수증 비공개 경로; 계약 테스트와 실제 Pi 스모크 테스트 |
 | 3 | CI/CD와 배포 스크립트 | Pi 배포와 모니터링 배포 반영; SHA 이미지, 검증 게이트, 롤백 및 데이터 서비스 유지 확인 필요 |
 | 4 | 백업·복원과 모니터링 | 외부 백업, 복원 리허설, DB/MinIO/호스트 경보, 운영 문서 |
