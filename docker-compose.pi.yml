@@ -1,0 +1,33 @@
+services:
+  app:
+    environment:
+      DB_URL: jdbc:mysql://mysql:3306/${DB_DATABASE:-orbit}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+  mysql:
+    image: mysql:8.4.11
+    container_name: orbit-mysql
+    restart: unless-stopped
+    env_file:
+      - path: .env.mysql
+        format: raw
+    environment:
+      MYSQL_DATABASE: ${DB_DATABASE:-orbit}
+      MYSQL_USER: ${DB_USERNAME}
+      MYSQL_PASSWORD: ${DB_PWD}
+    volumes:
+      - mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD-SHELL", "mysql -h 127.0.0.1 -u\"$$MYSQL_USER\" -p\"$$MYSQL_PASSWORD\" \"$$MYSQL_DATABASE\" -e 'SELECT 1' >/dev/null"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 90s
+    networks:
+      - orbit
+
+volumes:
+  mysql-data:
+    name: orbit-mysql-data
