@@ -130,11 +130,17 @@ jobs:
             cd ~/deploy
             docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml config --quiet
             docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml pull app
-            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml up -d mysql
-            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml up -d --no-build app
+            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml up -d --no-recreate --wait --wait-timeout 240 mysql
+            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml up -d --no-build --no-deps app
+
+            app_port_binding=$(docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml port app 8080)
+            app_host_port=${app_port_binding##*:}
+            case "$app_host_port" in
+              ''|*[!0-9]*) echo 'Could not determine app host port'; exit 1 ;;
+            esac
 
             attempt=0
-            until curl --fail --silent http://127.0.0.1:8080/actuator/health | grep -q '"status":"UP"'; do
+            until curl --fail --silent "http://127.0.0.1:${app_host_port}/actuator/health" | grep -q '"status":"UP"'; do
               attempt=$((attempt + 1))
               if [ "$attempt" -ge 90 ]; then
                 docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml ps -a

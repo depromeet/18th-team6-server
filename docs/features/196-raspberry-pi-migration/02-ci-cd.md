@@ -12,10 +12,12 @@
 2. SSH로 기존 Compose, Pi 오버레이, 모니터링 설정을 Pi의 `~/deploy`에 복사
 3. GitHub Secrets로 앱·모니터링 `.env`, Discord webhook 파일, Firebase 자격증명 JSON 생성
 4. 두 Compose 파일의 병합 설정을 검사하고 앱 이미지를 pull
-5. MySQL을 기동한 뒤 앱을 갱신하고 `/actuator/health` 및 Firebase 초기화 실패 로그 확인
-6. 기존 Prometheus·Alertmanager·Grafana Compose 기동
+5. MySQL은 기존 컨테이너를 재생성하지 않고 기동해 `healthy`를 확인한 뒤, 의존 서비스를 건드리지 않고 앱만 갱신
+6. Compose에서 앱의 실제 호스트 포트를 조회해 `/actuator/health` 및 Firebase 초기화 실패 로그 확인
+7. 기존 Prometheus·Alertmanager·Grafana Compose 기동
 
 SSH 포트는 `SERVER_PORT` Secret만 사용한다. 배포 경로에는 `docker compose down`과 전체 서비스 `--force-recreate`가 없다.
+MySQL 설정이나 이미지 변경은 일반 앱 배포에서 적용되지 않으며 별도 유지보수 절차가 필요하다.
 
 ## 필요한 GitHub Secrets
 

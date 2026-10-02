@@ -4,7 +4,7 @@
 
 ## Actions 배포 흐름
 
-`.github/workflows/ci-cd.yml`은 ARM 러너에서 Docker Hub에 이미지를 게시하고 두 Compose 파일과 모니터링 설정을 Pi에 복사한다. 서버에서는 앱 이미지를 pull하고 MySQL과 앱을 기동한 뒤 `/actuator/health`를 확인한다. 이후 기존 Prometheus·Alertmanager·Grafana 설정을 기동한다. 앱 배포에서 `docker compose down`은 실행하지 않는다.
+`.github/workflows/ci-cd.yml`은 ARM 러너에서 Docker Hub에 이미지를 게시하고 두 Compose 파일과 모니터링 설정을 Pi에 복사한다. 서버에서는 앱 이미지를 pull하고 기존 MySQL 컨테이너를 유지한 채 `healthy` 상태를 확인한 다음 앱만 갱신한다. Compose에서 실제 앱 호스트 포트를 조회해 `/actuator/health`를 확인하고 기존 Prometheus·Alertmanager·Grafana 설정을 기동한다. 앱 배포에서 `docker compose down`은 실행하지 않는다. MySQL 설정이나 이미지 변경은 별도 유지보수 절차에서 반영한다.
 
 SSH 연결은 `SERVER_HOST`, `SERVER_USER`, `SERVER_PORT`, `SERVER_SSH_KEY` Secret을 사용한다. Docker Hub에는 `DOCKER_USERNAME`, `DOCKER_REPO`, `DOCKER_PWD`가 필요하다. 앱·MySQL 설정은 `ENV_FILE`, Firebase 서비스 계정 JSON 원문은 `FIREBASE_CREDENTIALS_JSON`, 모니터링은 `MONITORING_ENV_FILE`과 `MONITORING_DISCORD_WEBHOOK_URL`에서 받는다.
 
