@@ -10,8 +10,9 @@ services:
     image: mysql:8.4.11
     container_name: orbit-mysql
     restart: unless-stopped
+    env_file:
+      - .env.mysql
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
       MYSQL_DATABASE: ${DB_DATABASE:-orbit}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PWD}

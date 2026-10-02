@@ -65,7 +65,7 @@ Pi 저장 장치 ── MySQL 데이터 / MinIO 객체 / 모니터링 데이터
 ### 3.3 CI/CD
 
 1. 현재 ARM 러너에서 앱 이미지를 Docker Hub에 `latest`로 푸시하고 Pi에서 pull한다. Docker Hub 이미지 manifest는 Pi에서 접근 가능함을 확인했다. `bootJar` 후 Dockerfile에서 다시 빌드하는 중복은 남아 있다.
-2. 기존 Compose와 Pi 오버레이를 함께 복사한다. `SERVER_PORT`는 Secret으로만 받으며, `ENV_FILE`과 모니터링 Secrets도 기존 방식을 유지한다. 새 `FIREBASE_CREDENTIALS_JSON` Secret은 서비스 계정 JSON을 검증한 뒤 Pi의 파일로 저장한다. 원격 heredoc에 Secret을 넣는 방식의 인용·로그 노출 위험은 별도 검토가 필요하다.
+2. 기존 Compose와 Pi 오버레이를 함께 복사한다. `SERVER_PORT`는 Secret으로만 받으며, `ENV_FILE`의 MySQL root 암호는 MySQL 전용 `.env.mysql`로 분리한다. 모니터링 Secrets는 기존 방식을 유지한다. 새 `FIREBASE_CREDENTIALS_JSON` Secret은 서비스 계정 JSON을 검증한 뒤 Pi의 파일로 저장한다. 원격 heredoc에 Secret을 넣는 방식의 인용·로그 노출 위험은 별도 검토가 필요하다.
 3. 앱 배포에서 Compose 설정 검사와 이미지 pull 후 Firebase 파일의 앱 사용자 읽기 권한을 확인한다. MySQL은 `--no-recreate --wait`로 유지·검사하고 앱은 `--no-deps`로 갱신한다. `down`과 전체 `--force-recreate`는 사용하지 않는다. 기존 모니터링 설정을 복사하고 앱 확인 후 모니터링 Compose를 기동한다.
 4. 현재 성공 조건은 실제 호스트 포트의 앱 `/actuator/health` `UP`과 Firebase 초기화 실패 로그 부재다. [Firebase Secret을 사용한 Actions 배포](https://github.com/depromeet/18th-team6-server/actions/runs/36987283270)가 성공했고 기존 MySQL 컨테이너가 유지됨을 확인했다. 실제 DB 읽기/쓰기, Firebase 알림 발송, 모니터링 수집 및 객체 업로드 확인은 추가한다. Firebase Secret이 없으면 빌드 전에 실패한다.
 5. 다음 CI 개선에서 커밋 SHA 이미지 태그와 롤백 경로를 마련한다. 실패 시 이전 앱으로 복귀하려면 Flyway 스키마 변경과 데이터 호환성도 함께 판단한다.

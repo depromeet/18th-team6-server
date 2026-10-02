@@ -11,7 +11,7 @@
 - Pi 오버레이에서 앱의 `DB_URL`을 `mysql:3306`으로 지정하고 MySQL이 `healthy`가 된 뒤 앱을 시작
 - MySQL `8.4.11`을 사용하고 데이터를 이름 있는 볼륨 `orbit-mysql-data`에 저장
 - MySQL 3306 포트를 호스트에 공개하지 않음
-- `DB_ROOT_PASSWORD`, `DB_DATABASE`, `DB_USERNAME`, `DB_PWD`를 Actions의 `ENV_FILE`에서 전달
+- `DB_ROOT_PASSWORD`, `DB_DATABASE`, `DB_USERNAME`, `DB_PWD`를 Actions의 `ENV_FILE`에서 받아 root 암호만 MySQL 전용 `.env.mysql`로 분리
 - 앱 배포에서 Compose `down`을 실행하지 않고 MySQL 컨테이너와 볼륨을 의도적으로 내리지 않음
 
 CI/CD와 모니터링 배포 절차는 [02-ci-cd.md](02-ci-cd.md)에 정리한다. MinIO와 RDS 데이터 복원은 후속 작업이다.
@@ -24,7 +24,7 @@ CI/CD와 모니터링 배포 절차는 [02-ci-cd.md](02-ci-cd.md)에 정리한�
 | `docker-compose.pi.yml` | 앱 DB 주소와 MySQL 서비스·볼륨 추가 |
 | `.github/workflows/ci-cd.yml` | 두 Compose 파일을 함께 서버에 전달하고 앱·MySQL 기동 |
 
-현재는 MySQL root 암호도 앱이 읽는 `.env`에 들어간다. 기본 Compose의 `app.env_file`이 이 파일 전체를 앱에 전달하므로, 운영 설정에서는 root 암호를 앱 환경에서 분리하는 작업이 남아 있다. 저장소에는 `.env`와 자격증명 파일을 올리지 않는다.
+배포 워크플로는 MySQL root 암호를 앱이 읽는 `.env`에서 제거하고 MySQL 서비스의 `env_file`인 `.env.mysql`에만 `MYSQL_ROOT_PASSWORD`로 기록한다. 두 파일과 자격증명 파일은 저장소에 올리지 않는다.
 
 ## 검증 기록
 

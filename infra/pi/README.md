@@ -8,7 +8,7 @@
 
 SSH 연결은 `SERVER_HOST`, `SERVER_USER`, `SERVER_PORT`, `SERVER_SSH_KEY` Secret을 사용한다. Docker Hub에는 `DOCKER_USERNAME`, `DOCKER_REPO`, `DOCKER_PWD`가 필요하다. 앱·MySQL 설정은 `ENV_FILE`, Firebase 서비스 계정 JSON 원문은 `FIREBASE_CREDENTIALS_JSON`, 모니터링은 `MONITORING_ENV_FILE`과 `MONITORING_DISCORD_WEBHOOK_URL`에서 받는다.
 
-`infra/pi/env.example`은 `ENV_FILE`의 키 예시다. 워크플로가 `APP_IMAGE`와 `FIREBASE_CREDENTIALS_HOST_PATH`를 배포 시 추가한다. Firebase JSON은 `umask 077`을 적용해 `~/deploy/firebase-credentials.json`에 저장하고, 앱 이미지의 사용자에게 파일 소유권을 넘겨 `0600` 권한으로 읽을 수 있게 한다.
+`infra/pi/env.example`은 `ENV_FILE`의 키 예시다. 워크플로는 `DB_ROOT_PASSWORD`를 MySQL 전용 `.env.mysql`로 옮기고 앱 `.env`에서 제거한 뒤, `APP_IMAGE`와 `FIREBASE_CREDENTIALS_HOST_PATH`를 추가한다. Firebase JSON은 `umask 077`을 적용해 `~/deploy/firebase-credentials.json`에 저장하고, 앱 이미지의 사용자에게 파일 소유권을 넘겨 `0600` 권한으로 읽을 수 있게 한다.
 
 ## Compose 설정
 
@@ -20,6 +20,6 @@ Pi 오버레이는 MySQL `8.4.11`과 `orbit-mysql-data` Docker 볼륨을 사용�
 docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml config --quiet
 ```
 
-현재 `DB_ROOT_PASSWORD`도 `ENV_FILE`에 있어 기본 Compose의 `app.env_file`을 통해 앱에 전달된다. 앱 환경에서 root 암호를 분리하는 작업이 남아 있다. RDS 데이터 복원, 외부 백업, MinIO 이전도 후속 작업이다.
+앱 `.env`와 MySQL `.env.mysql`은 서버에서만 보관한다. RDS 데이터 복원, 외부 백업, MinIO 이전은 후속 작업이다.
 
 [Firebase Secret을 사용한 Actions 배포](https://github.com/depromeet/18th-team6-server/actions/runs/36987283270)가 성공했다. 배포 후 앱·모니터링 실행과 기존 MySQL 컨테이너 유지 및 `healthy` 상태를 읽기 전용으로 확인했다. Firebase 알림 실제 발송, 모니터링 데이터 수집, DB 데이터 유지 검증은 남아 있다.

@@ -10,7 +10,7 @@
 
 1. ARM 러너에서 이미지를 빌드해 Docker Hub의 `latest` 태그로 게시
 2. SSH로 기존 Compose, Pi 오버레이, 모니터링 설정을 Pi의 `~/deploy`에 복사
-3. GitHub Secrets로 앱·모니터링 `.env`, Discord webhook 파일, Firebase 자격증명 JSON 생성
+3. GitHub Secrets로 앱·모니터링 `.env`, MySQL root 전용 `.env.mysql`, Discord webhook 파일, Firebase 자격증명 JSON 생성
 4. 두 Compose 파일의 병합 설정을 검사하고 앱 이미지를 pull
 5. Firebase JSON을 `0600`으로 유지하면서 이미지의 앱 사용자에게 소유권을 넘기고 읽기 가능 여부를 확인
 6. MySQL은 기존 컨테이너를 재생성하지 않고 기동해 `healthy`를 확인한 뒤, 의존 서비스를 건드리지 않고 앱만 갱신
@@ -19,6 +19,7 @@
 
 SSH 포트는 `SERVER_PORT` Secret만 사용한다. 배포 경로에는 `docker compose down`과 전체 서비스 `--force-recreate`가 없다.
 MySQL 설정이나 이미지 변경은 일반 앱 배포에서 적용되지 않으며 별도 유지보수 절차가 필요하다.
+`ENV_FILE`의 `DB_ROOT_PASSWORD`는 서버에서 `.env.mysql`의 `MYSQL_ROOT_PASSWORD`로 옮기므로 앱 컨테이너에는 전달되지 않는다.
 
 ## 필요한 GitHub Secrets
 
