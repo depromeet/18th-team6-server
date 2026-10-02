@@ -130,6 +130,11 @@ jobs:
             cd ~/deploy
             docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml config --quiet
             docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml pull app
+            # 호스트 파일은 0600으로 유지하고 이미지의 앱 사용자에게 읽기 권한을 준다.
+            app_image='${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest'
+            app_uid=$(docker run --rm --network none --entrypoint id "$app_image" -u)
+            docker run --rm --network none --user 0 --mount "type=bind,source=$HOME/deploy/firebase-credentials.json,target=/firebase-credentials.json" --entrypoint chown "$app_image" "$app_uid" /firebase-credentials.json
+            docker run --rm --network none --user "$app_uid" --mount "type=bind,source=$HOME/deploy/firebase-credentials.json,target=/firebase-credentials.json,readonly" --entrypoint sh "$app_image" -c 'test -r /firebase-credentials.json'
             docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml up -d --no-recreate --wait --wait-timeout 240 mysql
             docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml up -d --no-build --no-deps app
 
