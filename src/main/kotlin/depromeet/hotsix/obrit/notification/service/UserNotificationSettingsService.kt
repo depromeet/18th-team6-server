@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.notification.service
 
 import depromeet.hotsix.obrit.global.exception.BusinessException
+import depromeet.hotsix.obrit.notification.dto.request.ReportNotificationPermissionRequest
 import depromeet.hotsix.obrit.notification.dto.request.UpdateNotificationSettingsRequest
 import depromeet.hotsix.obrit.notification.dto.response.NotificationSettingsResponse
 import depromeet.hotsix.obrit.notification.entity.EffectiveNotificationSettings
@@ -46,6 +47,21 @@ class UserNotificationSettingsService(
 
         return EffectiveNotificationSettings.from(userNotificationSettingsRepository.save(settings)).toResponse()
     }
+
+    /** 권한 보고와 설정 저장은 같은 사용자 잠금을 사용해 서로의 값을 보존한다. */
+    @Transactional
+    fun reportPermission(userId: Long, request: ReportNotificationPermissionRequest): NotificationSettingsResponse {
+        userService.lockForSettingsUpdate(userId)
+
+        val settings = userNotificationSettingsRepository.findByUserId(userId)
+            .let { it ?: UserNotificationSettings(userId = userId, leadDays = defaultLeadDays()) }
+            .apply { permissionStatus = request.permissionStatus }
+
+        return EffectiveNotificationSettings.from(userNotificationSettingsRepository.save(settings)).toResponse()
+    }
+
+    /** 권한만 보고한 사용자는 기존 전역 선행 일수를 유지한다. */
+    private fun defaultLeadDays() = notificationSettingsService.current().leadDays
 
     private fun validateLeadDays(leadDays: Int) {
         if (leadDays !in NotificationSettings.MIN_LEAD_DAYS..NotificationSettings.MAX_LEAD_DAYS) {
