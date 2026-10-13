@@ -94,11 +94,25 @@ class ReceiptJobService(
     fun processBatch(jobIds: List<Long>) {
         val jobs = jobIds.map { findJob(it) }
 
+        // 다운로드 실패는 해당 잡만 재시도하고, 나머지 잡은 그대로 배치 호출한다.
+        val (downloaded, downloadFailed) = jobs
+            .map { job -> job to runCatching { fileUploader.download(job.imageKey) } }
+            .partition { (_, bytes) -> bytes.isSuccess }
+        downloadFailed.forEach { (job, bytes) ->
+            log.warn("영수증 이미지 다운로드에 실패했습니다. jobId={}", job.id, bytes.exceptionOrNull())
+        }
+
         val resultsByReceiptId = try {
-            val images = jobs.map { job ->
-                BatchOcrImage(job.id.toString(), fileUploader.download(job.imageKey), job.mimeType)
+            val images = downloaded.map { (job, bytes) ->
+                BatchOcrImage(job.id.toString(), bytes.getOrThrow(), job.mimeType)
             }
-            ocrService.analyzeReceiptImages(images).results.associateBy { it.receiptId }
+            if (images.isEmpty()) {
+                emptyMap()
+            } else {
+                ocrService.analyzeReceiptImages(images).results.associateBy {
+                    it.receiptId
+                }
+            }
         } catch (e: Exception) {
             log.warn("영수증 배치 OCR 처리에 실패했습니다. jobIds={}", jobIds, e)
             transaction.executeWithoutResult {
@@ -107,8 +121,16 @@ class ReceiptJobService(
             return
         }
 
+        val downloadFailedIds = downloadFailed.map { (job, _) -> job.id!! }.toSet()
         transaction.executeWithoutResult {
-            jobIds.forEach { handleResult(findJob(it), resultsByReceiptId[it.toString()]) }
+            jobIds.forEach { jobId ->
+                val job = findJob(jobId)
+                if (jobId in downloadFailedIds) {
+                    retryOrFail(job, "영수증 이미지를 불러오지 못했습니다.")
+                } else {
+                    handleResult(job, resultsByReceiptId[jobId.toString()])
+                }
+            }
         }
     }
 

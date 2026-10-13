@@ -122,6 +122,23 @@ class ReceiptJobServiceTest {
     }
 
     @Test
+    fun `processBatch는_이미지_다운로드에_실패한_잡만_재시도하고_나머지는_완료한다`() {
+        seedDefaultIcon()
+        val user = userRepository.save(UserFixture.user())
+        val completedId = receiptJobService.enqueue(userId = user.id!!, imageFile = image())
+        receiptJobService.pickBatch(maxBatch = 6)
+        val missingImageId = insertProcessingJob(updatedAtMinutesAgo = 0)
+        stubReceiptOcrClient.batchResponse = BatchOcrResponse(listOf(successResult(completedId)))
+
+        receiptJobService.processBatch(listOf(completedId, missingImageId))
+
+        assertEquals(ReceiptJobStatus.COMPLETED, receiptJobRepository.findById(completedId).get().status)
+        val missingImage = receiptJobRepository.findById(missingImageId).get()
+        assertEquals(ReceiptJobStatus.PENDING, missingImage.status)
+        assertEquals(1, missingImage.retryCount)
+    }
+
+    @Test
     fun `processBatch는_items가_비어있으면_재시도없이_인식_실패로_처리한다`() {
         val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
         stubReceiptOcrClient.batchResponse = BatchOcrResponse(
