@@ -26,7 +26,8 @@ class LocalFileUploader(private val baseDir: Path = Path.of("build", "local-uplo
     }
 
     override fun download(key: String): ByteArray {
-        val target = baseDir.resolve(key)
+        val target = baseDir.resolve(key).normalize()
+        require(target.startsWith(baseDir.normalize())) { "잘못된 파일 키입니다: $key" }
         require(Files.exists(target)) { "로컬 스토리지에 파일이 없습니다: $key" }
         return target.readBytes()
     }

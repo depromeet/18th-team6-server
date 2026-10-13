@@ -29,4 +29,13 @@ class LocalFileUploaderTest {
             uploader.download("receipts/does-not-exist.jpg")
         }
     }
+
+    @Test
+    fun `저장소_밖을_가리키는_key를_download하면_예외를_던진다`(@TempDir tempDir: Path) {
+        val uploader = LocalFileUploader(tempDir.resolve("uploads"))
+
+        assertFailsWith<IllegalArgumentException> {
+            uploader.download("../secret.txt")
+        }
+    }
 }
