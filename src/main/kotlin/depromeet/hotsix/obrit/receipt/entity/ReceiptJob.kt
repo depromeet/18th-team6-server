@@ -39,7 +39,7 @@ class ReceiptJob(
     @Column(name = "result_json", columnDefinition = "TEXT")
     var resultJson: String? = null,
 
-    @Column(name = "error_message", length = 500)
+    @Column(name = "error_message", length = ERROR_MESSAGE_MAX_LENGTH)
     var errorMessage: String? = null,
 
     @Column(name = "retry_count", nullable = false)
@@ -61,14 +61,19 @@ class ReceiptJob(
     }
 
     fun markFailed(errorMessage: String) {
-        this.errorMessage = errorMessage
+        this.errorMessage = errorMessage.take(ERROR_MESSAGE_MAX_LENGTH)
         status = ReceiptJobStatus.FAILED
     }
 
     /** 재시도 횟수를 늘리고 다시 대기중으로 되돌린다. 마지막 실패 사유를 기록한다. */
     fun retry(errorMessage: String) {
         retryCount++
-        this.errorMessage = errorMessage
+        this.errorMessage = errorMessage.take(ERROR_MESSAGE_MAX_LENGTH)
         status = ReceiptJobStatus.PENDING
+    }
+
+    companion object {
+        /** error_message 컬럼 길이. 초과 시 저장 자체가 실패해 잡이 멈추지 않도록 잘라서 저장한다. */
+        const val ERROR_MESSAGE_MAX_LENGTH = 500
     }
 }
