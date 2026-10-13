@@ -6,10 +6,12 @@ import depromeet.hotsix.obrit.admin.dto.AdminItemForm
 import depromeet.hotsix.obrit.admin.dto.AdminReplacementForm
 import depromeet.hotsix.obrit.admin.dto.AdminUserForm
 import depromeet.hotsix.obrit.admin.service.AdminBackofficeService
+import depromeet.hotsix.obrit.admin.service.AdminUserJourneyService
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import org.slf4j.LoggerFactory
+import org.springframework.format.annotation.DateTimeFormat
 import org.springframework.stereotype.Controller
 import org.springframework.ui.Model
 import org.springframework.web.bind.annotation.GetMapping
@@ -19,10 +21,14 @@ import org.springframework.web.bind.annotation.PostMapping
 import org.springframework.web.bind.annotation.RequestMapping
 import org.springframework.web.bind.annotation.RequestParam
 import org.springframework.web.servlet.mvc.support.RedirectAttributes
+import java.time.LocalDateTime
 
 @Controller
 @RequestMapping("/admin")
-class AdminBackofficeController(private val adminBackofficeService: AdminBackofficeService) {
+class AdminBackofficeController(
+    private val adminBackofficeService: AdminBackofficeService,
+    private val adminUserJourneyService: AdminUserJourneyService,
+) {
 
     private val log = LoggerFactory.getLogger(AdminBackofficeController::class.java)
 
@@ -197,6 +203,37 @@ class AdminBackofficeController(private val adminBackofficeService: AdminBackoff
         model.addAttribute("users", adminBackofficeService.listUsers(includeDeleted = false))
         model.addAttribute("categories", adminBackofficeService.listCategoryOptions())
         return "admin/item-form"
+    }
+
+    @GetMapping("/analytics/signup-funnel")
+    fun signupFunnel(
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        startAt: LocalDateTime?,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        endAt: LocalDateTime?,
+        @RequestParam(required = false) userId: Long?,
+        model: Model,
+    ): String {
+        model.addAttribute("activeMenu", "analytics")
+        model.addAttribute("analysis", adminBackofficeService.getSignupFunnelJourney(startAt, endAt, userId))
+        return "admin/signup-funnel"
+    }
+
+    @GetMapping("/analytics/user-journey")
+    fun userJourney(
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        startAt: LocalDateTime?,
+        @RequestParam(required = false)
+        @DateTimeFormat(iso = DateTimeFormat.ISO.DATE_TIME)
+        endAt: LocalDateTime?,
+        model: Model,
+    ): String {
+        model.addAttribute("activeMenu", "analytics")
+        model.addAttribute("analysis", adminUserJourneyService.getUserJourney(startAt, endAt))
+        return "admin/user-journey"
     }
 
     @GetMapping("/items/{itemId}/change")

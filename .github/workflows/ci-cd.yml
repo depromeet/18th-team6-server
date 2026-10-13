@@ -16,6 +16,14 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Check Pi deployment secrets
+        env:
+          SERVER_PORT: ${{ secrets.SERVER_PORT }}
+          FIREBASE_CREDENTIALS_JSON: ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+        run: |
+          test -n "$SERVER_PORT"
+          test -n "$FIREBASE_CREDENTIALS_JSON"
+
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -34,18 +42,18 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
+          port: ${{ secrets.SERVER_PORT }}
           script: |
             mkdir -p ~/deploy
 
-      - name: Copy docker-compose.yml
+      - name: Copy Compose files
         uses: appleboy/scp-action@v0.1.7
         with:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
-          source: "docker-compose.yml"
+          port: ${{ secrets.SERVER_PORT }}
+          source: "docker-compose.yml,docker-compose.pi.yml"
           target: "~/deploy/"
 
       - name: Copy monitoring stack
@@ -56,7 +64,7 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
+          port: ${{ secrets.SERVER_PORT }}
           source: "infra/monitoring/"
           target: "~/deploy/"
 
@@ -85,12 +93,39 @@ jobs:
           host: ${{ secrets.SERVER_HOST }}
           username: ${{ secrets.SERVER_USER }}
           key: ${{ secrets.SERVER_SSH_KEY }}
-          port: ${{ secrets.SERVER_PORT || 22 }}
+          port: ${{ secrets.SERVER_PORT }}
+          command_timeout: 20m
           script: |
+            set -eu
+            umask 077
+
             # 앱 .env
             cat <<'ENVEOF' > ~/deploy/.env
             ${{ secrets.ENV_FILE }}
             ENVEOF
+            test -s ~/deploy/.env
+            # MySQL root 암호는 mysql 전용 env_file로 분리해 앱에 전달하지 않는다.
+            python3 - <<'PYEOF'
+            from pathlib import Path
+
+            path = Path.home() / "deploy/.env"
+            lines = path.read_text().splitlines(keepends=True)
+            root_lines = [line for line in lines if line.startswith("DB_ROOT_PASSWORD=")]
+            if len(root_lines) != 1:
+                raise ValueError("DB_ROOT_PASSWORD missing or duplicated")
+            root_value = root_lines[0].partition("=")[2].rstrip("\r\n")
+            if not root_value or root_value.startswith(("'", '"')):
+                raise ValueError("DB_ROOT_PASSWORD must be a nonempty, unquoted literal")
+            path.with_name(".env.mysql").write_text(f"MYSQL_ROOT_PASSWORD={root_value}\n")
+            path.write_text("".join(line for line in lines if not line.startswith("DB_ROOT_PASSWORD=")))
+            PYEOF
+
+            cat <<'FIREBASEEOF' > ~/deploy/firebase-credentials.json.tmp
+            ${{ secrets.FIREBASE_CREDENTIALS_JSON }}
+            FIREBASEEOF
+            python3 -c 'import json,sys; data=json.load(open(sys.argv[1])); assert data.get("type") == "service_account" and data.get("private_key") and data.get("client_email")' ~/deploy/firebase-credentials.json.tmp
+            mv ~/deploy/firebase-credentials.json.tmp ~/deploy/firebase-credentials.json
+            printf '\nAPP_IMAGE=%s/%s:latest\nFIREBASE_CREDENTIALS_HOST_PATH=%s/deploy/firebase-credentials.json\n' '${{ secrets.DOCKER_USERNAME }}' '${{ secrets.DOCKER_REPO }}' "$HOME" >> ~/deploy/.env
 
             # 모니터링 .env (Grafana admin 비밀번호 등)
             cat <<'MENVEOF' > ~/deploy/infra/monitoring/.env
@@ -106,11 +141,40 @@ jobs:
             # docker-compose의 secret mode 옵션은 non-Swarm에서 무시되므로 호스트 파일 권한에서 직접 풀어준다.
             chmod 644 ~/deploy/infra/monitoring/secrets/discord_webhook_url
 
-            # 앱 재배포 (orbit-network 생성)
-            sudo docker compose -f ~/deploy/docker-compose.yml down
-            sudo docker compose -f ~/deploy/docker-compose.yml pull --ignore-pull-failures
-            sudo docker compose -f ~/deploy/docker-compose.yml up -d --force-recreate
+            # Pi의 MySQL을 유지하면서 앱 이미지만 갱신한다.
+            cd ~/deploy
+            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml config --quiet
+            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml pull app
+            # 호스트 파일은 0600으로 유지하고 이미지의 앱 사용자에게 읽기 권한을 준다.
+            app_image='${{ secrets.DOCKER_USERNAME }}/${{ secrets.DOCKER_REPO }}:latest'
+            app_uid=$(docker run --rm --network none --entrypoint id "$app_image" -u)
+            docker run --rm --network none --user 0 --mount "type=bind,source=$HOME/deploy/firebase-credentials.json,target=/firebase-credentials.json" --entrypoint chown "$app_image" "$app_uid" /firebase-credentials.json
+            docker run --rm --network none --user "$app_uid" --mount "type=bind,source=$HOME/deploy/firebase-credentials.json,target=/firebase-credentials.json,readonly" --entrypoint sh "$app_image" -c 'test -r /firebase-credentials.json'
+            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml up -d --no-recreate --wait --wait-timeout 240 mysql
+            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml up -d --no-build --no-deps app
+
+            app_port_binding=$(docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml port app 8080)
+            app_host_port=${app_port_binding##*:}
+            case "$app_host_port" in
+              ''|*[!0-9]*) echo 'Could not determine app host port'; exit 1 ;;
+            esac
+
+            attempt=0
+            until curl --fail --silent "http://127.0.0.1:${app_host_port}/actuator/health" | grep -q '"status":"UP"'; do
+              attempt=$((attempt + 1))
+              if [ "$attempt" -ge 90 ]; then
+                docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml ps -a
+                docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml logs --tail=100 app mysql
+                exit 1
+              fi
+              sleep 2
+            done
+            if docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml logs --no-color app | grep -q 'Firebase 초기화 실패'; then
+              echo 'Firebase initialization failed'
+              exit 1
+            fi
 
             # 모니터링 스택 기동 (orbit-network에 외부 참여)
             # 이미 떠 있으면 변경된 config만 반영, 처음이면 새로 생성
-            sudo docker compose -f ~/deploy/infra/monitoring/docker-compose.yml up -d
+            docker compose --env-file infra/monitoring/.env -f infra/monitoring/docker-compose.yml up -d
+            docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml ps

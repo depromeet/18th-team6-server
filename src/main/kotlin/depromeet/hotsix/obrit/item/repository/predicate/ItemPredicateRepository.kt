@@ -19,6 +19,7 @@ class ItemPredicateRepository {
     }
 
     // 여분 수량이 spareQuantity 이하인 아이템만 남기는 필터. spareQuantity가 null이면 적용하지 않는다.
+    // 여분 미입력 아이템은 loe 비교 결과가 NULL이라 자연히 제외된다.
     fun filterSpareQuantity(item: QItem, spareQuantity: Int?): BooleanExpression? {
         if (spareQuantity == null) {
             return null

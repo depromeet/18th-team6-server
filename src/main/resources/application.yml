@@ -8,6 +8,12 @@ receipt:
   batch:
     max-size: 6   # 한 번의 Gemini 호출에 묶을 최대 영수증 수
 
+notification:
+  schedule:
+    # 자동 발송 on/off는 notification_settings 테이블에서 관리한다(어드민에서 변경).
+    cron: "0 0 9 * * *"
+    zone: "Asia/Seoul"
+
 management:
   endpoints:
     web:

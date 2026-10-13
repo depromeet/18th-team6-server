@@ -44,11 +44,12 @@ data class CreateItemRequest(
     val name: String,
 
     @field:Schema(
-        description = "여분 수량. 영수증 분석 시: AnalyzedItem.quantity 를 그대로 전달.",
+        description = "여분 수량. 생략하면 미입력으로 저장되어 여분 부족 알림 대상에서 제외됩니다. " +
+            "영수증 분석 시: AnalyzedItem.quantity 를 그대로 전달.",
         example = "12",
     )
     @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
-    val spareQuantity: Int,
+    val spareQuantity: Int? = null,
 
     @field:Schema(
         description = "마지막 교체 시기. 기간의 평균치를 교체일자로 적용. " +
@@ -130,8 +131,8 @@ data class ItemResponse(
     @field:Schema(description = "소모품 이름", example = "사무실 제로콜라")
     val name: String,
 
-    @field:Schema(description = "여분 수량", example = "12")
-    val spareQuantity: Int,
+    @field:Schema(description = "여분 수량. null은 미입력을 뜻하며 0(여분 없음)과 다릅니다.", example = "12")
+    val spareQuantity: Int?,
 
     @field:Schema(description = "교체 주기(일)", example = "7")
     val replacementIntervalDays: Int,
@@ -166,8 +167,8 @@ data class ItemDetailResponse(
     @field:Schema(description = "표시용 라벨", example = "D+2")
     val ddayLabel: String,
 
-    @field:Schema(description = "여분 수량", example = "0")
-    val spareQuantity: Int,
+    @field:Schema(description = "여분 수량. null은 미입력을 뜻하며 0(여분 없음)과 다릅니다.", example = "0")
+    val spareQuantity: Int?,
 
     @field:Schema(description = "최근 교체일", example = "2026-03-03")
     val lastReplacedDate: LocalDate,

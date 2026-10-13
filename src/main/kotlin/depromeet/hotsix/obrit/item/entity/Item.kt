@@ -32,8 +32,9 @@ class Item(
     @Column(nullable = false)
     var name: String,
 
-    @Column(name = "count", nullable = false)
-    var quantity: Int,
+    /** 여분 수량. null은 미입력이고 0은 사용자가 명시한 "여분 없음"이다. 둘은 알림 판정에서 다르게 다룬다. */
+    @Column(name = "count")
+    var quantity: Int? = null,
 
     @Column(name = "replacement_interval_days", nullable = false)
     var replacementIntervalDays: Int,
@@ -46,17 +47,29 @@ class Item(
 
     @Column(name = "receipt_image_url", length = 512)
     var receiptImageUrl: String? = null,
+
+    @Column(name = "overdue_notified_count", nullable = false)
+    var overdueNotifiedCount: Int = 0,
+
+    @Column(name = "last_overdue_notified_at")
+    var lastOverdueNotifiedAt: LocalDate? = null,
+
+    @Column(name = "low_stock_notified_at")
+    var lowStockNotifiedAt: LocalDate? = null,
 ) : BaseTimeEntity() {
 
     constructor() : this(
         userId = 0,
         categoryId = 0,
         name = "",
-        quantity = 0,
+        quantity = null,
         replacementIntervalDays = 1,
         lastReplacedDate = LocalDate.EPOCH,
         nextReplacementDate = LocalDate.EPOCH,
         receiptImageUrl = null,
+        overdueNotifiedCount = 0,
+        lastOverdueNotifiedAt = null,
+        lowStockNotifiedAt = null,
     )
 
     fun update(name: String?, quantity: Int?, replacementIntervalDays: Int?, lastReplacedDate: LocalDate?) {
@@ -67,17 +80,49 @@ class Item(
 
         if (replacementIntervalDays != null || lastReplacedDate != null) {
             recalculateNextReplacementDate()
+            resetOverdueNotification()
+        }
+        if (quantity != null) {
+            resetLowStockNotificationIfRestocked()
         }
     }
 
-    fun updateSpareCount(quantity: Int) {
+    fun updateSpareCount(quantity: Int?) {
         this.quantity = quantity
+        resetLowStockNotificationIfRestocked()
     }
 
     fun replace(replacedDate: LocalDate) {
         lastReplacedDate = replacedDate
-        quantity = (quantity - 1).coerceAtLeast(0)
+        // 미입력은 차감하지 않고 미입력으로 둔다. 모르는 값을 0으로 확정하면 안 된다.
+        quantity = quantity?.let { (it - 1).coerceAtLeast(0) }
         recalculateNextReplacementDate()
+        resetOverdueNotification()
+        resetLowStockNotificationIfRestocked()
+    }
+
+    /** 지연 알림 발송 시 호출한다. D+1/D+4/D+7 스텝 진행에 맞춰 마지막 발송일만 갱신한다. */
+    fun recordOverdueNotification(notifiedAt: LocalDate) {
+        overdueNotifiedCount += 1
+        lastOverdueNotifiedAt = notifiedAt
+    }
+
+    /** 여분 부족 알림 발송 시 호출한다. 재입고 전까지 다시 발송하지 않는다. */
+    fun recordLowStockNotification(notifiedAt: LocalDate) {
+        lowStockNotifiedAt = notifiedAt
+    }
+
+    private fun resetOverdueNotification() {
+        overdueNotifiedCount = 0
+        lastOverdueNotifiedAt = null
+    }
+
+    private fun resetLowStockNotificationIfRestocked() {
+        // 미입력으로 되돌아간 경우도 알림 대상이 아니므로 함께 초기화한다.
+        val current = quantity
+        if (current == null || current > 0) {
+            lowStockNotifiedAt = null
+        }
     }
 
     private fun recalculateNextReplacementDate() {

@@ -8,20 +8,14 @@ services:
     restart: on-failure:3
     ports:
       - "${APP_PORT:-8080}:8080"
+    env_file:
+      - .env
     environment:
       TZ: ${TZ:-Asia/Seoul}
       JAVA_TOOL_OPTIONS: ${JAVA_TOOL_OPTIONS:--XX:MaxRAMPercentage=75.0 -XX:InitialRAMPercentage=25.0}
       SPRING_PROFILES_ACTIVE: ${SPRING_PROFILES_ACTIVE:-prod}
-      DB_URL: ${DB_URL}
-      DB_USERNAME: ${DB_USERNAME}
-      DB_PWD: ${DB_PWD}
-      ADMIN_USERNAME: ${ADMIN_USERNAME}
-      ADMIN_PASSWORD: ${ADMIN_PASSWORD}
-      S3_REGION: ${S3_REGION}
-      S3_BUCKET: ${S3_BUCKET}
-      AI_API_KEY: ${AI_API_KEY}
-      AI_URL: ${AI_URL}
-      AI_AUTH_HEADER: ${AI_AUTH_HEADER}
+    volumes:
+      - ${FIREBASE_CREDENTIALS_HOST_PATH}:/app/secrets/firebase-credentials.json:ro
     networks:
       - orbit
 

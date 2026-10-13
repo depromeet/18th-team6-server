@@ -10,7 +10,7 @@ data class ItemSnapshot(
     val name: String,
     val categoryId: Long,
     val nextReplacementDate: LocalDate,
-    val quantity: Int,
+    val quantity: Int?,
 ) {
 
     // 교체 시기는?
@@ -23,7 +23,9 @@ data class ItemSnapshot(
     fun replacementScore(today: LocalDate): Int = replacementBand(today).score
 
     // 내 여분 점수는?
+    // 미입력은 위험으로도 안전으로도 볼 수 없어 중간값을 준다. 0점을 주면 입력하지 않은 것만으로 점수가 깎인다.
     fun spareScore(): Int = when {
+        quantity == null -> SCORE_WARNING
         quantity >= SPARE_GOOD_MIN -> SCORE_GOOD
         quantity >= SPARE_WARNING_MIN -> SCORE_WARNING
         else -> SCORE_DANGER

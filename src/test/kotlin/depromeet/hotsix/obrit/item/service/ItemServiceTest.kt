@@ -6,6 +6,8 @@ import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.dto.CreateReplacementRequest
+import depromeet.hotsix.obrit.item.dto.UpdateItemRequest
+import depromeet.hotsix.obrit.item.dto.UpdateSpareCountRequest
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
 import depromeet.hotsix.obrit.item.entity.ItemReplacementHistory
@@ -175,6 +177,81 @@ class ItemServiceTest {
 
         assertEquals(0, result.spareQuantity)
         assertEquals(0, itemRepository.getReferenceById(itemId).quantity)
+    }
+
+    @Test
+    fun `소모품을 교체하면 지연 알림 발송 이력이 초기화된다`() {
+        val item = itemRepository.getReferenceById(itemId)
+        item.recordOverdueNotification(today.minusDays(1))
+
+        itemService.replaceItem(
+            userId = userId,
+            itemId = itemId,
+            request = CreateReplacementRequest(replacedDate = today),
+        )
+
+        val updated = itemRepository.getReferenceById(itemId)
+        assertEquals(0, updated.overdueNotifiedCount)
+        assertEquals(null, updated.lastOverdueNotifiedAt)
+    }
+
+    @Test
+    fun `여분이 남은 채로 교체하면 여분 부족 알림 발송 이력도 초기화된다`() {
+        val item = itemRepository.getReferenceById(itemId)
+        item.updateSpareCount(2)
+        item.recordLowStockNotification(today.minusDays(1))
+
+        itemService.replaceItem(
+            userId = userId,
+            itemId = itemId,
+            request = CreateReplacementRequest(replacedDate = today),
+        )
+
+        assertEquals(null, itemRepository.getReferenceById(itemId).lowStockNotifiedAt)
+    }
+
+    @Test
+    fun `여분이 0인 채로 교체하면 여분 부족 알림 발송 이력은 유지된다`() {
+        val item = itemRepository.getReferenceById(itemId)
+        item.recordLowStockNotification(today.minusDays(1))
+
+        itemService.replaceItem(
+            userId = userId,
+            itemId = itemId,
+            request = CreateReplacementRequest(replacedDate = today),
+        )
+
+        assertEquals(today.minusDays(1), itemRepository.getReferenceById(itemId).lowStockNotifiedAt)
+    }
+
+    @Test
+    fun `교체 주기를 편집하면 지연 알림 발송 이력이 초기화된다`() {
+        val item = itemRepository.getReferenceById(itemId)
+        item.recordOverdueNotification(today.minusDays(1))
+
+        itemService.updateItem(
+            userId = userId,
+            itemId = itemId,
+            request = UpdateItemRequest(replacementIntervalDays = 60),
+        )
+
+        val updated = itemRepository.getReferenceById(itemId)
+        assertEquals(0, updated.overdueNotifiedCount)
+        assertEquals(null, updated.lastOverdueNotifiedAt)
+    }
+
+    @Test
+    fun `여분을 재입고하면 여분 부족 알림 발송 이력이 초기화된다`() {
+        val item = itemRepository.getReferenceById(itemId)
+        item.recordLowStockNotification(today.minusDays(1))
+
+        itemService.updateSpareCount(
+            userId = userId,
+            itemId = itemId,
+            request = UpdateSpareCountRequest(spareQuantity = 3),
+        )
+
+        assertEquals(null, itemRepository.getReferenceById(itemId).lowStockNotifiedAt)
     }
 
     @Test
