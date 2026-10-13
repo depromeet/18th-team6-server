@@ -30,6 +30,8 @@ class ReceiptJobController(private val receiptJobService: ReceiptJobService) : R
         ApiResponse.ok(EnqueueReceiptJobResponse(receiptJobService.enqueue(userId, imageFile)))
 
     @GetMapping("/{jobId}")
-    override fun getJob(@PathVariable jobId: Long): ApiResponse<ReceiptJobResponse> =
-        ApiResponse.ok(receiptJobService.getJob(jobId))
+    override fun getJob(
+        @RequestHeader("X-User-Id") userId: Long,
+        @PathVariable jobId: Long,
+    ): ApiResponse<ReceiptJobResponse> = ApiResponse.ok(receiptJobService.getJob(userId, jobId))
 }

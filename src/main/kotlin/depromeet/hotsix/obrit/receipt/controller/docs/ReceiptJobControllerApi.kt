@@ -36,9 +36,13 @@ interface ReceiptJobControllerApi {
 
 - PENDING/PROCESSING: 처리 중. result는 null입니다.
 - COMPLETED: result에 분석 결과가 담깁니다. 그대로 POST /items/bulk에 전달합니다.
-- FAILED: errorMessage에 실패 사유가 담깁니다.""",
+- FAILED: errorMessage에 실패 사유가 담깁니다.
+
+본인이 등록한 잡만 조회할 수 있으며, 다른 사용자의 잡은 존재하지 않는 잡과 동일하게 404를 반환합니다.""",
     )
     fun getJob(
+        @Parameter(description = "사용자 ID", required = true, example = "1")
+        userId: Long,
         @Parameter(description = "분석 잡 ID", required = true, example = "1")
         jobId: Long,
     ): ApiResponse<ReceiptJobResponse>

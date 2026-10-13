@@ -11,9 +11,12 @@ import depromeet.hotsix.obrit.receipt.entity.ReceiptImage
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJob
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJobStatus
 import depromeet.hotsix.obrit.receipt.repository.ReceiptJobRepository
+import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
+import org.springframework.transaction.PlatformTransactionManager
 import org.springframework.transaction.annotation.Transactional
+import org.springframework.transaction.support.TransactionTemplate
 import org.springframework.web.multipart.MultipartFile
 import tools.jackson.databind.ObjectMapper
 import java.time.Clock
@@ -28,7 +31,10 @@ class ReceiptJobService(
     private val receiptService: ReceiptService,
     private val objectMapper: ObjectMapper,
     private val clock: Clock,
+    transactionManager: PlatformTransactionManager,
 ) {
+    private val log = LoggerFactory.getLogger(javaClass)
+    private val transaction = TransactionTemplate(transactionManager)
 
     /**
      * 영수증 이미지를 검증·저장하고 대기중(PENDING) 잡으로 큐에 등록한다.
@@ -43,11 +49,14 @@ class ReceiptJobService(
 
     /**
      * 분석 잡의 현재 상태와 결과를 조회한다. 완료된 잡은 저장된 결과를 역직렬화해 반환한다.
+     * 다른 사용자의 잡은 존재 여부를 노출하지 않도록 없는 잡과 동일하게 처리한다.
      */
     @Transactional(readOnly = true)
-    fun getJob(jobId: Long): ReceiptJobResponse {
-        val job = receiptJobRepository.findById(jobId)
-            .orElseThrow { ResourceNotFoundException("영수증 분석 잡을 찾을 수 없습니다: $jobId") }
+    fun getJob(userId: Long, jobId: Long): ReceiptJobResponse {
+        val job = findJob(jobId)
+        if (job.userId != userId) {
+            throw ResourceNotFoundException("영수증 분석 잡을 찾을 수 없습니다: $jobId")
+        }
 
         val result = job.resultJson?.let { objectMapper.readValue(it, AnalyzeReceiptResponse::class.java) }
         return ReceiptJobResponse(
@@ -75,12 +84,13 @@ class ReceiptJobService(
 
     /**
      * 선점된 잡들을 한 번의 배치 OCR 호출로 처리한다. 응답을 receipt_id(=잡 ID)로 매핑해
-     * 각 잡을 개별 완료/재시도한다. (process 트랜잭션)
+     * 각 잡을 개별 완료/재시도한다.
+     * 다운로드·Gemini 호출은 트랜잭션 밖에서 수행해 외부 I/O 동안 DB 커넥션을 잡지 않고,
+     * 결과 반영만 짧은 트랜잭션으로 저장한다.
      *
      * - 배치 호출 자체 실패(다운로드·API 오류): 전체 잡을 재시도/실패 처리.
      * - 부분 실패(특정 잡의 결과 누락): 해당 잡만 재시도/실패, 나머지는 완료.
      */
-    @Transactional
     fun processBatch(jobIds: List<Long>) {
         val jobs = jobIds.map { findJob(it) }
 
@@ -90,11 +100,16 @@ class ReceiptJobService(
             }
             ocrService.analyzeReceiptImages(images).results.associateBy { it.receiptId }
         } catch (e: Exception) {
-            jobs.forEach { retryOrFail(it, e.message ?: "배치 처리 중 오류가 발생했습니다.") }
+            log.warn("영수증 배치 OCR 처리에 실패했습니다. jobIds={}", jobIds, e)
+            transaction.executeWithoutResult {
+                jobIds.forEach { retryOrFail(findJob(it), e.message ?: "배치 처리 중 오류가 발생했습니다.") }
+            }
             return
         }
 
-        jobs.forEach { job -> handleResult(job, resultsByReceiptId[job.id.toString()]) }
+        transaction.executeWithoutResult {
+            jobIds.forEach { handleResult(findJob(it), resultsByReceiptId[it.toString()]) }
+        }
     }
 
     private fun handleResult(job: ReceiptJob, result: BatchOcrResult?) {
@@ -105,7 +120,7 @@ class ReceiptJobService(
 
             // 인식 실패: 결과는 있으나 구조적으로 영수증이 아님 → 재시도해도 동일하므로 즉시 실패
             result.items.isEmpty() || result.store.isNullOrBlank() ->
-                job.markFailed("영수증을 인식하지 못했습니다. 직접 입력해 주세요.")
+                fail(job, "영수증을 인식하지 못했습니다. 직접 입력해 주세요.")
 
             else -> {
                 val ocrResult = OcrAnalysisResponse(result.store, result.date, result.items, result.total)
@@ -120,8 +135,13 @@ class ReceiptJobService(
         if (job.retryCount < MAX_RETRY) {
             job.retry(message)
         } else {
-            job.markFailed(message)
+            fail(job, message)
         }
+    }
+
+    private fun fail(job: ReceiptJob, message: String) {
+        log.warn("영수증 분석 잡이 실패했습니다. jobId={}, reason={}", job.id, message)
+        job.markFailed(message)
     }
 
     /**

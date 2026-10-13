@@ -174,7 +174,7 @@ class ReceiptJobServiceTest {
         stubReceiptOcrClient.batchResponse = BatchOcrResponse(listOf(successResult(jobId)))
         receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
 
-        val response = receiptJobService.getJob(jobId)
+        val response = receiptJobService.getJob(user.id!!, jobId)
 
         assertEquals(ReceiptJobStatus.COMPLETED, response.status)
         assertNotNull(response.result)
@@ -183,7 +183,16 @@ class ReceiptJobServiceTest {
     @Test
     fun `getJob은_존재하지_않는_잡이면_예외를_던진다`() {
         assertFailsWith<ResourceNotFoundException> {
-            receiptJobService.getJob(99_999L)
+            receiptJobService.getJob(1L, 99_999L)
+        }
+    }
+
+    @Test
+    fun `getJob은_다른_사용자의_잡이면_없는_잡과_동일하게_예외를_던진다`() {
+        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+
+        assertFailsWith<ResourceNotFoundException> {
+            receiptJobService.getJob(2L, jobId)
         }
     }
 
