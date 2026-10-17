@@ -1,6 +1,6 @@
 # PRD v2.1 / 01: 소모품 등록·편집
 
-상태: 설계 초안, 구현 전
+상태: 구현 완료
 
 ## 목표
 
@@ -46,6 +46,7 @@
 | `item/entity/LastReplacementPeriod.kt` | 삭제 |
 | `item/dto/ItemDto.kt` | `lastReplacementPeriod`, `newCategoryDefaultReplacementIntervalDays`, `UpdateItemRequest.lastReplacedDate` 삭제, Swagger 설명 갱신 |
 | `item/entity/Item.kt` | `update`에서 `lastReplacedDate` 제거 |
+| `admin/service/AdminBackofficeService.kt` | 백오피스 수정은 `Item.updateForAdmin`으로 마지막 교체일 보정 유지 |
 | `item/service/ItemService.kt` | `saveItem`, `updateItem` |
 | `item/controller/docs/ItemControllerApi.kt` | 구간 선택 설명 제거 |
 | `category/entity/Category.kt` | 90일 상수 |

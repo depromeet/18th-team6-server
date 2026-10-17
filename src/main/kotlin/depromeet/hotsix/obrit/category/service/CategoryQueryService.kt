@@ -78,6 +78,15 @@ class CategoryQueryService(
         }
     }
 
+    fun findVisibleCategoryDefaultIntervals(userId: Long, categoryIds: Collection<Long>): Map<Long, Int> {
+        if (categoryIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        return categoryRepository.findVisibleByIds(userId, categoryIds.toSet())
+            .associate { requireNotNull(it.id) to it.defaultReplacementIntervalDays }
+    }
+
     private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
         categoryId = requireNotNull(id),
         name = name,
@@ -99,6 +108,8 @@ class CategoryQueryService(
             .orElseThrow { ResourceNotFoundException("기본 카테고리 아이콘이 없습니다.") }
         return iconUrlResolver.resolve(icon.key)
     }
+
+    fun getUserCategoryDefaultIntervalDays(): Int = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS
 
     @Transactional(readOnly = true)
     fun findAccessibleCategoryNameToIdMap(userId: Long): Map<String, Long> {
