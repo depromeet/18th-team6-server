@@ -1,8 +1,10 @@
 package depromeet.hotsix.obrit.category.service
 
+import depromeet.hotsix.obrit.category.dto.response.CategoryGroupResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategorySnapshot
+import depromeet.hotsix.obrit.category.repository.CategoryGroupRepository
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.common.storage.UrlResolver
@@ -17,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional
 class CategoryQueryService(
     private val categoryRepository: CategoryRepository,
     private val categoryIconRepository: CategoryIconRepository,
+    private val categoryGroupRepository: CategoryGroupRepository,
     private val userService: UserService,
     @Qualifier("s3PublicUrlResolver") private val iconUrlResolver: UrlResolver,
 ) {
@@ -32,6 +35,16 @@ class CategoryQueryService(
 
         return allCategories.map { it.toResponse(iconUrlResolver.resolve(iconKeyMap[it.iconId].orEmpty())) }
     }
+
+    fun listCategoryGroups(): List<CategoryGroupResponse> =
+        categoryGroupRepository.findActiveOrderByDisplayOrder().map {
+            CategoryGroupResponse(
+                categoryGroupId = requireNotNull(it.id),
+                name = it.name,
+                type = it.type,
+                displayOrder = it.displayOrder,
+            )
+        }
 
     fun getVisibleCategoryNameAndDefaultInterval(userId: Long, categoryId: Long): Pair<String, Int> {
         val category = getVisibleCategoryOrThrow(userId, categoryId)
@@ -94,6 +107,7 @@ class CategoryQueryService(
         userId = userId,
         createdAt = createdAt,
         defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+        categoryGroupId = categoryGroupId,
     )
 
     private fun getVisibleCategoryOrThrow(userId: Long, categoryId: Long): Category {

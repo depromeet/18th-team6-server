@@ -4,6 +4,8 @@ import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
 import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
+import depromeet.hotsix.obrit.category.entity.CategoryGroupType
+import depromeet.hotsix.obrit.category.repository.CategoryGroupRepository
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.common.CategoryItemCleaner
@@ -12,6 +14,7 @@ import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.global.exception.ConflictException
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.user.service.UserService
+import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
@@ -20,10 +23,13 @@ import org.springframework.transaction.annotation.Transactional
 class CategoryService(
     private val categoryRepository: CategoryRepository,
     private val categoryIconRepository: CategoryIconRepository,
+    private val categoryGroupRepository: CategoryGroupRepository,
     private val userService: UserService,
     private val categoryItemCleaner: CategoryItemCleaner,
     @Qualifier("s3PublicUrlResolver") private val iconUrlResolver: UrlResolver,
 ) {
+
+    private val log = LoggerFactory.getLogger(javaClass)
 
     @Transactional(readOnly = true)
     fun listCategoryIcons(): List<CategoryIconResponse> = categoryIconRepository.findAllByOrderByIdDesc().map {
@@ -47,6 +53,7 @@ class CategoryService(
             name = trimmedName,
             iconId = Category.USER_DEFAULT_ICON_ID,
             defaultReplacementIntervalDays = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS,
+            categoryGroupId = findUserCategoryGroupId(),
         )
         val iconKey = categoryIconRepository.findById(Category.USER_DEFAULT_ICON_ID).map { it.key }.orElse("")
 
@@ -77,6 +84,7 @@ class CategoryService(
         userId = userId,
         createdAt = createdAt,
         defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+        categoryGroupId = categoryGroupId,
     )
 
     @Transactional
@@ -93,6 +101,7 @@ class CategoryService(
                 name = trimmedName,
                 iconId = Category.USER_DEFAULT_ICON_ID,
                 defaultReplacementIntervalDays = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS,
+                categoryGroupId = findUserCategoryGroupId(),
             )
             categoryRepository.save(newCategory).id!!
         } catch (e: Exception) {
@@ -100,5 +109,14 @@ class CategoryService(
                 ?: throw e
             retryCategory.id!!
         }
+    }
+
+    // '사용자' 카테고리 행이 없어도 소모품 등록은 막지 않는다. 카테고리를 비워 두고 운영에서 행을 넣도록 알린다.
+    private fun findUserCategoryGroupId(): Long? {
+        val groupId = categoryGroupRepository.findFirstByTypeAndDeletedAtIsNullOrderByIdAsc(CategoryGroupType.USER)?.id
+        if (groupId == null) {
+            log.warn("'사용자' 카테고리(type=USER)가 없어 사용자 소모품의 카테고리를 비워 둡니다.")
+        }
+        return groupId
     }
 }

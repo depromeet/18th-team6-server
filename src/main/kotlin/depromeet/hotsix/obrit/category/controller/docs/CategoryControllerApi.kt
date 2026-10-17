@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.category.controller.docs
 
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoryGroupResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.global.dto.ApiResponse
@@ -33,8 +34,25 @@ interface CategoryControllerApi {
     fun listCategoryIcons(): ApiResponse<List<CategoryIconResponse>>
 
     @Operation(
+        summary = "소모품 카테고리(욕실·주방 등) 목록 조회",
+        description = "온보딩 탭에 쓰는 카테고리 목록을 displayOrder 오름차순으로 조회합니다. " +
+            "각 소모품의 소속은 카테고리 전체 조회 응답의 categoryGroupId로 확인합니다. " +
+            "빈 탭 숨김 등 탭 구성은 앱에서 정합니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "조회 완료",
+            ),
+        ],
+    )
+    fun listCategoryGroups(): ApiResponse<List<CategoryGroupResponse>>
+
+    @Operation(
         summary = "카테고리 전체 조회",
-        description = "사용자가 접근 가능한 모든 카테고리(기본 제공 + 사용자 등록)를 조회합니다.",
+        description = "사용자가 접근 가능한 모든 카테고리(기본 제공 + 사용자 등록)를 조회합니다. " +
+            "각 항목의 categoryGroupId로 소속 카테고리(욕실·주방 등)를 알 수 있습니다.",
     )
     @ApiResponses(
         value = [

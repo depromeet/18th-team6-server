@@ -14,6 +14,7 @@ import jakarta.persistence.Table
     name = "categories",
     indexes = [
         Index(name = "idx_categories_user_deleted", columnList = "user_id, deleted_at"),
+        Index(name = "idx_categories_group", columnList = "category_group_id"),
     ],
 )
 class Category(
@@ -32,6 +33,10 @@ class Category(
 
     @Column(name = "default_replacement_interval_days", nullable = false)
     var defaultReplacementIntervalDays: Int = 1,
+
+    /** 소속 카테고리(`CategoryGroup`) ID. 아직 배정되지 않은 기본 소모품은 null */
+    @Column(name = "category_group_id")
+    var categoryGroupId: Long? = null,
 ) : BaseTimeEntity() {
 
     val isPreset: Boolean
