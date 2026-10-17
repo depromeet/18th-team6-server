@@ -1,7 +1,6 @@
 package depromeet.hotsix.obrit.item.dto
 
 import depromeet.hotsix.obrit.item.entity.ItemDetailStatus
-import depromeet.hotsix.obrit.item.entity.LastReplacementPeriod
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.Valid
 import jakarta.validation.constraints.NotBlank
@@ -51,17 +50,6 @@ data class CreateItemRequest(
     @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
     val spareQuantity: Int? = null,
 
-    @field:Schema(
-        description = "마지막 교체 시기. 기간의 평균치를 교체일자로 적용. " +
-            "1주일 이내(WITHIN_WEEK)=4일 전, " +
-            "2-4주 전(WITHIN_MONTH)=21일 전, " +
-            "1-3개월 전(WITHIN_THREE_MONTHS)=45일 전, " +
-            "3개월 이전(OVER_THREE_MONTHS)=90일 전, " +
-            "미선택(null)=오늘.",
-        example = "WITHIN_WEEK",
-    )
-    val lastReplacementPeriod: LastReplacementPeriod? = null,
-
     @field:Schema(description = "사용자 교체 주기(일). 미입력 시 카테고리 기본값 사용.", example = "7")
     @field:Positive(message = "교체 주기는 1일 이상이어야 합니다.")
     val replacementIntervalDays: Int? = null,
@@ -75,9 +63,6 @@ data class UpdateItemRequest(
     @field:Schema(description = "여분 수량", example = "6")
     @field:PositiveOrZero(message = "여분 수량은 0 이상이어야 합니다.")
     val spareQuantity: Int? = null,
-
-    @field:Schema(description = "최근 교체일", example = "2026-04-18")
-    val lastReplacedDate: LocalDate? = null,
 
     @field:Schema(description = "사용자 교체 주기(일)", example = "10")
     @field:Positive(message = "교체 주기는 1일 이상이어야 합니다.")

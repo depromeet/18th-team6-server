@@ -72,18 +72,27 @@ class Item(
         lowStockNotifiedAt = null,
     )
 
-    fun update(name: String?, quantity: Int?, replacementIntervalDays: Int?, lastReplacedDate: LocalDate?) {
+    fun update(name: String?, quantity: Int?, replacementIntervalDays: Int?) {
         name?.let { this.name = it.trim() }
         quantity?.let { this.quantity = it }
         replacementIntervalDays?.let { this.replacementIntervalDays = it }
-        lastReplacedDate?.let { this.lastReplacedDate = it }
 
-        if (replacementIntervalDays != null || lastReplacedDate != null) {
+        if (replacementIntervalDays != null) {
             recalculateNextReplacementDate()
             resetOverdueNotification()
         }
         if (quantity != null) {
             resetLowStockNotificationIfRestocked()
+        }
+    }
+
+    /** 앱 사용자는 교체 등록으로만 마지막 교체일을 바꾼다. 운영자 보정용으로 백오피스에서만 직접 수정한다. */
+    fun updateForAdmin(name: String?, quantity: Int?, replacementIntervalDays: Int?, lastReplacedDate: LocalDate?) {
+        update(name = name, quantity = quantity, replacementIntervalDays = replacementIntervalDays)
+        lastReplacedDate?.let {
+            this.lastReplacedDate = it
+            recalculateNextReplacementDate()
+            resetOverdueNotification()
         }
     }
 

@@ -5,14 +5,11 @@ import depromeet.hotsix.obrit.category.repository.CategoryFixture
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
-import depromeet.hotsix.obrit.item.entity.LastReplacementPeriod
 import depromeet.hotsix.obrit.item.service.ItemService
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
@@ -61,33 +58,8 @@ class ItemCreateAcceptanceTest {
         categoryId = requireNotNull(category.id)
     }
 
-    @ParameterizedTest
-    @EnumSource(LastReplacementPeriod::class)
-    fun `교체_시기_선택지는_기한의_평균치를_교체일자로_사용한다`(period: LastReplacementPeriod) {
-        val baseDate = LocalDate.now(clock)
-        val expectedDaysAgo = when (period) {
-            LastReplacementPeriod.WITHIN_WEEK -> 4L
-            LastReplacementPeriod.WITHIN_MONTH -> 21L
-            LastReplacementPeriod.WITHIN_THREE_MONTHS -> 45L
-            LastReplacementPeriod.OVER_THREE_MONTHS -> 90L
-        }
-
-        val result = itemService.createItem(
-            userId,
-            CreateItemRequest(
-                categoryId = categoryId,
-                name = "테스트 소모품",
-                spareQuantity = 1,
-                lastReplacementPeriod = period,
-            ),
-        )
-
-        assertEquals(baseDate.minusDays(expectedDaysAgo), result.lastReplacedDate)
-        assertEquals(baseDate.minusDays(expectedDaysAgo).plusDays(30), result.nextReplacementDate)
-    }
-
     @Test
-    fun `교체_시기를_선택하지_않으면_오늘_날짜로_설정된다`() {
+    fun `등록하면_오늘을_마지막_교체일로_쓴다`() {
         val baseDate = LocalDate.now(clock)
         val result = itemService.createItem(
             userId,

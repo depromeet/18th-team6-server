@@ -194,8 +194,7 @@ class ItemService(
             categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, resolvedCategoryId)
 
         val intervalDays = request.replacementIntervalDays ?: defaultReplacementIntervalDays
-        val today = LocalDate.now(clock)
-        val lastReplacedDate = request.lastReplacementPeriod?.toDate(today) ?: today
+        val lastReplacedDate = LocalDate.now(clock)
         val item = Item(
             userId = userId,
             categoryId = resolvedCategoryId,
@@ -229,7 +228,6 @@ class ItemService(
             name = name,
             quantity = request.spareQuantity,
             replacementIntervalDays = request.replacementIntervalDays,
-            lastReplacedDate = request.lastReplacedDate,
         )
 
         return item.toResponse(

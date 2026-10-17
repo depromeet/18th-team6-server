@@ -125,7 +125,7 @@ class OverdueStepComparisonTest {
     fun `주기를 편집하면 카운트가 초기화된다`() {
         val item = saveOverdueItem(daysOverdue = 100, notifiedCount = 3, lastNotifiedAt = today.minusDays(30))
 
-        item.update(name = null, quantity = null, replacementIntervalDays = 40, lastReplacedDate = null)
+        item.update(name = null, quantity = null, replacementIntervalDays = 40)
 
         assertEquals(0, item.overdueNotifiedCount)
         assertNull(item.lastOverdueNotifiedAt)

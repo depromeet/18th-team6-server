@@ -5,7 +5,6 @@ import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
-import depromeet.hotsix.obrit.item.entity.LastReplacementPeriod
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.user.entity.User
 import depromeet.hotsix.obrit.user.repository.UserRepository
@@ -108,7 +107,6 @@ class ItemControllerBulkTest {
                 categoryId = categoryId,
                 name = "Bulk Item $index",
                 spareQuantity = index,
-                lastReplacementPeriod = LastReplacementPeriod.WITHIN_WEEK,
             )
         }
         return objectMapper.writeValueAsString(mapOf("items" to items))
