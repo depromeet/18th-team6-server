@@ -1,5 +1,7 @@
 package depromeet.hotsix.obrit.category.service
 
+import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.repository.CategoryFixture
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
@@ -20,6 +22,9 @@ class CategoryServiceTest {
 
     @Autowired
     private lateinit var categoryQueryService: CategoryQueryService
+
+    @Autowired
+    private lateinit var categoryService: CategoryService
 
     @Autowired
     private lateinit var categoryRepository: CategoryRepository
@@ -76,5 +81,23 @@ class CategoryServiceTest {
 
         // then: 사용자2의 카테고리는 name이 "커스텀2"와 같지 않음
         assertTrue(result.none { it.name == "다른사용자카테고리" })
+    }
+
+    @Test
+    fun `사용자_소모품을_만들면_주기_90일과_공용_아이콘을_쓴다`() {
+        // when: 앱이 다른 아이콘을 보내도 무시한다
+        val result = categoryService.createCategory(user1Id, CreateCategoryRequest(name = "수건", iconId = 3))
+
+        // then
+        val category = categoryRepository.findById(result.categoryId).orElseThrow()
+        assertEquals(Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS, result.defaultReplacementIntervalDays)
+        assertEquals(Category.USER_DEFAULT_ICON_ID, category.iconId)
+    }
+
+    @Test
+    fun `아이콘_없이도_사용자_소모품을_만들_수_있다`() {
+        val result = categoryService.createCategory(user1Id, CreateCategoryRequest(name = "수건"))
+
+        assertEquals(90, result.defaultReplacementIntervalDays)
     }
 }

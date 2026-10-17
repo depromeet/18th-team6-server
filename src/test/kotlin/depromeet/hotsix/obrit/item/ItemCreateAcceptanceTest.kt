@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.item
 
+import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryFixture
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
@@ -72,5 +73,34 @@ class ItemCreateAcceptanceTest {
 
         assertEquals(baseDate, result.lastReplacedDate)
         assertEquals(baseDate.plusDays(30), result.nextReplacementDate)
+    }
+
+    @Test
+    fun `새_사용자_소모품으로_등록하면_주기_90일과_공용_아이콘으로_만든다`() {
+        val baseDate = LocalDate.now(clock)
+        val result = itemService.createItem(
+            userId,
+            CreateItemRequest(newCategoryName = "수세미", name = "주방 수세미"),
+        )
+
+        val category = requireNotNull(categoryRepository.findActiveByUserIdAndName(userId, "수세미"))
+        assertEquals(Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS, category.defaultReplacementIntervalDays)
+        assertEquals(Category.USER_DEFAULT_ICON_ID, category.iconId)
+        assertEquals(90, result.replacementIntervalDays)
+        assertEquals(baseDate.plusDays(90), result.nextReplacementDate)
+    }
+
+    @Test
+    fun `같은_이름의_사용자_소모품이_있으면_그_소모품의_주기를_쓴다`() {
+        categoryRepository.save(
+            CategoryFixture.userCategory(userId = userId, name = "수세미", defaultReplacementIntervalDays = 14),
+        )
+
+        val result = itemService.createItem(
+            userId,
+            CreateItemRequest(newCategoryName = "수세미", name = "주방 수세미"),
+        )
+
+        assertEquals(14, result.replacementIntervalDays)
     }
 }

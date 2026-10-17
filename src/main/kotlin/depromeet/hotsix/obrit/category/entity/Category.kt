@@ -44,4 +44,12 @@ class Category(
         this.iconId = iconId
         this.defaultReplacementIntervalDays = defaultReplacementIntervalDays
     }
+
+    companion object {
+        /** 사용자가 직접 만든 소모품의 기본 교체 주기 */
+        const val USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS = 90
+
+        /** 사용자가 직접 만든 소모품과 매칭 실패 영수증 소모품에 쓰는 공용 아이콘 */
+        const val USER_DEFAULT_ICON_ID = 1L
+    }
 }

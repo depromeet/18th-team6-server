@@ -67,7 +67,7 @@ interface CategoryControllerApi {
 
     @Operation(
         summary = "카테고리 생성",
-        description = "사용자의 커스텀 카테고리를 생성합니다.",
+        description = "사용자 소모품을 생성합니다. 기본 교체 주기 90일과 공용 아이콘으로 저장하며, 요청의 iconId는 쓰지 않습니다.",
     )
     @ApiResponses(
         value = [
@@ -83,10 +83,6 @@ interface CategoryControllerApi {
                         mediaType = "application/json",
                         schema = Schema(implementation = ErrorResponse::class),
                         examples = [
-                            ExampleObject(
-                                name = "유효하지 않은 아이콘",
-                                value = """{"message": "유효하지 않은 아이콘입니다."}""",
-                            ),
                             ExampleObject(
                                 name = "종류명 누락",
                                 value = """{"message": "종류명은 필수입니다."}""",

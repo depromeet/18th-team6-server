@@ -16,8 +16,6 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-private const val DEFAULT_CATEGORY_ICON_ID = 1L
-
 @Service
 class CategoryService(
     private val categoryRepository: CategoryRepository,
@@ -43,19 +41,16 @@ class CategoryService(
             throw ConflictException("이미 등록된 소모품 종류입니다.")
         }
 
-        val icon = categoryIconRepository.findById(request.iconId)
-            .orElseThrow { BusinessException("유효하지 않은 아이콘입니다.") }
-        if (icon.deletedAt != null) {
-            throw BusinessException("유효하지 않은 아이콘입니다.")
-        }
-
+        // request.iconId는 구버전 앱 호환용으로 받기만 하고 쓰지 않는다.
         val category = Category(
             userId = userId,
             name = trimmedName,
-            iconId = icon.id,
+            iconId = Category.USER_DEFAULT_ICON_ID,
+            defaultReplacementIntervalDays = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS,
         )
+        val iconKey = categoryIconRepository.findById(Category.USER_DEFAULT_ICON_ID).map { it.key }.orElse("")
 
-        return categoryRepository.save(category).toResponse(iconUrlResolver.resolve(icon.key))
+        return categoryRepository.save(category).toResponse(iconUrlResolver.resolve(iconKey))
     }
 
     @Transactional
@@ -85,7 +80,7 @@ class CategoryService(
     )
 
     @Transactional
-    fun getOrCreateUserCategoryId(userId: Long, categoryName: String, defaultReplacementIntervalDays: Int): Long {
+    fun getOrCreateUserCategoryId(userId: Long, categoryName: String): Long {
         val trimmedName = categoryName.trim()
         val existingCategory = categoryRepository.findActiveByUserIdAndName(userId, trimmedName)
         if (existingCategory != null) {
@@ -96,8 +91,8 @@ class CategoryService(
             val newCategory = Category(
                 userId = userId,
                 name = trimmedName,
-                iconId = DEFAULT_CATEGORY_ICON_ID,
-                defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+                iconId = Category.USER_DEFAULT_ICON_ID,
+                defaultReplacementIntervalDays = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS,
             )
             categoryRepository.save(newCategory).id!!
         } catch (e: Exception) {

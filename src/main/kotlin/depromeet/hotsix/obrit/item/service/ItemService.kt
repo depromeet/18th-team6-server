@@ -183,11 +183,7 @@ class ItemService(
             ?: run {
                 val newCategoryName = request.newCategoryName
                     ?: throw BusinessException("categoryId가 없으면 newCategoryName은 필수입니다.")
-                resolveOrCreateCategory(
-                    userId,
-                    newCategoryName,
-                    request.newCategoryDefaultReplacementIntervalDays ?: 1,
-                )
+                categoryService.getOrCreateUserCategoryId(userId, newCategoryName)
             }
 
         val (categoryName, defaultReplacementIntervalDays) =
@@ -208,12 +204,6 @@ class ItemService(
 
         return itemRepository.save(item).toResponse(categoryName = categoryName)
     }
-
-    private fun resolveOrCreateCategory(
-        userId: Long,
-        categoryName: String,
-        defaultReplacementIntervalDays: Int,
-    ): Long = categoryService.getOrCreateUserCategoryId(userId, categoryName, defaultReplacementIntervalDays)
 
     @Transactional
     fun updateItem(userId: Long, itemId: Long, request: UpdateItemRequest): ItemResponse {

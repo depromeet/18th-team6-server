@@ -21,19 +21,12 @@ data class CreateItemRequest(
     val categoryId: Long? = null,
 
     @field:Schema(
-        description = "새로 만들 카테고리 이름. categoryId가 null이면 필수. 15자 이내, 한글/영문만. " +
+        description = "새로 만들 사용자 소모품 이름. categoryId가 null이면 필수. 15자 이내, 한글/영문만. " +
+            "새로 만들면 기본 교체 주기 90일과 공용 아이콘으로 저장하고, 같은 이름의 사용자 소모품이 있으면 그것을 재사용. " +
             "영수증 분석 시: AnalyzedItem.categoryId 가 null 이면 AnalyzedItem.suggestedCategoryName 을 이 필드에 전달.",
         example = "칫솔",
     )
     val newCategoryName: String? = null,
-
-    @field:Schema(
-        description = "새 카테고리의 기본 교체 주기(일). newCategoryName과 함께 제공. 미제공 시 카테고리 엔티티 기본값(1) 사용. 범위 1~365. " +
-            "영수증 분석 시: newCategoryName 사용 시 AnalyzedItem.suggestedReplacementIntervalDays 를 이 필드에 함께 전달.",
-        example = "90",
-    )
-    @field:Positive(message = "교체 주기는 1일 이상이어야 합니다.")
-    val newCategoryDefaultReplacementIntervalDays: Int? = null,
 
     @field:Schema(
         description = "소모품 이름. 영수증 분석 시: AnalyzedItem.suggestedName 을 그대로 전달.",
