@@ -18,7 +18,7 @@ interface NotificationSettingsControllerApi {
 
     @Operation(
         summary = "알림 설정 조회",
-        description = "사용자의 알림 설정을 조회합니다. 저장한 설정이 없으면 기본값을 반환합니다.",
+        description = "사용자의 알림 설정을 조회합니다. 저장한 설정이 없으면 기본값(세 유형 모두 꺼짐, 09:00)을 반환합니다.",
     )
     @ApiResponses(
         value = [
@@ -51,7 +51,7 @@ interface NotificationSettingsControllerApi {
 
     @Operation(
         summary = "알림 설정 수정",
-        description = "사용자의 알림 설정을 저장합니다. 저장한 설정이 없으면 새로 만듭니다.",
+        description = "유형별 수신 여부 3개와 알림 시간을 저장합니다. 저장한 설정이 없으면 새로 만듭니다.",
     )
     @ApiResponses(
         value = [
@@ -67,7 +67,7 @@ interface NotificationSettingsControllerApi {
             ),
             SwaggerApiResponse(
                 responseCode = "400",
-                description = "선행 일수 또는 발송 시각이 허용 범위를 벗어났습니다.",
+                description = "알림 시간이 30분 단위가 아닙니다.",
                 content = [
                     Content(
                         mediaType = "application/json",

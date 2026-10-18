@@ -3,9 +3,11 @@ package depromeet.hotsix.obrit.notification.service
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
+import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.entity.Notification
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
+import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
@@ -36,6 +38,9 @@ class NotificationDispatchServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Autowired
+    private lateinit var userNotificationSettingsRepository: UserNotificationSettingsRepository
+
+    @Autowired
     private lateinit var notificationRepository: NotificationRepository
 
     @Autowired
@@ -51,6 +56,7 @@ class NotificationDispatchServiceTest {
     @BeforeEach
     fun setUp() {
         userId = requireNotNull(userRepository.save(UserFixture.user(id = null)).id)
+        userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
     private fun saveItem(name: String, quantity: Int, nextReplacementDate: LocalDate): Item = itemRepository.save(

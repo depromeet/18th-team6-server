@@ -20,8 +20,8 @@ import java.time.temporal.ChronoUnit
  * 상위 유형이 성립하지 않거나 꺼져 있으면 그 아래 유형으로 내려간다. 교체일이 지났는데 그날이 지연 스텝이
  * 아니면 여분 부족으로, 여분 부족이 꺼져 있으면 사전으로 내려가는 식이다. 가장 급한 상태가 가장 조용해지면 안 된다.
  *
- * 선행 일수는 유저 설정, 지연 스텝은 전역 설정에서 읽는다. 유형별 발송 여부는
- * `전역 유형 활성 AND 유저 전체 수신 AND 유저 유형 활성`이며, 전역은 킬 스위치로 동작한다.
+ * 선행 일수와 지연 스텝은 전역 설정에서 읽는다. 유형별 발송 여부는
+ * `전역 유형 활성 AND 유저 유형 활성`이며, 전역은 킬 스위치로 동작한다.
  * 판정 구조 자체는 설정으로 바꿀 수 없다.
  */
 @Service
@@ -52,7 +52,7 @@ class NotificationPolicyService(
         overdueSteps: List<Int>,
     ): NotificationCandidate? {
         val daysUntil = ChronoUnit.DAYS.between(today, item.nextReplacementDate).toInt()
-        val type = applicableTypes(item, today, daysUntil, user.leadDays, overdueSteps)
+        val type = applicableTypes(item, today, daysUntil, global.leadDays, overdueSteps)
             .firstOrNull { global.isEnabled(it) && user.isEnabled(it) }
             ?: return null
 

@@ -12,10 +12,11 @@ import jakarta.persistence.Table
 import java.time.LocalTime
 
 /**
- * 유저별 알림 설정. 행이 없는 사용자는 전역 [NotificationSettings] 기본값으로 동작한다.
+ * 유저별 알림 설정. 행이 없는 사용자는 세 유형 모두 꺼진 것으로 판정한다.
  *
- * 값은 전역이 기본값 레이어이고, 유형별 on/off는 전역이 킬 스위치다.
- * 전역에서 유형을 끄면 유저가 켜두었어도 발송하지 않는다.
+ * v2.1 전환 시점의 기존 사용자는 마이그레이션(V13)이 당시 상태로 행을 만들어 두었으므로,
+ * 행이 없는 사용자는 그 이후 가입한 사용자뿐이다.
+ * 유형별 on/off는 전역 [NotificationSettings]가 킬 스위치다. 전역에서 유형을 끄면 유저가 켜두었어도 발송하지 않는다.
  */
 @Entity
 @Table(name = "user_notification_settings")
@@ -28,23 +29,16 @@ class UserNotificationSettings(
     @Column(name = "user_id", nullable = false, unique = true)
     val userId: Long,
 
-    /** 알림 수신 전체 on/off. 끄면 유형별 설정과 무관하게 발송하지 않는다. */
-    @Column(name = "enabled", nullable = false)
-    var enabled: Boolean = true,
-
     @Column(name = "pre_replacement_enabled", nullable = false)
-    var preReplacementEnabled: Boolean = true,
+    var preReplacementEnabled: Boolean = false,
 
     @Column(name = "overdue_enabled", nullable = false)
-    var overdueEnabled: Boolean = true,
+    var overdueEnabled: Boolean = false,
 
     @Column(name = "low_stock_enabled", nullable = false)
-    var lowStockEnabled: Boolean = true,
+    var lowStockEnabled: Boolean = false,
 
-    /** 사전 알림 선행 일수. 개별 소모품의 경고 임계(D-3)와는 별개 값이다. */
-    @Column(name = "lead_days", nullable = false)
-    var leadDays: Int = NotificationSettings.DEFAULT_LEAD_DAYS,
-
+    /** 사용자가 고른 알림 시간. 발송은 아직 전 사용자 09:00 일괄이라 판정에 쓰지 않는다. */
     @Column(name = "dispatch_time", nullable = false)
     var dispatchTime: LocalTime = DEFAULT_DISPATCH_TIME,
 
@@ -55,10 +49,6 @@ class UserNotificationSettings(
 
     companion object {
         val DEFAULT_DISPATCH_TIME: LocalTime = LocalTime.of(9, 0)
-
-        /** 조용 시간(22:00~08:00)에는 발송하지 않으므로 그 구간의 값은 저장을 막는다. */
-        val MIN_DISPATCH_TIME: LocalTime = LocalTime.of(8, 0)
-        val MAX_DISPATCH_TIME_EXCLUSIVE: LocalTime = LocalTime.of(22, 0)
 
         /** 발송 시각은 30분 단위 슬롯 배치로 처리한다. */
         const val DISPATCH_TIME_UNIT_MINUTES = 30

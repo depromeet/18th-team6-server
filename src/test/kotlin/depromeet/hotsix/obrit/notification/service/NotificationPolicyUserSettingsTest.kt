@@ -76,12 +76,41 @@ class NotificationPolicyUserSettingsTest {
 
     private fun candidateFor(itemId: Long?) = notificationPolicyService.evaluate().find { it.itemId == itemId }
 
+    private fun saveUserSettings(
+        targetUserId: Long = userId,
+        preReplacementEnabled: Boolean = true,
+        overdueEnabled: Boolean = true,
+        lowStockEnabled: Boolean = true,
+    ) = userNotificationSettingsRepository.save(
+        UserNotificationSettings(
+            userId = targetUserId,
+            preReplacementEnabled = preReplacementEnabled,
+            overdueEnabled = overdueEnabled,
+            lowStockEnabled = lowStockEnabled,
+        ),
+    )
+
     @Test
-    fun `유저가 알림을 끄면 후보에서 제외된다`() {
+    fun `설정 행이 없는 사용자는 정책 알림 대상이 아니다`() {
+        val preReplacement = saveItem(quantity = 2, nextReplacementDate = today.plusDays(3))
+        val lowStock = saveItem(quantity = 0, nextReplacementDate = today.plusDays(1))
+        val overdue = saveItem(quantity = 2, nextReplacementDate = today.minusDays(1))
+
+        assertNull(candidateFor(preReplacement.id))
+        assertNull(candidateFor(lowStock.id))
+        assertNull(candidateFor(overdue.id))
+    }
+
+    @Test
+    fun `유저가 세 유형을 모두 끄면 후보에서 제외된다`() {
         val item = saveItem(quantity = 2, nextReplacementDate = today.plusDays(3))
+        val settings = saveUserSettings()
         assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(item.id)?.type)
 
-        userNotificationSettingsRepository.save(UserNotificationSettings(userId = userId, enabled = false))
+        settings.preReplacementEnabled = false
+        settings.overdueEnabled = false
+        settings.lowStockEnabled = false
+        userNotificationSettingsRepository.save(settings)
 
         assertNull(candidateFor(item.id))
     }
@@ -90,40 +119,19 @@ class NotificationPolicyUserSettingsTest {
     fun `유저가 유형을 끄면 해당 유형만 제외된다`() {
         // 여분 부족과 사전 알림이 동시에 성립하는 날짜. 우선순위상 여분 부족이 먼저다.
         val item = saveItem(quantity = 0, nextReplacementDate = today.plusDays(3))
+        val settings = saveUserSettings()
         assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
 
-        userNotificationSettingsRepository.save(
-            UserNotificationSettings(userId = userId, lowStockEnabled = false),
-        )
+        settings.lowStockEnabled = false
+        userNotificationSettingsRepository.save(settings)
 
         assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(item.id)?.type)
     }
 
     @Test
-    fun `유저 선행 일수가 전역 값보다 우선한다`() {
+    fun `선행 일수는 전역 설정을 따른다`() {
         val item = saveItem(quantity = 2, nextReplacementDate = today.plusDays(5))
-        assertNull(candidateFor(item.id))
-
-        userNotificationSettingsRepository.save(UserNotificationSettings(userId = userId, leadDays = 5))
-
-        assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(item.id)?.type)
-    }
-
-    @Test
-    fun `전역에서 유형을 끄면 유저가 켜두었어도 제외된다`() {
-        val item = saveItem(quantity = 2, nextReplacementDate = today.plusDays(3))
-        userNotificationSettingsRepository.save(
-            UserNotificationSettings(userId = userId, preReplacementEnabled = true),
-        )
-
-        updateGlobal(preReplacementEnabled = false)
-
-        assertNull(candidateFor(item.id))
-    }
-
-    @Test
-    fun `유저 설정이 없는 사용자는 전역 기본값으로 판정된다`() {
-        val item = saveItem(quantity = 2, nextReplacementDate = today.plusDays(5))
+        saveUserSettings()
         assertNull(candidateFor(item.id))
 
         notificationSettingsService.update(
@@ -135,6 +143,16 @@ class NotificationPolicyUserSettingsTest {
         )
 
         assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(item.id)?.type)
+    }
+
+    @Test
+    fun `전역에서 유형을 끄면 유저가 켜두었어도 제외된다`() {
+        val item = saveItem(quantity = 2, nextReplacementDate = today.plusDays(3))
+        saveUserSettings()
+
+        updateGlobal(preReplacementEnabled = false)
+
+        assertNull(candidateFor(item.id))
     }
 
     @Test
@@ -153,7 +171,8 @@ class NotificationPolicyUserSettingsTest {
             ),
         )
 
-        userNotificationSettingsRepository.save(UserNotificationSettings(userId = userId, enabled = false))
+        saveUserSettings(preReplacementEnabled = false, overdueEnabled = false, lowStockEnabled = false)
+        saveUserSettings(targetUserId = otherUserId)
 
         assertNull(candidateFor(item.id))
         assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(otherItem.id)?.type)

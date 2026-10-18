@@ -2,7 +2,9 @@ package depromeet.hotsix.obrit.notification.service
 
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
+import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.entity.NotificationType
+import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
@@ -36,6 +38,9 @@ class OverdueStepComparisonTest {
     private lateinit var userRepository: UserRepository
 
     @Autowired
+    private lateinit var userNotificationSettingsRepository: UserNotificationSettingsRepository
+
+    @Autowired
     private lateinit var clock: Clock
 
     private val today: LocalDate
@@ -45,6 +50,7 @@ class OverdueStepComparisonTest {
     @BeforeEach
     fun setUp() {
         userId = requireNotNull(userRepository.save(UserFixture.user(id = null)).id)
+        userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
     /** 여분은 넉넉히 둬서 여분 부족 알림으로 내려가지 않게 한다. 지연 판정만 보기 위해서다. */

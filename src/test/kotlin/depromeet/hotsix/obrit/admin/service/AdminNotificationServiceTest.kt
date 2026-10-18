@@ -6,9 +6,11 @@ import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.notification.DeviceRegistrationFixture
+import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.notification.repository.DeviceRegistrationRepository
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
+import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.notification.service.NotificationSettingsService
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
@@ -48,6 +50,9 @@ class AdminNotificationServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Autowired
+    private lateinit var userNotificationSettingsRepository: UserNotificationSettingsRepository
+
+    @Autowired
     private lateinit var clock: Clock
 
     private val today: LocalDate
@@ -57,6 +62,7 @@ class AdminNotificationServiceTest {
     @BeforeEach
     fun setUp() {
         userId = requireNotNull(userRepository.save(UserFixture.user(id = null)).id)
+        userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
     private fun registerDevice(targetUserId: Long = userId, fid: String = "fid-$targetUserId") {
