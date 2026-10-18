@@ -123,6 +123,73 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
+    fun `교체 예정과 여분 부족이 겹치면 한 알림으로 보내고 여분 부족 발송을 기록한다`() {
+        val item = saveItem(name = "면도날", quantity = 0, nextReplacementDate = today.plusDays(3))
+
+        notificationDispatchService.dispatch()
+
+        val notification = notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).single()
+        assertEquals(NotificationType.PRE_REPLACEMENT, notification.type)
+        assertEquals("교체 D-3 · 여분 부족", notification.label)
+        assertEquals("교체 시기가 다가와요", notification.title)
+        assertEquals("면도날 교체가 얼마 남지 않았어요 여분도 없어요", notification.body)
+        assertEquals(today, itemRepository.getReferenceById(requireNotNull(item.id)).lowStockNotifiedAt)
+    }
+
+    @Test
+    fun `지연과 여분 부족이 겹치면 한 알림으로 보내고 지연 스텝과 여분 부족을 함께 기록한다`() {
+        val item = saveItem(name = "수건", quantity = 0, nextReplacementDate = today.minusDays(1))
+
+        notificationDispatchService.dispatch()
+
+        val notification = notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).single()
+        assertEquals(NotificationType.OVERDUE, notification.type)
+        assertEquals("교체 D+1 · 여분 부족", notification.label)
+        val updated = itemRepository.getReferenceById(requireNotNull(item.id))
+        assertEquals(1, updated.overdueNotifiedCount)
+        assertEquals(today, updated.lastOverdueNotifiedAt)
+        assertEquals(today, updated.lowStockNotifiedAt)
+    }
+
+    @Test
+    fun `교체 예정일 당일에는 당일 문구로 보낸다`() {
+        saveItem(name = "수세미", quantity = 2, nextReplacementDate = today)
+
+        notificationDispatchService.dispatch()
+
+        val notification = notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).single()
+        assertEquals(NotificationType.PRE_REPLACEMENT, notification.type)
+        assertEquals("오늘 교체할 날이에요", notification.title)
+        assertEquals("수세미 교체 예정일이 오늘이에요", notification.body)
+        assertEquals("교체 D-day", notification.label)
+    }
+
+    @Test
+    fun `여분 부족만 있으면 여분 부족 문구로 보낸다`() {
+        saveItem(name = "치실", quantity = 0, nextReplacementDate = today.plusDays(2))
+
+        notificationDispatchService.dispatch()
+
+        val notification = notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).single()
+        assertEquals(NotificationType.LOW_STOCK, notification.type)
+        assertEquals("여분이 부족해요", notification.title)
+        assertEquals("치실 여분이 없어요. 지금 준비해두세요", notification.body)
+    }
+
+    @Test
+    fun `미리보기는 합친 알림의 사유를 각각 센다`() {
+        saveItem(name = "면도날", quantity = 0, nextReplacementDate = today.plusDays(3))
+
+        val preview = notificationDispatchService.preview()
+
+        assertEquals(1, preview.targetItemCount)
+        assertEquals(
+            mapOf(NotificationType.PRE_REPLACEMENT to 1, NotificationType.LOW_STOCK to 1),
+            preview.countByType,
+        )
+    }
+
+    @Test
     fun `발송 대상이 없으면 알림을 생성하지 않는다`() {
         saveItem(name = "칫솔", quantity = 2, nextReplacementDate = today.plusDays(10))
 
@@ -133,7 +200,7 @@ class NotificationDispatchServiceTest {
 
     @Test
     fun `여분 부족 알림은 소모품 변경 후에도 발송 당시 정보를 반환한다`() {
-        val item = saveItem("치실", 0, today.plusDays(1))
+        val item = saveItem("치실", 0, today.plusDays(2))
         notificationDispatchService.dispatch()
         item.nextReplacementDate = today.plusDays(30)
         item.quantity = 5
@@ -141,7 +208,7 @@ class NotificationDispatchServiceTest {
 
         val response = notificationService.listAllNotification(userId).single()
         assertEquals("여분 부족", response.label)
-        assertEquals(today.plusDays(1), response.nextReplacementDate)
+        assertEquals(today.plusDays(2), response.nextReplacementDate)
         assertEquals(item.id, response.itemId)
     }
 

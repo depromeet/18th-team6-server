@@ -11,7 +11,8 @@ data class AdminDeviceCoverageRow(val totalUserCount: Long, val registeredUserCo
 
 data class AdminNotificationSettingsRow(
     val autoDispatchEnabled: Boolean,
-    val leadDays: Int,
+    val preReplacementStepDays: String,
+    val lowStockLeadDays: Int,
     val overdueStepDays: String,
     val preReplacementEnabled: Boolean,
     val overdueEnabled: Boolean,
@@ -34,8 +35,9 @@ data class AdminNotificationDashboard(
 )
 
 data class AdminNotificationSettingsForm(
-    val leadDays: Int = 3,
-    val overdueStepDays: String = "1,4,7",
+    val preReplacementStepDays: String = "7,3,1,0",
+    val lowStockLeadDays: Int = 3,
+    val overdueStepDays: String = "1,3,7",
     val preReplacementEnabled: Boolean = false,
     val overdueEnabled: Boolean = false,
     val lowStockEnabled: Boolean = false,

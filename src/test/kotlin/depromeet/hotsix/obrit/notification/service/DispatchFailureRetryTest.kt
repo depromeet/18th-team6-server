@@ -62,20 +62,17 @@ class DispatchFailureRetryTest {
         userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
-    private fun saveLowStockItem(): Item {
-        val nextReplacementDate = today.plusDays(1)
-        return itemRepository.save(
-            Item(
-                userId = userId,
-                categoryId = 1L,
-                name = "칫솔",
-                quantity = 0,
-                replacementIntervalDays = 30,
-                lastReplacedDate = nextReplacementDate.minusDays(30),
-                nextReplacementDate = nextReplacementDate,
-            ),
-        )
-    }
+    private fun saveLowStockItem(nextReplacementDate: LocalDate = today.plusDays(1)): Item = itemRepository.save(
+        Item(
+            userId = userId,
+            categoryId = 1L,
+            name = "칫솔",
+            quantity = 0,
+            replacementIntervalDays = 30,
+            lastReplacedDate = nextReplacementDate.minusDays(30),
+            nextReplacementDate = nextReplacementDate,
+        ),
+    )
 
     @Test
     fun `전송에 실패하면 실패로 집계된다`() {
@@ -96,6 +93,19 @@ class DispatchFailureRetryTest {
         notificationDispatchService.dispatch()
 
         assertNull(requireNotNull(itemRepository.findById(item.id!!).orElse(null)).lowStockNotifiedAt)
+    }
+
+    @Test
+    fun `지연과 여분 부족을 합친 알림의 전송에 실패하면 두 기록 모두 남지 않는다`() {
+        val item = saveLowStockItem(nextReplacementDate = today.minusDays(1))
+        deviceRegistrationRepository.save(DeviceRegistrationFixture.deviceRegistration(userId, "fid-$userId"))
+
+        notificationDispatchService.dispatch()
+
+        val saved = requireNotNull(itemRepository.findById(item.id!!).orElse(null))
+        assertNull(saved.lowStockNotifiedAt)
+        assertEquals(0, saved.overdueNotifiedCount)
+        assertNull(saved.lastOverdueNotifiedAt)
     }
 
     @Test

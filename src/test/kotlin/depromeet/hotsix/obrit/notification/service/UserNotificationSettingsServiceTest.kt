@@ -65,8 +65,9 @@ class UserNotificationSettingsServiceTest {
     fun `전역에서 유형을 꺼도 유저 설정값은 켜진 상태로 반환한다`() {
         userNotificationSettingsRepository.save(allEnabled())
         notificationSettingsService.update(
-            leadDays = 3,
-            overdueStepDays = "1,4,7",
+            preReplacementStepDays = "7,3,1,0",
+            lowStockLeadDays = 3,
+            overdueStepDays = "1,3,7",
             preReplacementEnabled = true,
             overdueEnabled = true,
             lowStockEnabled = false,

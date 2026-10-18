@@ -12,17 +12,15 @@ import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 
 /**
- * 사전/지연/여분부족 알림 판정 로직.
+ * 사전·당일/지연/여분 부족 알림 판정 로직.
  *
- * 우선순위: 지연 > 여분 부족 > 사전. 여분 부족이 사전보다 앞서는 것은 여분이 없다는 정보가 더 구체적인 행동을 지시하기 때문이다.
+ * 일정 사유는 사전·당일(사전 스텝, 예: D-7·D-3·D-1·D-day)과 지연(지연 스텝, 예: D+1·D+3·D+7) 중 하나다. 둘은 날짜상 겹치지 않는다.
+ * 여분 부족은 일정과 따로 판정해, 같은 날 함께 성립하면 하나를 고르지 않고 한 후보의 사유로 합친다.
  * 지연 알림은 설정된 스텝 수만큼만 발송하고, 여분 부족 알림은 재입고 전까지 한 번만 발송한다.
+ * 사전·당일 알림은 상태를 저장하지 않고 스텝과 정확히 일치하는 날에만 보낸다.
  *
- * 상위 유형이 성립하지 않거나 꺼져 있으면 그 아래 유형으로 내려간다. 교체일이 지났는데 그날이 지연 스텝이
- * 아니면 여분 부족으로, 여분 부족이 꺼져 있으면 사전으로 내려가는 식이다. 가장 급한 상태가 가장 조용해지면 안 된다.
- *
- * 선행 일수와 지연 스텝은 전역 설정에서 읽는다. 유형별 발송 여부는
- * `전역 유형 활성 AND 유저 유형 활성`이며, 전역은 킬 스위치로 동작한다.
- * 판정 구조 자체는 설정으로 바꿀 수 없다.
+ * 각 사유는 `전역 유형 활성 AND 유저 유형 활성`으로 따로 거른다. 전역은 킬 스위치로 동작한다.
+ * 꺼진 사유만 빠지고 남은 사유가 없으면 후보가 아니다.
  */
 @Service
 class NotificationPolicyService(
@@ -34,13 +32,14 @@ class NotificationPolicyService(
     fun evaluate(): List<NotificationCandidate> {
         val today = LocalDate.now(clock)
         val global = notificationSettingsService.current()
+        val preReplacementSteps = global.preReplacementSteps().toSet()
         val overdueSteps = global.overdueSteps()
         val snapshots = itemService.findActiveNotificationSnapshots()
         val userSettings = userNotificationSettingsService
             .effectiveSettingsByUserIds(snapshots.mapTo(mutableSetOf()) { it.userId })
 
         return snapshots.mapNotNull {
-            evaluate(it, today, global, userSettings.getValue(it.userId), overdueSteps)
+            evaluate(it, today, global, userSettings.getValue(it.userId), preReplacementSteps, overdueSteps)
         }
     }
 
@@ -49,47 +48,44 @@ class NotificationPolicyService(
         today: LocalDate,
         global: NotificationSettings,
         user: EffectiveNotificationSettings,
+        preReplacementSteps: Set<Int>,
         overdueSteps: List<Int>,
     ): NotificationCandidate? {
         val daysUntil = ChronoUnit.DAYS.between(today, item.nextReplacementDate).toInt()
-        val type = applicableTypes(item, today, daysUntil, global.leadDays, overdueSteps)
-            .firstOrNull { global.isEnabled(it) && user.isEnabled(it) }
-            ?: return null
+        val reasons = listOfNotNull(
+            scheduleReason(item, today, daysUntil, preReplacementSteps, overdueSteps),
+            lowStockReason(item, daysUntil, global.lowStockLeadDays),
+        ).filter { global.isEnabled(it) && user.isEnabled(it) }
+        if (reasons.isEmpty()) return null
 
         return NotificationCandidate(
             itemId = item.id,
             userId = item.userId,
             itemName = item.name,
-            type = type,
+            reasons = reasons,
             daysUntil = daysUntil,
             nextReplacementDate = item.nextReplacementDate,
         )
     }
 
-    /**
-     * 이 소모품에 성립하는 알림 유형을 우선순위 순으로 돌려준다. 성립하지 않으면 비어 있다.
-     *
-     * 유형별 on/off는 호출부가 이 목록을 훑으며 적용한다. 판정을 먼저 끝내고 나중에 거르면
-     * 상위 유형이 꺼져 있을 때 아래 유형까지 같이 사라진다.
-     */
-    private fun applicableTypes(
+    /** 오늘 성립하는 일정 사유. 교체일 전·당일은 사전 스텝, 지난 뒤는 지연 스텝으로 본다. */
+    private fun scheduleReason(
         item: ItemNotificationSnapshot,
         today: LocalDate,
         daysUntil: Int,
-        leadDays: Int,
+        preReplacementSteps: Set<Int>,
         overdueSteps: List<Int>,
-    ): List<NotificationType> {
-        // 미입력(null)은 대상이 아니다. 0은 사용자가 "여분 없음"을 명시한 값이라 대상이 된다.
-        val isLowStock = item.quantity == 0 && daysUntil <= leadDays && item.lowStockNotifiedAt == null
-
-        return buildList {
-            if (daysUntil < 0 && isOverdueStepDue(item, today, daysUntil, overdueSteps)) {
-                add(NotificationType.OVERDUE)
-            }
-            if (isLowStock) add(NotificationType.LOW_STOCK)
-            if (daysUntil == leadDays) add(NotificationType.PRE_REPLACEMENT)
-        }
+    ): NotificationType? = when {
+        daysUntil < 0 -> NotificationType.OVERDUE.takeIf { isOverdueStepDue(item, today, daysUntil, overdueSteps) }
+        daysUntil in preReplacementSteps -> NotificationType.PRE_REPLACEMENT
+        else -> null
     }
+
+    /** 미입력(null)은 대상이 아니다. 0은 사용자가 "여분 없음"을 명시한 값이라 대상이 된다. */
+    private fun lowStockReason(item: ItemNotificationSnapshot, daysUntil: Int, leadDays: Int): NotificationType? =
+        NotificationType.LOW_STOCK.takeIf {
+            item.quantity == 0 && daysUntil <= leadDays && item.lowStockNotifiedAt == null
+        }
 
     /**
      * 다음 지연 알림 스텝에 도달했는지. 스텝을 모두 소진했으면 false.
@@ -98,7 +94,7 @@ class NotificationPolicyService(
      * 이미 D+7을 넘긴 아이템은 다음 스텝이 D+1인데 경과일이 8, 20, 100이라 일치할 수 없고,
      * 스케줄러가 하루만 걸러도 그날 스텝이 영구 유실된다. 가장 오래 방치된 소모품이 가장 확실하게 빠지는 셈이다.
      *
-     * 대신 스텝 간 최소 간격을 둔다. `>=`만 적용하면 D+8 아이템이 D+1·D+4·D+7 스텝을 날마다 연달아 소진한다.
+     * 대신 스텝 간 최소 간격을 둔다. `>=`만 적용하면 D+8 아이템이 D+1·D+3·D+7 스텝을 날마다 연달아 소진한다.
      */
     private fun isOverdueStepDue(
         item: ItemNotificationSnapshot,

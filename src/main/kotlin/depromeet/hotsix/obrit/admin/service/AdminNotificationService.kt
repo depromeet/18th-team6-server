@@ -54,7 +54,8 @@ class AdminNotificationService(
 
     fun updateSettings(form: AdminNotificationSettingsForm) {
         notificationSettingsService.update(
-            leadDays = form.leadDays,
+            preReplacementStepDays = form.preReplacementStepDays,
+            lowStockLeadDays = form.lowStockLeadDays,
             overdueStepDays = form.overdueStepDays,
             preReplacementEnabled = form.preReplacementEnabled,
             overdueEnabled = form.overdueEnabled,
@@ -86,7 +87,8 @@ class AdminNotificationService(
 
     private fun NotificationSettings.toRow(): AdminNotificationSettingsRow = AdminNotificationSettingsRow(
         autoDispatchEnabled = autoDispatchEnabled,
-        leadDays = leadDays,
+        preReplacementStepDays = preReplacementStepDays,
+        lowStockLeadDays = lowStockLeadDays,
         overdueStepDays = overdueStepDays,
         preReplacementEnabled = preReplacementEnabled,
         overdueEnabled = overdueEnabled,

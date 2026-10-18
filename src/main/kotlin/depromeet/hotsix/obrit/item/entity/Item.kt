@@ -110,7 +110,7 @@ class Item(
         resetLowStockNotificationIfRestocked()
     }
 
-    /** 지연 알림 발송 시 호출한다. D+1/D+4/D+7 스텝 진행에 맞춰 마지막 발송일만 갱신한다. */
+    /** 지연 알림 발송 시 호출한다. D+1/D+3/D+7 스텝 진행에 맞춰 마지막 발송일만 갱신한다. */
     fun recordOverdueNotification(notifiedAt: LocalDate) {
         overdueNotifiedCount += 1
         lastOverdueNotifiedAt = notifiedAt

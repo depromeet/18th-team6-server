@@ -76,40 +76,66 @@ class NotificationPolicyServiceTest {
 
     private fun candidateFor(itemId: Long?) = notificationPolicyService.evaluate().find { it.itemId == itemId }
 
-    private fun updateOverdueSteps(overdueStepDays: String) = notificationSettingsService.update(
-        leadDays = NotificationSettings.DEFAULT_LEAD_DAYS,
+    private fun updateGlobal(
+        overdueStepDays: String = NotificationSettings.DEFAULT_OVERDUE_STEP_DAYS,
+        preReplacementEnabled: Boolean = true,
+        overdueEnabled: Boolean = true,
+        lowStockEnabled: Boolean = true,
+    ) = notificationSettingsService.update(
+        preReplacementStepDays = NotificationSettings.DEFAULT_PRE_REPLACEMENT_STEP_DAYS,
+        lowStockLeadDays = NotificationSettings.DEFAULT_LOW_STOCK_LEAD_DAYS,
         overdueStepDays = overdueStepDays,
-        preReplacementEnabled = true,
-        overdueEnabled = true,
-        lowStockEnabled = true,
+        preReplacementEnabled = preReplacementEnabled,
+        overdueEnabled = overdueEnabled,
+        lowStockEnabled = lowStockEnabled,
     )
 
     @Test
-    fun `선행 일수 이내로 진입한 당일이면 사전 알림 후보가 된다`() {
-        val item = saveItem(name = "칫솔", quantity = 2, nextReplacementDate = today.plusDays(3))
+    fun `교체 D-7, D-3, D-1에는 교체 예정 사유 후보가 된다`() {
+        listOf(7L, 3L, 1L).forEach { days ->
+            val item = saveItem(name = "칫솔 D-$days", quantity = 2, nextReplacementDate = today.plusDays(days))
 
-        assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(item.id)?.type)
+            val candidate = requireNotNull(candidateFor(item.id)) { "D-$days 후보가 없다" }
+            assertEquals(listOf(NotificationType.PRE_REPLACEMENT), candidate.reasons)
+            assertEquals("교체 D-$days", candidate.label())
+        }
     }
 
     @Test
-    fun `선행 일수 이내가 아니면 사전 알림 후보가 아니다`() {
-        val item = saveItem(name = "칫솔", quantity = 2, nextReplacementDate = today.plusDays(4))
+    fun `교체 예정일 당일에는 교체 예정 사유 후보가 되고 라벨은 D-day다`() {
+        val item = saveItem(name = "수세미", quantity = 2, nextReplacementDate = today)
 
-        assertNull(candidateFor(item.id))
+        val candidate = requireNotNull(candidateFor(item.id))
+        assertEquals(listOf(NotificationType.PRE_REPLACEMENT), candidate.reasons)
+        assertEquals("교체 D-day", candidate.label())
     }
 
     @Test
-    fun `여분이 0이고 선행 일수 이내면 여분 부족 알림 후보가 된다`() {
-        val item = saveItem(name = "치실", quantity = 0, nextReplacementDate = today.plusDays(1))
+    fun `사전 스텝이 아닌 날에는 후보가 아니다`() {
+        listOf(2L, 4L, 6L, 8L).forEach { days ->
+            val item = saveItem(name = "칫솔 D-$days", quantity = 2, nextReplacementDate = today.plusDays(days))
 
-        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+            assertNull(candidateFor(item.id), "D-$days")
+        }
     }
 
     @Test
-    fun `사전 알림과 여분 부족 알림이 동시 성립하면 여분 부족 알림만 발송한다`() {
+    fun `여분이 0이고 기준 일수 이내면 여분 부족 사유 후보가 된다`() {
+        val item = saveItem(name = "치실", quantity = 0, nextReplacementDate = today.plusDays(2))
+
+        val candidate = requireNotNull(candidateFor(item.id))
+        assertEquals(listOf(NotificationType.LOW_STOCK), candidate.reasons)
+        assertEquals("여분 부족", candidate.label())
+    }
+
+    @Test
+    fun `사전 스텝과 여분 부족이 같은 날 성립하면 한 후보에 두 사유를 합친다`() {
         val item = saveItem(name = "면도날", quantity = 0, nextReplacementDate = today.plusDays(3))
 
-        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+        val candidate = requireNotNull(candidateFor(item.id))
+        assertEquals(listOf(NotificationType.PRE_REPLACEMENT, NotificationType.LOW_STOCK), candidate.reasons)
+        assertEquals(NotificationType.PRE_REPLACEMENT, candidate.primaryType)
+        assertEquals("교체 D-3 · 여분 부족", candidate.label())
     }
 
     @Test
@@ -117,7 +143,7 @@ class NotificationPolicyServiceTest {
         val item = saveItem(
             name = "필터",
             quantity = 0,
-            nextReplacementDate = today.plusDays(1),
+            nextReplacementDate = today.plusDays(2),
             lowStockNotifiedAt = today.minusDays(1),
         )
 
@@ -125,22 +151,30 @@ class NotificationPolicyServiceTest {
     }
 
     @Test
-    fun `교체 예정일 당일에는 사전 알림도 지연 알림도 발송하지 않는다`() {
-        val item = saveItem(name = "수세미", quantity = 2, nextReplacementDate = today)
+    fun `교체 예정일이 D+1 지나면 지연 사유 후보가 된다`() {
+        val item = saveItem(name = "수건", quantity = 2, nextReplacementDate = today.minusDays(1))
 
-        assertNull(candidateFor(item.id))
+        val candidate = requireNotNull(candidateFor(item.id))
+        assertEquals(listOf(NotificationType.OVERDUE), candidate.reasons)
+        assertEquals("교체 D+1", candidate.label())
     }
 
     @Test
-    fun `교체 예정일이 D+1 지나면 지연 알림 후보가 된다`() {
-        val item = saveItem(name = "수건", quantity = 2, nextReplacementDate = today.minusDays(1))
+    fun `D+1 지연 알림을 받은 소모품은 D+3에 다음 지연 알림 후보가 된다`() {
+        val item = saveItem(
+            name = "수건",
+            quantity = 2,
+            nextReplacementDate = today.minusDays(3),
+            overdueNotifiedCount = 1,
+            lastOverdueNotifiedAt = today.minusDays(2),
+        )
 
-        assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.OVERDUE), candidateFor(item.id)?.reasons)
     }
 
     @Test
     fun `첫 스텝에 도달하기 전에는 지연 알림 후보가 아니다`() {
-        updateOverdueSteps("5,10,15")
+        updateGlobal(overdueStepDays = "5,10,15")
         val item = saveItem(name = "수건", quantity = 2, nextReplacementDate = today.minusDays(2))
 
         assertNull(candidateFor(item.id))
@@ -159,7 +193,7 @@ class NotificationPolicyServiceTest {
     }
 
     @Test
-    fun `지연 알림이 최소 간격에 막힌 날이어도 여분이 0이면 여분 부족 알림 후보가 된다`() {
+    fun `지연 알림이 최소 간격에 막힌 날이어도 여분이 0이면 여분 부족 사유만 남는다`() {
         val item = saveItem(
             name = "수건",
             quantity = 0,
@@ -168,11 +202,11 @@ class NotificationPolicyServiceTest {
             lastOverdueNotifiedAt = today,
         )
 
-        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.LOW_STOCK), candidateFor(item.id)?.reasons)
     }
 
     @Test
-    fun `지연 알림 상한에 도달해도 여분이 0이면 여분 부족 알림 후보가 된다`() {
+    fun `지연 알림 상한에 도달해도 여분이 0이면 여분 부족 사유만 남는다`() {
         val item = saveItem(
             name = "행주",
             quantity = 0,
@@ -180,51 +214,47 @@ class NotificationPolicyServiceTest {
             overdueNotifiedCount = 3,
         )
 
-        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.LOW_STOCK), candidateFor(item.id)?.reasons)
     }
 
     @Test
-    fun `교체일이 지났고 지연 스텝에 해당하면 여분이 0이어도 지연 알림이 우선한다`() {
+    fun `지연 스텝과 여분 부족이 같은 날 성립하면 한 후보에 두 사유를 합친다`() {
         val item = saveItem(name = "수건", quantity = 0, nextReplacementDate = today.minusDays(1))
 
-        assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+        val candidate = requireNotNull(candidateFor(item.id))
+        assertEquals(listOf(NotificationType.OVERDUE, NotificationType.LOW_STOCK), candidate.reasons)
+        assertEquals("교체 D+1 · 여분 부족", candidate.label())
     }
 
     @Test
-    fun `지연 알림이 꺼져 있으면 여분 부족 알림으로 내려간다`() {
-        disableTypes(overdueEnabled = false)
+    fun `전역에서 지연을 끄면 결합 후보에서 여분 부족 사유만 남는다`() {
+        updateGlobal(overdueEnabled = false)
         val item = saveItem(name = "수건", quantity = 0, nextReplacementDate = today.minusDays(1))
 
-        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.LOW_STOCK), candidateFor(item.id)?.reasons)
     }
 
     @Test
-    fun `여분 부족 알림이 꺼져 있으면 사전 알림으로 내려간다`() {
-        disableTypes(lowStockEnabled = false)
+    fun `전역에서 여분 부족을 끄면 결합 후보에서 교체 예정 사유만 남는다`() {
+        updateGlobal(lowStockEnabled = false)
         val item = saveItem(name = "면도날", quantity = 0, nextReplacementDate = today.plusDays(3))
 
-        assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.PRE_REPLACEMENT), candidateFor(item.id)?.reasons)
     }
 
     @Test
-    fun `상위 유형이 꺼져 있어도 아래 유형이 성립하지 않으면 후보가 아니다`() {
-        disableTypes(overdueEnabled = false)
+    fun `전역에서 교체 예정을 끄면 결합 후보에서 여분 부족 사유만 남는다`() {
+        updateGlobal(preReplacementEnabled = false)
+        val item = saveItem(name = "면도날", quantity = 0, nextReplacementDate = today.plusDays(3))
+
+        assertEquals(listOf(NotificationType.LOW_STOCK), candidateFor(item.id)?.reasons)
+    }
+
+    @Test
+    fun `성립한 사유가 모두 꺼져 있으면 후보가 아니다`() {
+        updateGlobal(overdueEnabled = false)
         val item = saveItem(name = "수건", quantity = 2, nextReplacementDate = today.minusDays(1))
 
         assertNull(candidateFor(item.id))
-    }
-
-    private fun disableTypes(
-        preReplacementEnabled: Boolean = true,
-        overdueEnabled: Boolean = true,
-        lowStockEnabled: Boolean = true,
-    ) {
-        notificationSettingsService.update(
-            leadDays = NotificationSettings.DEFAULT_LEAD_DAYS,
-            overdueStepDays = NotificationSettings.DEFAULT_OVERDUE_STEP_DAYS,
-            preReplacementEnabled = preReplacementEnabled,
-            overdueEnabled = overdueEnabled,
-            lowStockEnabled = lowStockEnabled,
-        )
     }
 }

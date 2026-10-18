@@ -126,10 +126,22 @@ class AdminNotificationServiceTest {
     @Test
     fun `잘못된 정책 설정은 저장되지 않는다`() {
         assertFailsWith<BusinessException> {
-            adminNotificationService.updateSettings(AdminNotificationSettingsForm(leadDays = 99))
+            adminNotificationService.updateSettings(AdminNotificationSettingsForm(lowStockLeadDays = 99))
         }
 
-        assertEquals(3, notificationSettingsService.current().leadDays)
+        assertEquals(3, notificationSettingsService.current().lowStockLeadDays)
+    }
+
+    @Test
+    fun `사전 스텝과 여분 부족 기준 일수를 저장하면 대시보드에 그대로 보인다`() {
+        adminNotificationService.updateSettings(
+            AdminNotificationSettingsForm(preReplacementStepDays = "0,5", lowStockLeadDays = 5, overdueEnabled = true),
+        )
+
+        val settings = adminNotificationService.getDashboard().settings
+        assertEquals("5,0", settings.preReplacementStepDays)
+        assertEquals(5, settings.lowStockLeadDays)
+        assertEquals("1,3,7", settings.overdueStepDays)
     }
 
     @Test

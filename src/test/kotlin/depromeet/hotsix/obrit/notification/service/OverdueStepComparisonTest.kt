@@ -21,7 +21,7 @@ import kotlin.test.assertNull
 /**
  * 지연 알림 스텝 판정을 경과 기준(`>=`)으로 바꾼 뒤의 동작을 검증한다.
  *
- * 기본 스텝은 D+1, D+4, D+7이다.
+ * 기본 스텝은 D+1, D+3, D+7이다.
  */
 @SpringBootTest
 @ActiveProfiles("test")
@@ -77,26 +77,26 @@ class OverdueStepComparisonTest {
     fun `D+1 스텝을 놓친 아이템도 나중에 평가하면 후보가 된다`() {
         val item = saveOverdueItem(daysOverdue = 5)
 
-        assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.OVERDUE), candidateFor(item.id)?.reasons)
     }
 
     @Test
     fun `오래 방치된 아이템도 후보가 된다`() {
         val item = saveOverdueItem(daysOverdue = 100)
 
-        assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.OVERDUE), candidateFor(item.id)?.reasons)
     }
 
     @Test
-    fun `교체 예정일 당일은 지연 후보가 아니다`() {
+    fun `교체 예정일 당일은 지연 사유가 아니라 교체 예정 사유다`() {
         val item = saveOverdueItem(daysOverdue = 0)
 
-        assertNull(candidateFor(item.id))
+        assertEquals(listOf(NotificationType.PRE_REPLACEMENT), candidateFor(item.id)?.reasons)
     }
 
     @Test
     fun `방금 발송한 아이템은 다음 스텝 간격 전까지 후보가 아니다`() {
-        // D+8, 첫 스텝을 어제 발송. 다음 스텝(D+4)까지 최소 간격은 3일이다.
+        // D+8, 첫 스텝을 어제 발송. 다음 스텝(D+3)까지 최소 간격은 2일이다.
         val item = saveOverdueItem(daysOverdue = 8, notifiedCount = 1, lastNotifiedAt = today.minusDays(1))
 
         assertNull(candidateFor(item.id))
@@ -106,7 +106,7 @@ class OverdueStepComparisonTest {
     fun `최소 간격이 지나면 다음 스텝이 발송된다`() {
         val item = saveOverdueItem(daysOverdue = 8, notifiedCount = 1, lastNotifiedAt = today.minusDays(3))
 
-        assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.OVERDUE), candidateFor(item.id)?.reasons)
     }
 
     @Test
@@ -124,7 +124,7 @@ class OverdueStepComparisonTest {
 
         assertEquals(0, item.overdueNotifiedCount)
         assertNull(item.lastOverdueNotifiedAt)
-        assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.OVERDUE), candidateFor(item.id)?.reasons)
     }
 
     @Test

@@ -101,8 +101,10 @@ class NotificationDispatchService(
             targetUserCount = candidatesByUser.size,
             targetItemCount = candidatesByUser.values.sumOf { it.size },
             bundledUserCount = candidatesByUser.count { (_, candidates) -> candidates.size > 1 },
+            // 결합 알림은 사유마다 세므로 합계가 대상 소모품 수보다 클 수 있다.
             countByType = candidatesByUser.values.flatten()
-                .groupingBy { it.type }
+                .flatMap { it.reasons }
+                .groupingBy { it }
                 .eachCount(),
             samples = candidatesByUser.entries
                 .sortedBy { (_, candidates) -> candidates.minOf { it.daysUntil } }
@@ -153,7 +155,7 @@ class NotificationDispatchService(
             notificationRepository.save(
                 Notification(
                     userId = userId,
-                    type = sorted.first().type,
+                    type = sorted.first().primaryType,
                     title = message.title,
                     body = message.body,
                     itemId = single?.itemId,
@@ -167,10 +169,15 @@ class NotificationDispatchService(
         return result.outcome
     }
 
+    /** 사유마다 상태를 확정한다. 지연은 스텝 진행, 여분 부족은 재입고 전 1회 기록. 사전·당일은 기록하지 않는다. */
     private fun recordSent(candidate: NotificationCandidate, today: LocalDate) {
-        when (candidate.type) {
-            NotificationType.OVERDUE -> itemService.recordOverdueNotification(candidate.itemId, today)
-            NotificationType.LOW_STOCK -> itemService.recordLowStockNotification(candidate.itemId, today)
+        candidate.reasons.forEach { recordSent(candidate.itemId, it, today) }
+    }
+
+    private fun recordSent(itemId: Long, reason: NotificationType, today: LocalDate) {
+        when (reason) {
+            NotificationType.OVERDUE -> itemService.recordOverdueNotification(itemId, today)
+            NotificationType.LOW_STOCK -> itemService.recordLowStockNotification(itemId, today)
             NotificationType.PRE_REPLACEMENT -> Unit
             NotificationType.NOTICE -> error("공지는 정책 판정 대상이 아니다.")
         }
@@ -179,21 +186,37 @@ class NotificationDispatchService(
     private fun buildMessage(sorted: List<NotificationCandidate>): NotificationMessage =
         if (sorted.size == 1) singleMessage(sorted.single()) else bundleMessage(sorted)
 
-    private fun singleMessage(candidate: NotificationCandidate): NotificationMessage = when (candidate.type) {
-        NotificationType.PRE_REPLACEMENT -> NotificationMessage(
-            title = "교체 시기가 다가와요",
-            body = "${candidate.itemName} 교체가 얼마 남지 않았어요",
-        )
-        NotificationType.OVERDUE -> NotificationMessage(
-            title = "교체 시기가 지났어요",
-            body = "${candidate.itemName} 교체 예정일이 지났어요",
-        )
-        NotificationType.LOW_STOCK -> NotificationMessage(
-            title = "여분이 부족해요",
-            body = "${candidate.itemName} 여분이 없어요. 지금 준비해두세요",
-        )
-        NotificationType.NOTICE -> error("공지는 정책 판정 대상이 아니다.")
+    /** 일정 사유가 있으면 그 문구에 여분 부족을 덧붙이고, 여분 부족만 있으면 여분 부족 문구를 쓴다. */
+    private fun singleMessage(candidate: NotificationCandidate): NotificationMessage {
+        val schedule = candidate.scheduleReason?.let { scheduleMessage(candidate, it) }
+            ?: return NotificationMessage(
+                title = "여분이 부족해요",
+                body = "${candidate.itemName} 여분이 없어요. 지금 준비해두세요",
+            )
+        if (!candidate.hasLowStock) return schedule
+
+        return schedule.copy(body = "${schedule.body} 여분도 없어요")
     }
+
+    private fun scheduleMessage(candidate: NotificationCandidate, reason: NotificationType): NotificationMessage =
+        when (reason) {
+            NotificationType.PRE_REPLACEMENT -> if (candidate.daysUntil == 0) {
+                NotificationMessage(
+                    title = "오늘 교체할 날이에요",
+                    body = "${candidate.itemName} 교체 예정일이 오늘이에요",
+                )
+            } else {
+                NotificationMessage(
+                    title = "교체 시기가 다가와요",
+                    body = "${candidate.itemName} 교체가 얼마 남지 않았어요",
+                )
+            }
+            NotificationType.OVERDUE -> NotificationMessage(
+                title = "교체 시기가 지났어요",
+                body = "${candidate.itemName} 교체 예정일이 지났어요",
+            )
+            NotificationType.LOW_STOCK, NotificationType.NOTICE -> error("일정 사유가 아니다: $reason")
+        }
 
     private fun bundleMessage(sorted: List<NotificationCandidate>): NotificationMessage {
         val mostUrgent = sorted.first()
