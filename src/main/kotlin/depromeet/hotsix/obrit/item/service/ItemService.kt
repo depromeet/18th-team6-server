@@ -183,19 +183,14 @@ class ItemService(
             ?: run {
                 val newCategoryName = request.newCategoryName
                     ?: throw BusinessException("categoryId가 없으면 newCategoryName은 필수입니다.")
-                resolveOrCreateCategory(
-                    userId,
-                    newCategoryName,
-                    request.newCategoryDefaultReplacementIntervalDays ?: 1,
-                )
+                categoryService.getOrCreateUserCategoryId(userId, newCategoryName)
             }
 
         val (categoryName, defaultReplacementIntervalDays) =
             categoryQueryService.getVisibleCategoryNameAndDefaultInterval(userId, resolvedCategoryId)
 
         val intervalDays = request.replacementIntervalDays ?: defaultReplacementIntervalDays
-        val today = LocalDate.now(clock)
-        val lastReplacedDate = request.lastReplacementPeriod?.toDate(today) ?: today
+        val lastReplacedDate = LocalDate.now(clock)
         val item = Item(
             userId = userId,
             categoryId = resolvedCategoryId,
@@ -210,12 +205,6 @@ class ItemService(
         return itemRepository.save(item).toResponse(categoryName = categoryName)
     }
 
-    private fun resolveOrCreateCategory(
-        userId: Long,
-        categoryName: String,
-        defaultReplacementIntervalDays: Int,
-    ): Long = categoryService.getOrCreateUserCategoryId(userId, categoryName, defaultReplacementIntervalDays)
-
     @Transactional
     fun updateItem(userId: Long, itemId: Long, request: UpdateItemRequest): ItemResponse {
         val item = findActiveItem(userId, itemId)
@@ -229,7 +218,6 @@ class ItemService(
             name = name,
             quantity = request.spareQuantity,
             replacementIntervalDays = request.replacementIntervalDays,
-            lastReplacedDate = request.lastReplacedDate,
         )
 
         return item.toResponse(

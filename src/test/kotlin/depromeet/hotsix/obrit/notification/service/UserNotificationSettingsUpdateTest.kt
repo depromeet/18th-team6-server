@@ -17,7 +17,7 @@ import java.time.LocalTime
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
-import kotlin.test.assertNotNull
+import kotlin.test.assertTrue
 
 @SpringBootTest
 @ActiveProfiles("test")
@@ -41,48 +41,45 @@ class UserNotificationSettingsUpdateTest {
     }
 
     private fun update(
-        enabled: Boolean = true,
         preReplacementEnabled: Boolean = true,
         overdueEnabled: Boolean = true,
         lowStockEnabled: Boolean = true,
-        leadDays: Int = 3,
         dispatchTime: LocalTime = LocalTime.of(9, 0),
     ) = userNotificationSettingsService.updateSettings(
         userId,
         UpdateNotificationSettingsRequest(
-            enabled = enabled,
             preReplacementEnabled = preReplacementEnabled,
             overdueEnabled = overdueEnabled,
             lowStockEnabled = lowStockEnabled,
-            leadDays = leadDays,
             dispatchTime = dispatchTime,
         ),
     )
 
     @Test
     fun `설정 행이 없으면 저장 시 새로 만든다`() {
-        update(leadDays = 5)
+        update(dispatchTime = LocalTime.of(10, 30))
 
-        assertEquals(5, userNotificationSettingsRepository.findByUserId(userId)?.leadDays)
+        assertEquals(LocalTime.of(10, 30), userNotificationSettingsRepository.findByUserId(userId)?.dispatchTime)
     }
 
     @Test
     fun `이미 저장한 설정이 있으면 같은 행을 갱신한다`() {
-        update(leadDays = 5)
-        update(leadDays = 7)
+        update(dispatchTime = LocalTime.of(10, 30))
+        update(dispatchTime = LocalTime.of(11, 0))
 
         assertEquals(1, userNotificationSettingsRepository.findAll().count { it.userId == userId })
-        assertEquals(7, userNotificationSettingsRepository.findByUserId(userId)?.leadDays)
+        assertEquals(LocalTime.of(11, 0), userNotificationSettingsRepository.findByUserId(userId)?.dispatchTime)
     }
 
     @Test
     fun `저장한 값이 이후 조회에 반영된다`() {
-        update(enabled = false, overdueEnabled = false, dispatchTime = LocalTime.of(20, 30))
+        update(overdueEnabled = false, dispatchTime = LocalTime.of(20, 30))
 
         val settings = userNotificationSettingsService.effectiveSettings(userId)
 
-        assertFalse(settings.enabled)
+        assertTrue(settings.preReplacementEnabled)
         assertFalse(settings.overdueEnabled)
+        assertTrue(settings.lowStockEnabled)
         assertEquals(LocalTime.of(20, 30), settings.dispatchTime)
     }
 
@@ -92,7 +89,7 @@ class UserNotificationSettingsUpdateTest {
             UserNotificationSettings(userId = userId, permissionStatus = NotificationPermissionStatus.GRANTED),
         )
 
-        update(enabled = false)
+        update(overdueEnabled = false)
 
         assertEquals(
             NotificationPermissionStatus.GRANTED,
@@ -101,25 +98,14 @@ class UserNotificationSettingsUpdateTest {
     }
 
     @Test
-    fun `선행 일수가 허용 범위를 벗어나면 예외를 던진다`() {
-        assertFailsWith<BusinessException> { update(leadDays = 0) }
-        assertFailsWith<BusinessException> { update(leadDays = 8) }
-    }
-
-    @Test
     fun `발송 시각이 30분 단위가 아니면 예외를 던진다`() {
         assertFailsWith<BusinessException> { update(dispatchTime = LocalTime.of(9, 15)) }
     }
 
     @Test
-    fun `발송 시각이 조용 시간에 걸치면 예외를 던진다`() {
-        assertFailsWith<BusinessException> { update(dispatchTime = LocalTime.of(23, 0)) }
-        assertFailsWith<BusinessException> { update(dispatchTime = LocalTime.of(7, 30)) }
-    }
-
-    @Test
-    fun `조용 시간 경계값인 08시는 저장되고 22시는 거부된다`() {
-        assertNotNull(update(dispatchTime = LocalTime.of(8, 0)))
-        assertFailsWith<BusinessException> { update(dispatchTime = LocalTime.of(22, 0)) }
+    fun `예전 조용 시간대의 알림 시간도 저장된다`() {
+        assertEquals(LocalTime.of(23, 0), update(dispatchTime = LocalTime.of(23, 0)).dispatchTime)
+        assertEquals(LocalTime.of(0, 0), update(dispatchTime = LocalTime.of(0, 0)).dispatchTime)
+        assertEquals(LocalTime.of(7, 30), update(dispatchTime = LocalTime.of(7, 30)).dispatchTime)
     }
 }

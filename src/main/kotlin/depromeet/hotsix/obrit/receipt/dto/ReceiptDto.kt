@@ -53,8 +53,8 @@ data class AnalyzedItem(
     val quantity: Int,
 
     @Schema(
-        description = "AI가 추정한 카테고리 권장 교체 주기(일). " +
-            "categoryId 가 null 일 때 2단계 CreateItemRequest.newCategoryDefaultReplacementIntervalDays 에 함께 전달.",
+        description = "추천 교체 주기(일). 매칭된 소모품은 그 소모품의 기본 주기, 매칭 실패 시 사용자 소모품 기본값 90. " +
+            "2단계 등록 요청에 넘기지 않아도 서버가 같은 주기로 저장합니다.",
         example = "90",
     )
     val suggestedReplacementIntervalDays: Int,

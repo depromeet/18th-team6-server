@@ -54,7 +54,8 @@ class AdminNotificationService(
 
     fun updateSettings(form: AdminNotificationSettingsForm) {
         notificationSettingsService.update(
-            leadDays = form.leadDays,
+            preReplacementStepDays = form.preReplacementStepDays,
+            lowStockLeadDays = form.lowStockLeadDays,
             overdueStepDays = form.overdueStepDays,
             preReplacementEnabled = form.preReplacementEnabled,
             overdueEnabled = form.overdueEnabled,
@@ -66,7 +67,7 @@ class AdminNotificationService(
         notificationSettingsService.updateAutoDispatch(enabled)
     }
 
-    /** 정책 배치를 지금 실행한다. 자동 발송 스위치와 무관하게 동작한다. */
+    /** 사용자 시각·자동 발송 스위치와 무관하게 실행하되, 오늘 완료한 사용자는 제외한다. */
     fun dispatchNow(): AdminDispatchResultRow = notificationDispatchService.dispatch().toRow()
 
     fun sendNotice(form: AdminNoticeForm): Int {
@@ -86,7 +87,8 @@ class AdminNotificationService(
 
     private fun NotificationSettings.toRow(): AdminNotificationSettingsRow = AdminNotificationSettingsRow(
         autoDispatchEnabled = autoDispatchEnabled,
-        leadDays = leadDays,
+        preReplacementStepDays = preReplacementStepDays,
+        lowStockLeadDays = lowStockLeadDays,
         overdueStepDays = overdueStepDays,
         preReplacementEnabled = preReplacementEnabled,
         overdueEnabled = overdueEnabled,

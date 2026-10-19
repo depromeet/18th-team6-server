@@ -1,8 +1,10 @@
 package depromeet.hotsix.obrit.category.service
 
+import depromeet.hotsix.obrit.category.dto.response.CategoryGroupResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategorySnapshot
+import depromeet.hotsix.obrit.category.repository.CategoryGroupRepository
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.global.common.storage.UrlResolver
@@ -12,13 +14,12 @@ import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 
-private const val DEFAULT_CATEGORY_ICON_ID = 1L
-
 @Service
 @Transactional(readOnly = true)
 class CategoryQueryService(
     private val categoryRepository: CategoryRepository,
     private val categoryIconRepository: CategoryIconRepository,
+    private val categoryGroupRepository: CategoryGroupRepository,
     private val userService: UserService,
     @Qualifier("s3PublicUrlResolver") private val iconUrlResolver: UrlResolver,
 ) {
@@ -31,9 +32,26 @@ class CategoryQueryService(
 
         val iconIds = allCategories.map { it.iconId }.distinct()
         val iconKeyMap = categoryIconRepository.findAllById(iconIds).associate { it.id to it.key }
+        val groupNameById = categoryGroupRepository.findActiveOrderByDisplayOrder()
+            .associate { requireNotNull(it.id) to it.name }
 
-        return allCategories.map { it.toResponse(iconUrlResolver.resolve(iconKeyMap[it.iconId].orEmpty())) }
+        return allCategories.map { category ->
+            category.toResponse(
+                iconUrl = iconUrlResolver.resolve(iconKeyMap[category.iconId].orEmpty()),
+                categoryGroupName = category.categoryGroupId?.let { groupNameById[it] },
+            )
+        }
     }
+
+    fun listCategoryGroups(): List<CategoryGroupResponse> =
+        categoryGroupRepository.findActiveOrderByDisplayOrder().map {
+            CategoryGroupResponse(
+                categoryGroupId = requireNotNull(it.id),
+                name = it.name,
+                type = it.type,
+                displayOrder = it.displayOrder,
+            )
+        }
 
     fun getVisibleCategoryNameAndDefaultInterval(userId: Long, categoryId: Long): Pair<String, Int> {
         val category = getVisibleCategoryOrThrow(userId, categoryId)
@@ -80,13 +98,24 @@ class CategoryQueryService(
         }
     }
 
-    private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
+    fun findVisibleCategoryDefaultIntervals(userId: Long, categoryIds: Collection<Long>): Map<Long, Int> {
+        if (categoryIds.isEmpty()) {
+            return emptyMap()
+        }
+
+        return categoryRepository.findVisibleByIds(userId, categoryIds.toSet())
+            .associate { requireNotNull(it.id) to it.defaultReplacementIntervalDays }
+    }
+
+    private fun Category.toResponse(iconUrl: String, categoryGroupName: String?): CategoryResponse = CategoryResponse(
         categoryId = requireNotNull(id),
         name = name,
         iconUrl = iconUrl,
         userId = userId,
         createdAt = createdAt,
         defaultReplacementIntervalDays = defaultReplacementIntervalDays,
+        categoryGroupId = categoryGroupId,
+        categoryGroupName = categoryGroupName,
     )
 
     private fun getVisibleCategoryOrThrow(userId: Long, categoryId: Long): Category {
@@ -97,10 +126,12 @@ class CategoryQueryService(
     }
 
     fun getDefaultCategoryIconUrl(): String {
-        val icon = categoryIconRepository.findById(DEFAULT_CATEGORY_ICON_ID)
+        val icon = categoryIconRepository.findById(Category.USER_DEFAULT_ICON_ID)
             .orElseThrow { ResourceNotFoundException("기본 카테고리 아이콘이 없습니다.") }
         return iconUrlResolver.resolve(icon.key)
     }
+
+    fun getUserCategoryDefaultIntervalDays(): Int = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS
 
     @Transactional(readOnly = true)
     fun findAccessibleCategoryNameToIdMap(userId: Long): Map<String, Long> {

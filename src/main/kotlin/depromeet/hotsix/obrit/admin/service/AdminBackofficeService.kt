@@ -367,7 +367,7 @@ class AdminBackofficeService(
             .orElseThrow { ResourceNotFoundException("존재하지 않는 아이템입니다.") }
         item.userId = form.userId
         item.categoryId = form.categoryId
-        item.update(
+        item.updateForAdmin(
             name = form.name,
             quantity = form.spareQuantity,
             replacementIntervalDays = form.replacementIntervalDays,

@@ -14,6 +14,7 @@ import jakarta.persistence.Table
     name = "categories",
     indexes = [
         Index(name = "idx_categories_user_deleted", columnList = "user_id, deleted_at"),
+        Index(name = "idx_categories_group", columnList = "category_group_id"),
     ],
 )
 class Category(
@@ -32,6 +33,10 @@ class Category(
 
     @Column(name = "default_replacement_interval_days", nullable = false)
     var defaultReplacementIntervalDays: Int = 1,
+
+    /** 소속 카테고리(`CategoryGroup`) ID. 아직 배정되지 않은 기본 소모품은 null */
+    @Column(name = "category_group_id")
+    var categoryGroupId: Long? = null,
 ) : BaseTimeEntity() {
 
     val isPreset: Boolean
@@ -43,5 +48,13 @@ class Category(
         this.name = name.trim()
         this.iconId = iconId
         this.defaultReplacementIntervalDays = defaultReplacementIntervalDays
+    }
+
+    companion object {
+        /** 사용자가 직접 만든 소모품의 기본 교체 주기 */
+        const val USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS = 90
+
+        /** 사용자가 직접 만든 소모품과 매칭 실패 영수증 소모품에 쓰는 공용 아이콘 */
+        const val USER_DEFAULT_ICON_ID = 1L
     }
 }

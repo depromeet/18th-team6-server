@@ -56,7 +56,7 @@ depromeet.hotsix.obrit/
 - **엔티티 스키마 변경 시** (`@Table`, `@Column`, 컬럼 추가·삭제·이름 변경, FK 구조 변경) 같은 PR에서 `data.sql`도 함께 수정한다.
 - `data.sql`에는 **DDL(`CREATE TABLE`)을 넣지 않는다.** 스키마는 Hibernate `ddl-auto`가 생성하고, `data.sql`은 DML(`INSERT`)만 담는다.
 - `application.properties`에 `spring.jpa.defer-datasource-initialization=true`가 있어야 한다. 없으면 `data.sql`이 스키마 생성보다 먼저 실행되어 기동이 실패할 수 있다.
-- INSERT 순서는 FK·참조 의존성을 따른다. 현재: `users` → `icons` → `categories`.
+- INSERT 순서는 FK·참조 의존성을 따른다. 현재: `users` → `icons` → `category_groups` → `categories`.
 - 시드가 필요 없는 테이블(`items`, `item_replacement_histories` 등)은 INSERT하지 않아도 된다.
 - 로컬 Swagger 호출 예: `X-User-Id: 1` (시드 사용자), 프리셋 카테고리 ID `100`, `200`, `300`.
 

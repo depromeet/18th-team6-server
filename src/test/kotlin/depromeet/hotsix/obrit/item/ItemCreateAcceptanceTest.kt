@@ -1,20 +1,20 @@
 package depromeet.hotsix.obrit.item
 
+import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryFixture
+import depromeet.hotsix.obrit.category.repository.CategoryIconFixture
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
-import depromeet.hotsix.obrit.item.entity.LastReplacementPeriod
 import depromeet.hotsix.obrit.item.service.ItemService
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
-import org.junit.jupiter.params.ParameterizedTest
-import org.junit.jupiter.params.provider.EnumSource
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -41,11 +41,15 @@ class ItemCreateAcceptanceTest {
     @Autowired
     private lateinit var categoryIconRepository: CategoryIconRepository
 
+    @Autowired
+    private lateinit var jdbcTemplate: JdbcTemplate
+
     private var userId: Long = 0
     private var categoryId: Long = 0
 
     @BeforeEach
     fun setUp() {
+        CategoryIconFixture.ensureDefaultIcon(jdbcTemplate)
         val user = userRepository.save(UserFixture.user(id = null))
         userId = requireNotNull(user.id)
         val icon = categoryIconRepository.save(
@@ -61,33 +65,8 @@ class ItemCreateAcceptanceTest {
         categoryId = requireNotNull(category.id)
     }
 
-    @ParameterizedTest
-    @EnumSource(LastReplacementPeriod::class)
-    fun `교체_시기_선택지는_기한의_평균치를_교체일자로_사용한다`(period: LastReplacementPeriod) {
-        val baseDate = LocalDate.now(clock)
-        val expectedDaysAgo = when (period) {
-            LastReplacementPeriod.WITHIN_WEEK -> 4L
-            LastReplacementPeriod.WITHIN_MONTH -> 21L
-            LastReplacementPeriod.WITHIN_THREE_MONTHS -> 45L
-            LastReplacementPeriod.OVER_THREE_MONTHS -> 90L
-        }
-
-        val result = itemService.createItem(
-            userId,
-            CreateItemRequest(
-                categoryId = categoryId,
-                name = "테스트 소모품",
-                spareQuantity = 1,
-                lastReplacementPeriod = period,
-            ),
-        )
-
-        assertEquals(baseDate.minusDays(expectedDaysAgo), result.lastReplacedDate)
-        assertEquals(baseDate.minusDays(expectedDaysAgo).plusDays(30), result.nextReplacementDate)
-    }
-
     @Test
-    fun `교체_시기를_선택하지_않으면_오늘_날짜로_설정된다`() {
+    fun `등록하면_오늘을_마지막_교체일로_쓴다`() {
         val baseDate = LocalDate.now(clock)
         val result = itemService.createItem(
             userId,
@@ -100,5 +79,34 @@ class ItemCreateAcceptanceTest {
 
         assertEquals(baseDate, result.lastReplacedDate)
         assertEquals(baseDate.plusDays(30), result.nextReplacementDate)
+    }
+
+    @Test
+    fun `새_사용자_소모품으로_등록하면_주기_90일과_공용_아이콘으로_만든다`() {
+        val baseDate = LocalDate.now(clock)
+        val result = itemService.createItem(
+            userId,
+            CreateItemRequest(newCategoryName = "수세미", name = "주방 수세미"),
+        )
+
+        val category = requireNotNull(categoryRepository.findActiveByUserIdAndName(userId, "수세미"))
+        assertEquals(Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS, category.defaultReplacementIntervalDays)
+        assertEquals(Category.USER_DEFAULT_ICON_ID, category.iconId)
+        assertEquals(90, result.replacementIntervalDays)
+        assertEquals(baseDate.plusDays(90), result.nextReplacementDate)
+    }
+
+    @Test
+    fun `같은_이름의_사용자_소모품이_있으면_그_소모품의_주기를_쓴다`() {
+        categoryRepository.save(
+            CategoryFixture.userCategory(userId = userId, name = "수세미", defaultReplacementIntervalDays = 14),
+        )
+
+        val result = itemService.createItem(
+            userId,
+            CreateItemRequest(newCategoryName = "수세미", name = "주방 수세미"),
+        )
+
+        assertEquals(14, result.replacementIntervalDays)
     }
 }

@@ -11,7 +11,8 @@ receipt:
 notification:
   schedule:
     # 자동 발송 on/off는 notification_settings 테이블에서 관리한다(어드민에서 변경).
-    cron: "0 0 9 * * *"
+    # 매분 사용자별 발송 시각과 당일 발송 완료 여부를 확인한다.
+    cron: "0 * * * * *"
     zone: "Asia/Seoul"
 
 management:

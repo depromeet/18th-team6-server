@@ -2,9 +2,7 @@ package depromeet.hotsix.obrit.category.dto.request
 
 import io.swagger.v3.oas.annotations.media.Schema
 import jakarta.validation.constraints.NotBlank
-import jakarta.validation.constraints.NotNull
 import jakarta.validation.constraints.Pattern
-import jakarta.validation.constraints.Positive
 import jakarta.validation.constraints.Size
 
 @Schema(description = "카테고리 생성 요청")
@@ -15,8 +13,10 @@ data class CreateCategoryRequest(
     @field:Pattern(regexp = "^[가-힣a-zA-Z0-9\\s]+$", message = "종류명은 한글/영문/숫자만 입력 가능합니다.")
     val name: String,
 
-    @field:Schema(description = "아이콘 ID", example = "3")
-    @field:NotNull(message = "아이콘을 선택해주세요.")
-    @field:Positive(message = "유효하지 않은 아이콘입니다.")
-    val iconId: Long,
+    @field:Schema(
+        description = "사용하지 않음. 구버전 앱 호환을 위해 받기만 하며, 아이콘은 항상 공용 아이콘으로 저장됩니다.",
+        example = "1",
+        deprecated = true,
+    )
+    val iconId: Long? = null,
 )

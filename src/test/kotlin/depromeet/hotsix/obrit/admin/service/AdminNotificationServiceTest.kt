@@ -6,9 +6,11 @@ import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
 import depromeet.hotsix.obrit.notification.DeviceRegistrationFixture
+import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.notification.repository.DeviceRegistrationRepository
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
+import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.notification.service.NotificationSettingsService
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
@@ -48,6 +50,9 @@ class AdminNotificationServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Autowired
+    private lateinit var userNotificationSettingsRepository: UserNotificationSettingsRepository
+
+    @Autowired
     private lateinit var clock: Clock
 
     private val today: LocalDate
@@ -57,6 +62,7 @@ class AdminNotificationServiceTest {
     @BeforeEach
     fun setUp() {
         userId = requireNotNull(userRepository.save(UserFixture.user(id = null)).id)
+        userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
     private fun registerDevice(targetUserId: Long = userId, fid: String = "fid-$targetUserId") {
@@ -120,10 +126,22 @@ class AdminNotificationServiceTest {
     @Test
     fun `잘못된 정책 설정은 저장되지 않는다`() {
         assertFailsWith<BusinessException> {
-            adminNotificationService.updateSettings(AdminNotificationSettingsForm(leadDays = 99))
+            adminNotificationService.updateSettings(AdminNotificationSettingsForm(lowStockLeadDays = 99))
         }
 
-        assertEquals(3, notificationSettingsService.current().leadDays)
+        assertEquals(3, notificationSettingsService.current().lowStockLeadDays)
+    }
+
+    @Test
+    fun `사전 스텝과 여분 부족 기준 일수를 저장하면 대시보드에 그대로 보인다`() {
+        adminNotificationService.updateSettings(
+            AdminNotificationSettingsForm(preReplacementStepDays = "0,5", lowStockLeadDays = 5, overdueEnabled = true),
+        )
+
+        val settings = adminNotificationService.getDashboard().settings
+        assertEquals("5,0", settings.preReplacementStepDays)
+        assertEquals(5, settings.lowStockLeadDays)
+        assertEquals("1,3,7", settings.overdueStepDays)
     }
 
     @Test

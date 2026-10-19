@@ -42,31 +42,32 @@ class UserNotificationSettingsServiceTest {
     }
 
     @Test
-    fun `설정을 저장한 적 없으면 전역 선행 일수를 기본값으로 반환한다`() {
-        notificationSettingsService.update(
-            leadDays = 5,
-            overdueStepDays = "1,4,7",
-            preReplacementEnabled = true,
-            overdueEnabled = true,
-            lowStockEnabled = true,
-        )
+    fun `설정을 저장한 적 없으면 세 유형 모두 꺼진 상태로 반환한다`() {
+        val settings = userNotificationSettingsService.effectiveSettings(userId)
 
-        assertEquals(5, userNotificationSettingsService.effectiveSettings(userId).leadDays)
+        assertFalse(settings.isEnabled(NotificationType.PRE_REPLACEMENT))
+        assertFalse(settings.isEnabled(NotificationType.OVERDUE))
+        assertFalse(settings.isEnabled(NotificationType.LOW_STOCK))
     }
 
     @Test
-    fun `설정을 저장한 적 없으면 모든 유형이 켜진 상태로 반환한다`() {
-        val settings = userNotificationSettingsService.effectiveSettings(userId)
+    fun `설정 응답에는 구버전 앱 호환용 고정값을 담는다`() {
+        userNotificationSettingsRepository.save(UserNotificationSettings(userId = userId))
 
-        assertTrue(settings.enabled)
-        assertTrue(NotificationType.entries.all { settings.isEnabled(it) })
+        val response = userNotificationSettingsService.getSettings(userId)
+
+        assertTrue(response.enabled)
+        assertEquals(3, response.leadDays)
+        assertFalse(response.preReplacementEnabled)
     }
 
     @Test
     fun `전역에서 유형을 꺼도 유저 설정값은 켜진 상태로 반환한다`() {
+        userNotificationSettingsRepository.save(allEnabled())
         notificationSettingsService.update(
-            leadDays = 3,
-            overdueStepDays = "1,4,7",
+            preReplacementStepDays = "7,3,1,0",
+            lowStockLeadDays = 3,
+            overdueStepDays = "1,3,7",
             preReplacementEnabled = true,
             overdueEnabled = true,
             lowStockEnabled = false,
@@ -76,35 +77,8 @@ class UserNotificationSettingsServiceTest {
     }
 
     @Test
-    fun `유저 설정이 있으면 전역 기본값 대신 유저 값을 반환한다`() {
-        notificationSettingsService.update(
-            leadDays = 5,
-            overdueStepDays = "1,4,7",
-            preReplacementEnabled = true,
-            overdueEnabled = true,
-            lowStockEnabled = true,
-        )
-        userNotificationSettingsRepository.save(UserNotificationSettings(userId = userId, leadDays = 7))
-
-        assertEquals(7, userNotificationSettingsService.effectiveSettings(userId).leadDays)
-    }
-
-    @Test
-    fun `전체 수신을 끄면 모든 유형이 꺼진 것으로 판정된다`() {
-        userNotificationSettingsRepository.save(UserNotificationSettings(userId = userId, enabled = false))
-
-        val settings = userNotificationSettingsService.effectiveSettings(userId)
-
-        assertFalse(settings.isEnabled(NotificationType.PRE_REPLACEMENT))
-        assertFalse(settings.isEnabled(NotificationType.OVERDUE))
-        assertFalse(settings.isEnabled(NotificationType.LOW_STOCK))
-    }
-
-    @Test
     fun `유형을 끄면 해당 유형만 꺼진 것으로 판정된다`() {
-        userNotificationSettingsRepository.save(
-            UserNotificationSettings(userId = userId, overdueEnabled = false),
-        )
+        userNotificationSettingsRepository.save(allEnabled().apply { overdueEnabled = false })
 
         val settings = userNotificationSettingsService.effectiveSettings(userId)
 
@@ -127,4 +101,11 @@ class UserNotificationSettingsServiceTest {
 
         assertEquals(null, userNotificationSettingsRepository.findByUserId(userId))
     }
+
+    private fun allEnabled() = UserNotificationSettings(
+        userId = userId,
+        preReplacementEnabled = true,
+        overdueEnabled = true,
+        lowStockEnabled = true,
+    )
 }

@@ -34,13 +34,14 @@ class UserNotificationSettingsConcurrencyTest {
         val ready = CountDownLatch(4)
         val start = CountDownLatch(1)
         try {
-            val requests = (1..4).map { days ->
+            val dispatchTimes = (0..3).map { LocalTime.of(9, 0).plusMinutes(30L * it) }
+            val requests = dispatchTimes.map { dispatchTime ->
                 executor.submit {
                     ready.countDown()
                     check(start.await(10, TimeUnit.SECONDS))
                     settingsService.updateSettings(
                         userId,
-                        UpdateNotificationSettingsRequest(true, true, true, true, days, LocalTime.of(9, 0)),
+                        UpdateNotificationSettingsRequest(true, true, true, dispatchTime),
                     )
                 }
             }
@@ -50,7 +51,7 @@ class UserNotificationSettingsConcurrencyTest {
 
             val rows = settingsRepository.findByUserIdIn(listOf(userId))
             assertEquals(1, rows.size)
-            assertTrue(rows.single().leadDays in 1..4)
+            assertTrue(rows.single().dispatchTime in dispatchTimes)
         } finally {
             start.countDown()
             executor.shutdownNow()

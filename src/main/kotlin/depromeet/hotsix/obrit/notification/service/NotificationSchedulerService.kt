@@ -19,16 +19,16 @@ class NotificationSchedulerService(
 ) {
     private val log = LoggerFactory.getLogger(javaClass)
 
-    @Scheduled(cron = "\${notification.schedule.cron:0 0 9 * * *}", zone = "\${notification.schedule.zone:Asia/Seoul}")
+    @Scheduled(cron = "\${notification.schedule.cron:0 * * * * *}", zone = "\${notification.schedule.zone:Asia/Seoul}")
     fun run() {
         // 예외가 스케줄러 밖으로 나가면 다음 실행까지 조용히 멈춘 것처럼 보이므로 여기서 삼키고 남긴다.
         // 설정 조회도 같은 범위에 둔다. DB 장애로 조회가 실패해도 원인이 로그에 남아야 한다.
         runCatching {
             if (!notificationSettingsService.current().autoDispatchEnabled) {
-                log.info("자동 발송이 꺼져 있어 알림 배치를 건너뛴다.")
+                log.debug("자동 발송이 꺼져 있어 알림 배치를 건너뛴다.")
                 return@runCatching
             }
-            notificationDispatchService.dispatch()
+            notificationDispatchService.dispatchScheduled()
         }.onFailure { log.error("알림 배치 실행 실패", it) }
     }
 }

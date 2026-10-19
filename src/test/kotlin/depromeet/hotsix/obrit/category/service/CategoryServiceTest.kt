@@ -1,16 +1,24 @@
 package depromeet.hotsix.obrit.category.service
 
+import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.repository.CategoryFixture
+import depromeet.hotsix.obrit.category.repository.CategoryIconFixture
+import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.assertEquals
+import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 @SpringBootTest
@@ -22,7 +30,16 @@ class CategoryServiceTest {
     private lateinit var categoryQueryService: CategoryQueryService
 
     @Autowired
+    private lateinit var categoryService: CategoryService
+
+    @Autowired
     private lateinit var categoryRepository: CategoryRepository
+
+    @Autowired
+    private lateinit var categoryIconRepository: CategoryIconRepository
+
+    @Autowired
+    private lateinit var jdbcTemplate: JdbcTemplate
 
     @Autowired
     private lateinit var userRepository: UserRepository
@@ -32,6 +49,8 @@ class CategoryServiceTest {
 
     @BeforeEach
     fun setUp() {
+        CategoryIconFixture.ensureDefaultIcon(jdbcTemplate)
+
         // 사용자 생성
         val users = userRepository.saveAll(
             listOf(
@@ -76,5 +95,75 @@ class CategoryServiceTest {
 
         // then: 사용자2의 카테고리는 name이 "커스텀2"와 같지 않음
         assertTrue(result.none { it.name == "다른사용자카테고리" })
+    }
+
+    @Test
+    fun `사용자_소모품을_만들면_주기_90일과_공용_아이콘을_쓴다`() {
+        // when: 앱이 다른 아이콘을 보내도 무시한다
+        val result = categoryService.createCategory(user1Id, CreateCategoryRequest(name = "수건", iconId = 3))
+
+        // then
+        val category = categoryRepository.findById(result.categoryId).orElseThrow()
+        assertEquals(Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS, result.defaultReplacementIntervalDays)
+        assertEquals(Category.USER_DEFAULT_ICON_ID, category.iconId)
+    }
+
+    @Test
+    fun `요청에_아이콘을_지정하지_않아도_기본_아이콘으로_소모품을_만든다`() {
+        val result = categoryService.createCategory(user1Id, CreateCategoryRequest(name = "수건"))
+
+        assertEquals(90, result.defaultReplacementIntervalDays)
+    }
+
+    // 공용 아이콘이 없으면 소모품 종류를 저장하지 않는다.
+    @Test
+    fun `공용_아이콘이_없으면_사용자_소모품_생성을_거부한다`() {
+        categoryIconRepository.deleteById(Category.USER_DEFAULT_ICON_ID)
+
+        val exception = assertFailsWith<BusinessException> {
+            categoryService.createCategory(user1Id, CreateCategoryRequest(name = "수건"))
+        }
+
+        assertEquals("유효하지 않은 공용 아이콘입니다.", exception.message)
+        assertNull(categoryRepository.findActiveByUserIdAndName(user1Id, "수건"))
+    }
+
+    // 삭제된 공용 아이콘으로 소모품 종류를 새로 만들 수 없다.
+    @Test
+    fun `공용_아이콘이_삭제되면_사용자_소모품_생성을_거부한다`() {
+        categoryIconRepository.findById(Category.USER_DEFAULT_ICON_ID).orElseThrow().softDelete()
+
+        val exception = assertFailsWith<BusinessException> {
+            categoryService.createCategory(user1Id, CreateCategoryRequest(name = "수건"))
+        }
+
+        assertEquals("유효하지 않은 공용 아이콘입니다.", exception.message)
+        assertNull(categoryRepository.findActiveByUserIdAndName(user1Id, "수건"))
+    }
+
+    // 내 물건 등록 중에도 공용 아이콘이 없으면 새 종류를 저장하지 않는다.
+    @Test
+    fun `공용_아이콘이_없으면_물건_등록_중_새_종류_생성을_거부한다`() {
+        categoryIconRepository.deleteById(Category.USER_DEFAULT_ICON_ID)
+
+        val exception = assertFailsWith<BusinessException> {
+            categoryService.getOrCreateUserCategoryId(user1Id, "수건")
+        }
+
+        assertEquals("유효하지 않은 공용 아이콘입니다.", exception.message)
+        assertNull(categoryRepository.findActiveByUserIdAndName(user1Id, "수건"))
+    }
+
+    // 내 물건 등록 중에도 삭제된 공용 아이콘을 새 종류에 연결하지 않는다.
+    @Test
+    fun `공용_아이콘이_삭제되면_물건_등록_중_새_종류_생성을_거부한다`() {
+        categoryIconRepository.findById(Category.USER_DEFAULT_ICON_ID).orElseThrow().softDelete()
+
+        val exception = assertFailsWith<BusinessException> {
+            categoryService.getOrCreateUserCategoryId(user1Id, "수건")
+        }
+
+        assertEquals("유효하지 않은 공용 아이콘입니다.", exception.message)
+        assertNull(categoryRepository.findActiveByUserIdAndName(user1Id, "수건"))
     }
 }

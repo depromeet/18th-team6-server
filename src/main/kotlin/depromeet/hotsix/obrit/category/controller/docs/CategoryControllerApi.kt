@@ -1,6 +1,7 @@
 package depromeet.hotsix.obrit.category.controller.docs
 
 import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
+import depromeet.hotsix.obrit.category.dto.response.CategoryGroupResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.global.dto.ApiResponse
@@ -33,8 +34,26 @@ interface CategoryControllerApi {
     fun listCategoryIcons(): ApiResponse<List<CategoryIconResponse>>
 
     @Operation(
+        summary = "소모품 카테고리(욕실·주방 등) 목록 조회",
+        description = "온보딩 탭에 쓰는 카테고리 목록을 displayOrder 오름차순으로 조회합니다. " +
+            "각 소모품의 소속은 카테고리 전체 조회 응답의 categoryGroupId와 categoryGroupName으로 확인합니다. " +
+            "빈 탭 숨김 등 탭 구성은 앱에서 정합니다.",
+    )
+    @ApiResponses(
+        value = [
+            SwaggerApiResponse(
+                responseCode = "200",
+                description = "조회 완료",
+            ),
+        ],
+    )
+    fun listCategoryGroups(): ApiResponse<List<CategoryGroupResponse>>
+
+    @Operation(
         summary = "카테고리 전체 조회",
-        description = "사용자가 접근 가능한 모든 카테고리(기본 제공 + 사용자 등록)를 조회합니다.",
+        description = "사용자가 접근 가능한 모든 카테고리(기본 제공 + 사용자 등록)를 조회합니다. " +
+            "각 항목에 소속 그룹의 categoryGroupId와 categoryGroupName을 반환합니다. " +
+            "그룹이 없거나 삭제된 경우 categoryGroupName은 null입니다.",
     )
     @ApiResponses(
         value = [
@@ -67,7 +86,7 @@ interface CategoryControllerApi {
 
     @Operation(
         summary = "카테고리 생성",
-        description = "사용자의 커스텀 카테고리를 생성합니다.",
+        description = "사용자 소모품을 생성합니다. 기본 교체 주기 90일과 공용 아이콘으로 저장하며, 요청의 iconId는 쓰지 않습니다.",
     )
     @ApiResponses(
         value = [
@@ -83,10 +102,6 @@ interface CategoryControllerApi {
                         mediaType = "application/json",
                         schema = Schema(implementation = ErrorResponse::class),
                         examples = [
-                            ExampleObject(
-                                name = "유효하지 않은 아이콘",
-                                value = """{"message": "유효하지 않은 아이콘입니다."}""",
-                            ),
                             ExampleObject(
                                 name = "종류명 누락",
                                 value = """{"message": "종류명은 필수입니다."}""",

@@ -23,6 +23,16 @@ data class CategoryResponse(
     @field:Schema(description = "기본 교체 주기 (일)", example = "90")
     val defaultReplacementIntervalDays: Int,
 
+    @field:Schema(
+        description = "소속 카테고리(욕실·주방 등) ID. 사용자가 만든 소모품은 '사용자' 카테고리, 아직 배정되지 않은 기본 소모품은 null",
+        example = "1",
+        nullable = true,
+    )
+    val categoryGroupId: Long? = null,
+
+    @field:Schema(description = "소속 그룹 이름. 그룹이 없거나 삭제되었으면 null", example = "욕실", nullable = true)
+    val categoryGroupName: String? = null,
+
     @field:Schema(description = "카테고리에 등록된 소모품 수", example = "3")
     val itemCount: Int = 0,
 
