@@ -5,6 +5,7 @@ import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryGroupType
+import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryGroupRepository
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
@@ -48,16 +49,16 @@ class CategoryService(
         }
 
         // request.iconId는 구버전 앱 호환용으로 받기만 하고 쓰지 않는다.
+        val icon = getActiveDefaultIcon()
         val category = Category(
             userId = userId,
             name = trimmedName,
-            iconId = Category.USER_DEFAULT_ICON_ID,
+            iconId = icon.id,
             defaultReplacementIntervalDays = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS,
             categoryGroupId = findUserCategoryGroupId(),
         )
-        val iconKey = categoryIconRepository.findById(Category.USER_DEFAULT_ICON_ID).map { it.key }.orElse("")
 
-        return categoryRepository.save(category).toResponse(iconUrlResolver.resolve(iconKey))
+        return categoryRepository.save(category).toResponse(iconUrlResolver.resolve(icon.key))
     }
 
     @Transactional
@@ -95,11 +96,12 @@ class CategoryService(
             return existingCategory.id!!
         }
 
+        val icon = getActiveDefaultIcon()
         return try {
             val newCategory = Category(
                 userId = userId,
                 name = trimmedName,
-                iconId = Category.USER_DEFAULT_ICON_ID,
+                iconId = icon.id,
                 defaultReplacementIntervalDays = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS,
                 categoryGroupId = findUserCategoryGroupId(),
             )
@@ -109,6 +111,15 @@ class CategoryService(
                 ?: throw e
             retryCategory.id!!
         }
+    }
+
+    private fun getActiveDefaultIcon(): CategoryIcon {
+        val icon = categoryIconRepository.findById(Category.USER_DEFAULT_ICON_ID)
+            .orElseThrow { BusinessException("유효하지 않은 공용 아이콘입니다.") }
+        if (icon.deletedAt != null) {
+            throw BusinessException("유효하지 않은 공용 아이콘입니다.")
+        }
+        return icon
     }
 
     // '사용자' 카테고리 행이 없어도 소모품 등록은 막지 않는다. 카테고리를 비워 두고 운영에서 행을 넣도록 알린다.

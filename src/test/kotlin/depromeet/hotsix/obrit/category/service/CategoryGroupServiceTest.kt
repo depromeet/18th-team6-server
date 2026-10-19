@@ -5,6 +5,7 @@ import depromeet.hotsix.obrit.category.entity.CategoryGroup
 import depromeet.hotsix.obrit.category.entity.CategoryGroupType
 import depromeet.hotsix.obrit.category.repository.CategoryFixture
 import depromeet.hotsix.obrit.category.repository.CategoryGroupRepository
+import depromeet.hotsix.obrit.category.repository.CategoryIconFixture
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
@@ -12,6 +13,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import kotlin.test.assertEquals
@@ -37,10 +39,14 @@ class CategoryGroupServiceTest {
     @Autowired
     private lateinit var userRepository: UserRepository
 
+    @Autowired
+    private lateinit var jdbcTemplate: JdbcTemplate
+
     private var userId: Long = 0L
 
     @BeforeEach
     fun setUp() {
+        CategoryIconFixture.ensureDefaultIcon(jdbcTemplate)
         userId = userRepository.save(UserFixture.user(id = null, name = "사용자1")).id!!
     }
 

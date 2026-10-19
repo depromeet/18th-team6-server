@@ -2,6 +2,7 @@ package depromeet.hotsix.obrit.item.controller
 
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
+import depromeet.hotsix.obrit.category.repository.CategoryIconFixture
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.item.entity.Item
@@ -14,6 +15,7 @@ import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.boot.test.web.server.LocalServerPort
 import org.springframework.http.HttpStatus
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import java.net.URI
 import java.net.http.HttpClient
@@ -50,6 +52,9 @@ class ItemLegacyRequestFieldTest {
     @Autowired
     private lateinit var clock: Clock
 
+    @Autowired
+    private lateinit var jdbcTemplate: JdbcTemplate
+
     private var userId: Long = 0L
     private var categoryId: Long = 0L
 
@@ -63,6 +68,7 @@ class ItemLegacyRequestFieldTest {
         categoryIconRepository.deleteAll()
         userRepository.deleteAll()
 
+        CategoryIconFixture.ensureDefaultIcon(jdbcTemplate)
         val user = userRepository.save(User(uuid = "6f1c2a7e-3b9d-4e8a-9c1f-2d4b6a8e0c13"))
         val icon = categoryIconRepository.save(CategoryIcon(name = "legacy", key = "", url = "/icons/legacy.png"))
         val category = categoryRepository.save(

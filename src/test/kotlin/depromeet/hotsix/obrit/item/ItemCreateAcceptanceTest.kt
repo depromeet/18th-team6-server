@@ -3,6 +3,7 @@ package depromeet.hotsix.obrit.item
 import depromeet.hotsix.obrit.category.entity.Category
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryFixture
+import depromeet.hotsix.obrit.category.repository.CategoryIconFixture
 import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
 import depromeet.hotsix.obrit.category.repository.CategoryRepository
 import depromeet.hotsix.obrit.item.dto.CreateItemRequest
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
 import org.springframework.boot.test.context.SpringBootTest
+import org.springframework.jdbc.core.JdbcTemplate
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
@@ -39,11 +41,15 @@ class ItemCreateAcceptanceTest {
     @Autowired
     private lateinit var categoryIconRepository: CategoryIconRepository
 
+    @Autowired
+    private lateinit var jdbcTemplate: JdbcTemplate
+
     private var userId: Long = 0
     private var categoryId: Long = 0
 
     @BeforeEach
     fun setUp() {
+        CategoryIconFixture.ensureDefaultIcon(jdbcTemplate)
         val user = userRepository.save(UserFixture.user(id = null))
         userId = requireNotNull(user.id)
         val icon = categoryIconRepository.save(
