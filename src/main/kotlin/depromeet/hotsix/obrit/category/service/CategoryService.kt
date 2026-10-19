@@ -4,6 +4,7 @@ import depromeet.hotsix.obrit.category.dto.request.CreateCategoryRequest
 import depromeet.hotsix.obrit.category.dto.response.CategoryIconResponse
 import depromeet.hotsix.obrit.category.dto.response.CategoryResponse
 import depromeet.hotsix.obrit.category.entity.Category
+import depromeet.hotsix.obrit.category.entity.CategoryGroup
 import depromeet.hotsix.obrit.category.entity.CategoryGroupType
 import depromeet.hotsix.obrit.category.entity.CategoryIcon
 import depromeet.hotsix.obrit.category.repository.CategoryGroupRepository
@@ -50,15 +51,19 @@ class CategoryService(
 
         // request.iconId는 구버전 앱 호환용으로 받기만 하고 쓰지 않는다.
         val icon = getActiveDefaultIcon()
+        val userGroup = findUserCategoryGroup()
         val category = Category(
             userId = userId,
             name = trimmedName,
             iconId = icon.id,
             defaultReplacementIntervalDays = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS,
-            categoryGroupId = findUserCategoryGroupId(),
+            categoryGroupId = userGroup?.id,
         )
 
-        return categoryRepository.save(category).toResponse(iconUrlResolver.resolve(icon.key))
+        return categoryRepository.save(category).toResponse(
+            iconUrl = iconUrlResolver.resolve(icon.key),
+            categoryGroupName = userGroup?.name,
+        )
     }
 
     @Transactional
@@ -78,7 +83,7 @@ class CategoryService(
         categoryItemCleaner.softDeleteActiveItemsByCategory(categoryId, userId)
     }
 
-    private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
+    private fun Category.toResponse(iconUrl: String, categoryGroupName: String?): CategoryResponse = CategoryResponse(
         categoryId = requireNotNull(id),
         name = name,
         iconUrl = iconUrl,
@@ -86,6 +91,7 @@ class CategoryService(
         createdAt = createdAt,
         defaultReplacementIntervalDays = defaultReplacementIntervalDays,
         categoryGroupId = categoryGroupId,
+        categoryGroupName = categoryGroupName,
     )
 
     @Transactional
@@ -103,7 +109,7 @@ class CategoryService(
                 name = trimmedName,
                 iconId = icon.id,
                 defaultReplacementIntervalDays = Category.USER_DEFAULT_REPLACEMENT_INTERVAL_DAYS,
-                categoryGroupId = findUserCategoryGroupId(),
+                categoryGroupId = findUserCategoryGroup()?.id,
             )
             categoryRepository.save(newCategory).id!!
         } catch (e: Exception) {
@@ -123,11 +129,11 @@ class CategoryService(
     }
 
     // '사용자' 카테고리 행이 없어도 소모품 등록은 막지 않는다. 카테고리를 비워 두고 운영에서 행을 넣도록 알린다.
-    private fun findUserCategoryGroupId(): Long? {
-        val groupId = categoryGroupRepository.findFirstByTypeAndDeletedAtIsNullOrderByIdAsc(CategoryGroupType.USER)?.id
-        if (groupId == null) {
+    private fun findUserCategoryGroup(): CategoryGroup? {
+        val group = categoryGroupRepository.findFirstByTypeAndDeletedAtIsNullOrderByIdAsc(CategoryGroupType.USER)
+        if (group == null) {
             log.warn("'사용자' 카테고리(type=USER)가 없어 사용자 소모품의 카테고리를 비워 둡니다.")
         }
-        return groupId
+        return group
     }
 }

@@ -32,8 +32,15 @@ class CategoryQueryService(
 
         val iconIds = allCategories.map { it.iconId }.distinct()
         val iconKeyMap = categoryIconRepository.findAllById(iconIds).associate { it.id to it.key }
+        val groupNameById = categoryGroupRepository.findActiveOrderByDisplayOrder()
+            .associate { requireNotNull(it.id) to it.name }
 
-        return allCategories.map { it.toResponse(iconUrlResolver.resolve(iconKeyMap[it.iconId].orEmpty())) }
+        return allCategories.map { category ->
+            category.toResponse(
+                iconUrl = iconUrlResolver.resolve(iconKeyMap[category.iconId].orEmpty()),
+                categoryGroupName = category.categoryGroupId?.let { groupNameById[it] },
+            )
+        }
     }
 
     fun listCategoryGroups(): List<CategoryGroupResponse> =
@@ -100,7 +107,7 @@ class CategoryQueryService(
             .associate { requireNotNull(it.id) to it.defaultReplacementIntervalDays }
     }
 
-    private fun Category.toResponse(iconUrl: String): CategoryResponse = CategoryResponse(
+    private fun Category.toResponse(iconUrl: String, categoryGroupName: String?): CategoryResponse = CategoryResponse(
         categoryId = requireNotNull(id),
         name = name,
         iconUrl = iconUrl,
@@ -108,6 +115,7 @@ class CategoryQueryService(
         createdAt = createdAt,
         defaultReplacementIntervalDays = defaultReplacementIntervalDays,
         categoryGroupId = categoryGroupId,
+        categoryGroupName = categoryGroupName,
     )
 
     private fun getVisibleCategoryOrThrow(userId: Long, categoryId: Long): Category {
