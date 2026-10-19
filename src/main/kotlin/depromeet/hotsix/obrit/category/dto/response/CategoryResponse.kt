@@ -30,6 +30,9 @@ data class CategoryResponse(
     )
     val categoryGroupId: Long? = null,
 
+    @field:Schema(description = "소속 그룹 이름. 그룹이 없거나 삭제되었으면 null", example = "욕실", nullable = true)
+    val categoryGroupName: String? = null,
+
     @field:Schema(description = "카테고리에 등록된 소모품 수", example = "3")
     val itemCount: Int = 0,
 
