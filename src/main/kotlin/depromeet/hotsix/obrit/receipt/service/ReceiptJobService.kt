@@ -11,6 +11,7 @@ import depromeet.hotsix.obrit.receipt.entity.ReceiptImage
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJob
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJobStatus
 import depromeet.hotsix.obrit.receipt.repository.ReceiptJobRepository
+import depromeet.hotsix.obrit.user.service.UserService
 import org.slf4j.LoggerFactory
 import org.springframework.data.domain.PageRequest
 import org.springframework.stereotype.Service
@@ -29,6 +30,7 @@ class ReceiptJobService(
     private val fileUploader: FileUploader,
     private val ocrService: OcrService,
     private val receiptService: ReceiptService,
+    private val userService: UserService,
     private val objectMapper: ObjectMapper,
     private val clock: Clock,
     transactionManager: PlatformTransactionManager,
@@ -40,6 +42,7 @@ class ReceiptJobService(
      * 영수증 이미지를 검증·저장하고 대기중(PENDING) 잡으로 큐에 등록한다.
      */
     fun enqueue(userId: Long, imageFile: MultipartFile): Long {
+        userService.validateUserExist(userId)
         val image = ReceiptImage.from(imageFile.bytes, imageFile.originalFilename)
         val imageKey = fileUploader.upload(ReceiptService.RECEIPT_PREFIX, imageFile)
 
@@ -86,7 +89,8 @@ class ReceiptJobService(
      * 선점된 잡들을 한 번의 배치 OCR 호출로 처리한다. 응답을 receipt_id(=잡 ID)로 매핑해
      * 각 잡을 개별 완료/재시도한다.
      * 다운로드·Gemini 호출은 트랜잭션 밖에서 수행해 외부 I/O 동안 DB 커넥션을 잡지 않고,
-     * 결과 반영만 짧은 트랜잭션으로 저장한다.
+     * 결과는 잡마다 독립 트랜잭션으로 저장해 한 잡의 실패가 다른 잡의 반영을 롤백하지 않게 한다.
+     * 호출자가 트랜잭션을 열면 잡별 트랜잭션이 합쳐지므로 트랜잭션 밖에서 호출해야 한다.
      *
      * - 배치 호출 자체 실패(다운로드·API 오류): 전체 잡을 재시도/실패 처리.
      * - 부분 실패(특정 잡의 결과 누락): 해당 잡만 재시도/실패, 나머지는 완료.
@@ -115,21 +119,40 @@ class ReceiptJobService(
             }
         } catch (e: Exception) {
             log.warn("영수증 배치 OCR 처리에 실패했습니다. jobIds={}", jobIds, e)
-            transaction.executeWithoutResult {
-                jobIds.forEach { retryOrFail(findJob(it), e.message ?: "배치 처리 중 오류가 발생했습니다.") }
+            jobIds.forEach { jobId ->
+                applyInOwnTransaction(jobId) { retryOrFail(it, e.message ?: "배치 처리 중 오류가 발생했습니다.") }
             }
             return
         }
 
         val downloadFailedIds = downloadFailed.map { (job, _) -> job.id!! }.toSet()
-        transaction.executeWithoutResult {
-            jobIds.forEach { jobId ->
-                val job = findJob(jobId)
+        jobIds.forEach { jobId ->
+            applyInOwnTransaction(jobId) { job ->
                 if (jobId in downloadFailedIds) {
                     retryOrFail(job, "영수증 이미지를 불러오지 못했습니다.")
                 } else {
                     handleResult(job, resultsByReceiptId[jobId.toString()])
                 }
+            }
+        }
+    }
+
+    /**
+     * 잡 하나의 처리 결과를 독립 트랜잭션으로 반영한다.
+     * 반영 중 예외가 나면 롤백된 엔티티를 버리고, 새 트랜잭션에서 다시 조회해 재시도·실패로 기록한다.
+     * 기록마저 실패하면(DB 장애 등) 로그만 남기고 stuck 회수에 맡긴다.
+     */
+    private fun applyInOwnTransaction(jobId: Long, apply: (ReceiptJob) -> Unit) {
+        try {
+            transaction.executeWithoutResult { apply(findJob(jobId)) }
+        } catch (e: Exception) {
+            log.warn("영수증 잡 결과 반영에 실패했습니다. jobId={}", jobId, e)
+            try {
+                transaction.executeWithoutResult {
+                    retryOrFail(findJob(jobId), e.message ?: "영수증 결과 저장에 실패했습니다.")
+                }
+            } catch (saveError: Exception) {
+                log.error("영수증 잡 실패 상태 저장에 실패했습니다. jobId={}", jobId, saveError)
             }
         }
     }

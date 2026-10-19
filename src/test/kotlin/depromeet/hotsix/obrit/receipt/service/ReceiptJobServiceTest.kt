@@ -43,14 +43,17 @@ class ReceiptJobServiceTest {
     @Autowired
     private lateinit var jdbcTemplate: JdbcTemplate
 
+    private var userId = 0L
+
     @BeforeEach
     fun setUp() {
         stubReceiptOcrClient.reset()
+        userId = userRepository.save(UserFixture.user()).id!!
     }
 
     @Test
     fun `enqueue는_이미지를_저장하고_대기중_잡을_생성한다`() {
-        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val jobId = receiptJobService.enqueue(userId = userId, imageFile = image())
 
         val job = receiptJobRepository.findById(jobId).get()
         assertEquals(ReceiptJobStatus.PENDING, job.status)
@@ -59,9 +62,17 @@ class ReceiptJobServiceTest {
     }
 
     @Test
+    fun `enqueue는_존재하지_않는_사용자면_잡을_만들지_않고_예외를_던진다`() {
+        assertFailsWith<ResourceNotFoundException> {
+            receiptJobService.enqueue(userId = 99_999L, imageFile = image())
+        }
+        assertEquals(0, receiptJobRepository.count())
+    }
+
+    @Test
     fun `pickBatch는_대기중_잡을_id_오름차순으로_선점해_PROCESSING으로_바꾼다`() {
-        val first = receiptJobService.enqueue(userId = 1L, imageFile = image())
-        val second = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val first = receiptJobService.enqueue(userId = userId, imageFile = image())
+        val second = receiptJobService.enqueue(userId = userId, imageFile = image())
 
         val picked = receiptJobService.pickBatch(maxBatch = 6)
 
@@ -71,7 +82,7 @@ class ReceiptJobServiceTest {
 
     @Test
     fun `pickBatch는_maxBatch_개수만큼만_선점한다`() {
-        repeat(3) { receiptJobService.enqueue(userId = 1L, imageFile = image()) }
+        repeat(3) { receiptJobService.enqueue(userId = userId, imageFile = image()) }
 
         val picked = receiptJobService.pickBatch(maxBatch = 2)
 
@@ -111,8 +122,8 @@ class ReceiptJobServiceTest {
 
     @Test
     fun `processBatch는_배치_호출_자체가_실패하면_전체_잡을_재시도한다`() {
-        val first = receiptJobService.enqueue(userId = 1L, imageFile = image())
-        val second = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val first = receiptJobService.enqueue(userId = userId, imageFile = image())
+        val second = receiptJobService.enqueue(userId = userId, imageFile = image())
         stubReceiptOcrClient.batchError = RuntimeException("배치 OCR 호출 실패")
 
         receiptJobService.processBatch(receiptJobService.pickBatch(maxBatch = 6))
@@ -140,7 +151,7 @@ class ReceiptJobServiceTest {
 
     @Test
     fun `processBatch는_items가_비어있으면_재시도없이_인식_실패로_처리한다`() {
-        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val jobId = receiptJobService.enqueue(userId = userId, imageFile = image())
         stubReceiptOcrClient.batchResponse = BatchOcrResponse(
             listOf(BatchOcrResult(receiptId = jobId.toString(), store = "마트", items = emptyList())),
         )
@@ -154,7 +165,7 @@ class ReceiptJobServiceTest {
 
     @Test
     fun `processBatch는_가게명이_없으면_재시도없이_인식_실패로_처리한다`() {
-        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val jobId = receiptJobService.enqueue(userId = userId, imageFile = image())
         stubReceiptOcrClient.batchResponse = BatchOcrResponse(
             listOf(
                 BatchOcrResult(
@@ -172,8 +183,8 @@ class ReceiptJobServiceTest {
 
     @Test
     fun `releaseToPending은_선점한_잡들을_다시_대기중으로_되돌린다`() {
-        receiptJobService.enqueue(userId = 1L, imageFile = image())
-        receiptJobService.enqueue(userId = 1L, imageFile = image())
+        receiptJobService.enqueue(userId = userId, imageFile = image())
+        receiptJobService.enqueue(userId = userId, imageFile = image())
         val picked = receiptJobService.pickBatch(maxBatch = 6)
 
         receiptJobService.releaseToPending(picked)
@@ -206,10 +217,10 @@ class ReceiptJobServiceTest {
 
     @Test
     fun `getJob은_다른_사용자의_잡이면_없는_잡과_동일하게_예외를_던진다`() {
-        val jobId = receiptJobService.enqueue(userId = 1L, imageFile = image())
+        val jobId = receiptJobService.enqueue(userId = userId, imageFile = image())
 
         assertFailsWith<ResourceNotFoundException> {
-            receiptJobService.getJob(2L, jobId)
+            receiptJobService.getJob(userRepository.save(UserFixture.user()).id!!, jobId)
         }
     }
 
