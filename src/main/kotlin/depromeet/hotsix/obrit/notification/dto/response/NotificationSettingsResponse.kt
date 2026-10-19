@@ -16,7 +16,11 @@ data class NotificationSettingsResponse(
     @field:Schema(description = "여분 부족 알림 수신 여부", example = "true")
     val lowStockEnabled: Boolean,
 
-    @field:Schema(description = "알림 시간 (30분 단위). 현재 발송은 매일 09:00 일괄입니다.", example = "09:00", type = "string")
+    @field:Schema(
+        description = "실제 발송에 적용하는 공통 알림 시간 (30분 단위, 기본 09:00). 기본 시간대는 Asia/Seoul입니다.",
+        example = "09:00",
+        type = "string",
+    )
     @field:JsonFormat(pattern = "HH:mm")
     val dispatchTime: LocalTime,
 

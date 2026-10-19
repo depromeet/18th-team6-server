@@ -15,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlin.test.assertEquals
 
 @SpringBootTest
@@ -75,6 +76,7 @@ class NotificationSchedulerServiceTest {
     @Test
     fun `자동 발송을 켜면 스케줄 실행 시 발송한다`() {
         notificationSettingsService.updateAutoDispatch(enabled = true)
+        userNotificationSettingsRepository.findByUserId(userId)!!.dispatchTime = LocalTime.MIDNIGHT
 
         notificationSchedulerService.run()
 

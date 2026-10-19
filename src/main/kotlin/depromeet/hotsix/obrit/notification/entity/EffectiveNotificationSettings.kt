@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.notification.entity
 
+import java.time.LocalDate
 import java.time.LocalTime
 
 /**
@@ -13,6 +14,7 @@ data class EffectiveNotificationSettings(
     val lowStockEnabled: Boolean,
     val dispatchTime: LocalTime,
     val permissionStatus: NotificationPermissionStatus,
+    val lastDispatchDate: LocalDate?,
 ) {
     fun isEnabled(type: NotificationType): Boolean = when (type) {
         NotificationType.PRE_REPLACEMENT -> preReplacementEnabled
@@ -29,6 +31,7 @@ data class EffectiveNotificationSettings(
             lowStockEnabled = settings.lowStockEnabled,
             dispatchTime = settings.dispatchTime,
             permissionStatus = settings.permissionStatus,
+            lastDispatchDate = settings.lastDispatchDate,
         )
 
         /** 설정 행이 없는 사용자. 새 사용자는 알림을 직접 켜기 전까지 받지 않는다 (PRD v2.1). */

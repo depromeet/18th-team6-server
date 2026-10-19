@@ -27,3 +27,4 @@ INSERT INTO categories (id, user_id, name, icon_id, default_replacement_interval
 VALUES (300, NULL, '칫솔', 1, 90, 1, CURRENT_TIMESTAMP, CURRENT_TIMESTAMP);
 
 -- notifications의 item_id, label, next_replacement_date는 발송 시 생성하므로 시드하지 않는다.
+-- user_notification_settings.last_dispatch_date는 실제 발송 완료 시 기록한다. 설정 행은 시드하지 않는다.

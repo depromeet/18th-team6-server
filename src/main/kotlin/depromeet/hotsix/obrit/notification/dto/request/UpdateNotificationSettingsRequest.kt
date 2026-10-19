@@ -16,7 +16,7 @@ data class UpdateNotificationSettingsRequest(
     val lowStockEnabled: Boolean,
 
     @field:Schema(
-        description = "알림 시간 (30분 단위). 현재 발송은 매일 09:00 일괄이며 이 값은 저장만 합니다.",
+        description = "공통 알림 시간 (00:00~23:30, 30분 단위, 기본 09:00). 스케줄 시간대(기본 Asia/Seoul) 기준으로 실제 발송에 적용합니다.",
         example = "09:00",
         type = "string",
     )

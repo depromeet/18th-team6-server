@@ -51,7 +51,9 @@ interface NotificationSettingsControllerApi {
 
     @Operation(
         summary = "알림 설정 수정",
-        description = "유형별 수신 여부 3개와 알림 시간을 저장합니다. 저장한 설정이 없으면 새로 만듭니다.",
+        description = "유형별 수신 여부 3개와 실제 발송할 알림 시간을 저장합니다. 기본 시간은 09:00입니다. " +
+            "설정 시각이 이미 지났고 오늘 미발송이면 다음 배치에서 발송합니다. " +
+            "오늘 이미 발송했다면 변경한 시각은 내일부터 적용합니다. 저장한 설정이 없으면 새로 만듭니다.",
     )
     @ApiResponses(
         value = [

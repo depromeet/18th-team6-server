@@ -9,6 +9,7 @@ import jakarta.persistence.GeneratedValue
 import jakarta.persistence.GenerationType
 import jakarta.persistence.Id
 import jakarta.persistence.Table
+import java.time.LocalDate
 import java.time.LocalTime
 
 /**
@@ -38,13 +39,17 @@ class UserNotificationSettings(
     @Column(name = "low_stock_enabled", nullable = false)
     var lowStockEnabled: Boolean = false,
 
-    /** 사용자가 고른 알림 시간. 발송은 아직 전 사용자 09:00 일괄이라 판정에 쓰지 않는다. */
+    /** 사용자가 고른 공통 알림 시간. 스케줄 설정 시간대 기준이며 기본값은 09:00이다. */
     @Column(name = "dispatch_time", nullable = false)
     var dispatchTime: LocalTime = DEFAULT_DISPATCH_TIME,
 
     @Enumerated(EnumType.STRING)
     @Column(name = "permission_status", nullable = false, length = 20)
     var permissionStatus: NotificationPermissionStatus = NotificationPermissionStatus.NOT_REQUESTED,
+
+    /** 정책 알림 발송 완료일. 자동·수동 실행과 시간 변경에 따른 당일 중복을 막는다. */
+    @Column(name = "last_dispatch_date")
+    var lastDispatchDate: LocalDate? = null,
 ) : BaseTimeEntity() {
 
     companion object {

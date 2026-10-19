@@ -1,13 +1,13 @@
 # PRD v2.1 / 03: 알림 설정
 
-상태: 구현 완료
+상태: 기존 설정 단순화 구현 완료. 사용자별 발송 시각 반영은 05 스펙에 따라 확장.
 
 ## 목표
 
 사용자 알림 설정을 유형별 토글 3개(교체 예정, 교체 지연, 여분 부족)와 공통 알림 시간 하나로 줄인다.
 새 사용자는 세 유형 모두 꺼진 상태로 시작한다. 기존 사용자는 이 변경 때문에 받던 알림이 끊기거나 끈 알림을 다시 받지 않는다.
 
-## 현재 구현
+## 변경 전 구현 (v2.0)
 
 - `user_notification_settings`(V9): `enabled`, `pre_replacement_enabled`, `overdue_enabled`, `low_stock_enabled`(모두 기본 1), `lead_days`(기본 3), `dispatch_time`(기본 09:00), `permission_status`.
 - 행은 `PUT /notifications/settings`를 처음 호출할 때 생긴다. 행이 없는 사용자는 `EffectiveNotificationSettings.fallback`으로 판정하며, 이때 모든 유형이 켜짐이다.
@@ -64,10 +64,10 @@
 | `enabled` | 요청에서 삭제. 응답은 한동안 `true` 고정 |
 | `leadDays` | 요청에서 삭제. 응답은 한동안 `3` 고정 |
 | `preReplacementEnabled`, `overdueEnabled`, `lowStockEnabled` | 유지 |
-| `dispatchTime` | 유지. 30분 단위 검증은 유지하고 08:00~21:30 범위 제한은 없앤다 (조용 시간 삭제) |
+| `dispatchTime` | 기본 09:00. 00:00~23:30의 30분 단위이며 실제 사용자별 자동 발송에 적용한다 (조용 시간 없음) |
 | `permissionStatus` | 응답에 유지 |
 
-- 저장된 `dispatchTime`은 이번에도 발송에 쓰지 않는다. 발송은 매일 09:00 일괄이다.
+- 저장된 `dispatchTime`을 실제 자동 발송에 반영한다. 변경 시점과 당일 중복 방지 규칙은 [05 사용자별 발송 시각](05-user-dispatch-time.md)을 따른다.
 - Swagger 설명에서 전체 토글·선행 일수·조용 시간 언급을 지운다.
 
 ## 호환성
@@ -91,4 +91,5 @@
 - 마이그레이션 적용 전후로 기존 사용자의 유형별 수신 판정이 같다. 전체 토글을 꺼둔 사용자는 세 유형 모두 꺼짐이다. 운영과 같은 MySQL 버전의 로컬 컨테이너에서 샘플 데이터로 확인한다.
 - 마이그레이션 이후 가입한 사용자는 `GET` 결과 세 유형이 꺼짐이고 정책 알림 대상이 아니다.
 - `PUT`이 세 토글과 알림 시간만으로 동작하고, 30분 단위가 아니면 거절한다. 23:00 같은 시간도 저장된다.
+- 기본 발송 시각은 09:00이며, 저장한 다른 시각에도 실제 자동 발송이 동작한다 (05).
 - 영향 테스트 갱신: `UserNotificationSettings*Test`, `NotificationPolicyUserSettingsTest`, `NotificationSettingsServiceTest`. `./gradlew harness` 통과.

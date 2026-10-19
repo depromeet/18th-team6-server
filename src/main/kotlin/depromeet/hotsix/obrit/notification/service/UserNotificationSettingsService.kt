@@ -9,6 +9,7 @@ import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRe
 import depromeet.hotsix.obrit.user.service.UserService
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
+import java.time.LocalDate
 import java.time.LocalTime
 
 /** 유저별 알림 설정 조회. 유저 설정이 없으면 신규 사용자 기본값(모두 꺼짐)으로 내려간다. */
@@ -73,6 +74,15 @@ class UserNotificationSettingsService(
             .associate { it.userId to EffectiveNotificationSettings.from(it) }
 
         return userIds.associateWith { saved[it] ?: fallback }
+    }
+
+    /** 알림함·소모품 상태와 같은 트랜잭션에서 완료일을 남긴다. 설정 변경과 사용자 잠금을 공유한다. */
+    @Transactional
+    fun recordDispatch(userId: Long, date: LocalDate) {
+        userService.lockForSettingsUpdate(userId)
+        val settings = requireNotNull(userNotificationSettingsRepository.findByUserId(userId))
+        settings.lastDispatchDate = date
+        userNotificationSettingsRepository.save(settings)
     }
 
     private fun EffectiveNotificationSettings.toResponse() = NotificationSettingsResponse(

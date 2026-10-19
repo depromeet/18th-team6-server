@@ -29,8 +29,7 @@ class NotificationPolicyService(
     private val userNotificationSettingsService: UserNotificationSettingsService,
     private val clock: Clock,
 ) {
-    fun evaluate(): List<NotificationCandidate> {
-        val today = LocalDate.now(clock)
+    fun evaluate(today: LocalDate = LocalDate.now(clock)): List<NotificationCandidate> {
         val global = notificationSettingsService.current()
         val preReplacementSteps = global.preReplacementSteps().toSet()
         val overdueSteps = global.overdueSteps()
