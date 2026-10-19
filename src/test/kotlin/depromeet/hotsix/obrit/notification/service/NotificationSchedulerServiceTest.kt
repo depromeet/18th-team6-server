@@ -2,7 +2,9 @@ package depromeet.hotsix.obrit.notification.service
 
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
+import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
+import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
@@ -13,6 +15,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlin.test.assertEquals
 
 @SpringBootTest
@@ -33,6 +36,9 @@ class NotificationSchedulerServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Autowired
+    private lateinit var userNotificationSettingsRepository: UserNotificationSettingsRepository
+
+    @Autowired
     private lateinit var notificationRepository: NotificationRepository
 
     @Autowired
@@ -43,6 +49,7 @@ class NotificationSchedulerServiceTest {
     @BeforeEach
     fun setUp() {
         userId = requireNotNull(userRepository.save(UserFixture.user(id = null)).id)
+        userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
         val today = LocalDate.now(clock)
         itemRepository.save(
             Item(
@@ -69,6 +76,7 @@ class NotificationSchedulerServiceTest {
     @Test
     fun `자동 발송을 켜면 스케줄 실행 시 발송한다`() {
         notificationSettingsService.updateAutoDispatch(enabled = true)
+        userNotificationSettingsRepository.findByUserId(userId)!!.dispatchTime = LocalTime.MIDNIGHT
 
         notificationSchedulerService.run()
 

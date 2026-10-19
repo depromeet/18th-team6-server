@@ -2,7 +2,9 @@ package depromeet.hotsix.obrit.notification.service
 
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
+import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.entity.NotificationType
+import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
@@ -36,6 +38,9 @@ class SpareQuantityNullableTest {
     private lateinit var userRepository: UserRepository
 
     @Autowired
+    private lateinit var userNotificationSettingsRepository: UserNotificationSettingsRepository
+
+    @Autowired
     private lateinit var clock: Clock
 
     private val today: LocalDate
@@ -45,9 +50,11 @@ class SpareQuantityNullableTest {
     @BeforeEach
     fun setUp() {
         userId = requireNotNull(userRepository.save(UserFixture.user(id = null)).id)
+        userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
-    private fun saveItem(quantity: Int?, daysUntilReplacement: Long = 1): Item {
+    /** 교체 예정 사유가 섞이지 않도록 사전 스텝(7,3,1,0)이 아닌 D-2를 기본으로 둔다. */
+    private fun saveItem(quantity: Int?, daysUntilReplacement: Long = 2): Item {
         val nextReplacementDate = today.plusDays(daysUntilReplacement)
         return itemRepository.save(
             Item(
@@ -75,7 +82,7 @@ class SpareQuantityNullableTest {
     fun `여분이 명시적 0이면 여분 부족 알림 후보가 된다`() {
         val item = saveItem(quantity = 0)
 
-        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.LOW_STOCK), candidateFor(item.id)?.reasons)
     }
 
     @Test

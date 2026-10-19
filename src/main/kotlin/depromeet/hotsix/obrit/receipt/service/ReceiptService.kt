@@ -74,10 +74,19 @@ class ReceiptService(
             val categoryNameToId = categoryQueryService.findAccessibleCategoryNameToIdMap(userId)
             val matchedCategoryIds = ocrResult.items.mapNotNull { categoryNameToId[it.category] }
             val categoryIdToIconUrl = categoryQueryService.findVisibleCategoryIconUrls(userId, matchedCategoryIds)
+            val categoryIdToInterval =
+                categoryQueryService.findVisibleCategoryDefaultIntervals(userId, matchedCategoryIds)
             val defaultIconUrl = categoryQueryService.getDefaultCategoryIconUrl()
+            val defaultInterval = categoryQueryService.getUserCategoryDefaultIntervalDays()
 
-            val analyzedItems =
-                buildAnalyzedItems(ocrResult.items, categoryNameToId, categoryIdToIconUrl, defaultIconUrl)
+            val analyzedItems = buildAnalyzedItems(
+                ocrResult.items,
+                categoryNameToId,
+                categoryIdToIconUrl,
+                categoryIdToInterval,
+                defaultIconUrl,
+                defaultInterval,
+            )
             val receiptImageUrl = awaitUpload(uploadFuture)
 
             publishAnalysisFinished(
@@ -155,7 +164,9 @@ class ReceiptService(
         ocrItems: List<OcrItem>,
         categoryNameToId: Map<String, Long>,
         categoryIdToIconUrl: Map<Long, String>,
+        categoryIdToInterval: Map<Long, Int>,
         defaultIconUrl: String,
+        defaultInterval: Int,
     ): List<AnalyzedItem> = ocrItems.map { ocrItem ->
         val categoryId = categoryNameToId[ocrItem.category]
         AnalyzedItem(
@@ -165,7 +176,7 @@ class ReceiptService(
             iconUrl = categoryId?.let { categoryIdToIconUrl[it] } ?: defaultIconUrl,
             suggestedCategoryName = ocrItem.category,
             quantity = ocrItem.effective_quantity,
-            suggestedReplacementIntervalDays = ocrItem.suggested_replacement_interval_days ?: 1,
+            suggestedReplacementIntervalDays = categoryId?.let { categoryIdToInterval[it] } ?: defaultInterval,
         )
     }
 

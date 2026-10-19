@@ -3,7 +3,9 @@ package depromeet.hotsix.obrit.notification.service
 import depromeet.hotsix.obrit.global.exception.BusinessException
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
+import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.entity.NotificationType
+import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
 import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
@@ -36,6 +38,9 @@ class NotificationSettingsServiceTest {
     private lateinit var userRepository: UserRepository
 
     @Autowired
+    private lateinit var userNotificationSettingsRepository: UserNotificationSettingsRepository
+
+    @Autowired
     private lateinit var clock: Clock
 
     private val today: LocalDate
@@ -45,6 +50,7 @@ class NotificationSettingsServiceTest {
     @BeforeEach
     fun setUp() {
         userId = requireNotNull(userRepository.save(UserFixture.user(id = null)).id)
+        userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
     private fun saveItem(quantity: Int, nextReplacementDate: LocalDate): Item = itemRepository.save(
@@ -60,13 +66,15 @@ class NotificationSettingsServiceTest {
     )
 
     private fun update(
-        leadDays: Int = 3,
-        overdueStepDays: String = "1,4,7",
+        preReplacementStepDays: String = "7,3,1,0",
+        lowStockLeadDays: Int = 3,
+        overdueStepDays: String = "1,3,7",
         preReplacementEnabled: Boolean = true,
         overdueEnabled: Boolean = true,
         lowStockEnabled: Boolean = true,
     ) = notificationSettingsService.update(
-        leadDays = leadDays,
+        preReplacementStepDays = preReplacementStepDays,
+        lowStockLeadDays = lowStockLeadDays,
         overdueStepDays = overdueStepDays,
         preReplacementEnabled = preReplacementEnabled,
         overdueEnabled = overdueEnabled,
@@ -80,18 +88,29 @@ class NotificationSettingsServiceTest {
         val settings = notificationSettingsService.current()
 
         assertEquals(false, settings.autoDispatchEnabled)
-        assertEquals(3, settings.leadDays)
-        assertEquals(listOf(1, 4, 7), settings.overdueSteps())
+        assertEquals(listOf(7, 3, 1, 0), settings.preReplacementSteps())
+        assertEquals(3, settings.lowStockLeadDays)
+        assertEquals(listOf(1, 3, 7), settings.overdueSteps())
     }
 
     @Test
-    fun `선행 일수를 바꾸면 사전 알림 판정 기준이 함께 바뀐다`() {
+    fun `사전 스텝을 바꾸면 사전 알림 판정 기준이 함께 바뀐다`() {
         val item = saveItem(quantity = 2, nextReplacementDate = today.plusDays(5))
         assertNull(candidateFor(item.id))
 
-        update(leadDays = 5)
+        update(preReplacementStepDays = "5")
 
-        assertEquals(NotificationType.PRE_REPLACEMENT, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.PRE_REPLACEMENT), candidateFor(item.id)?.reasons)
+    }
+
+    @Test
+    fun `여분 부족 기준 일수를 바꾸면 여분 부족 판정 기준이 함께 바뀐다`() {
+        val item = saveItem(quantity = 0, nextReplacementDate = today.plusDays(5))
+        assertNull(candidateFor(item.id))
+
+        update(lowStockLeadDays = 5)
+
+        assertEquals(listOf(NotificationType.LOW_STOCK), candidateFor(item.id)?.reasons)
     }
 
     @Test
@@ -102,13 +121,13 @@ class NotificationSettingsServiceTest {
 
         update(overdueStepDays = "2,5,10")
 
-        assertEquals(NotificationType.OVERDUE, candidateFor(item.id)?.type)
+        assertEquals(listOf(NotificationType.OVERDUE), candidateFor(item.id)?.reasons)
     }
 
     @Test
     fun `유형을 끄면 해당 유형은 후보에서 제외된다`() {
-        val item = saveItem(quantity = 0, nextReplacementDate = today.plusDays(1))
-        assertEquals(NotificationType.LOW_STOCK, candidateFor(item.id)?.type)
+        val item = saveItem(quantity = 0, nextReplacementDate = today.plusDays(2))
+        assertEquals(listOf(NotificationType.LOW_STOCK), candidateFor(item.id)?.reasons)
 
         update(lowStockEnabled = false)
 
@@ -116,9 +135,30 @@ class NotificationSettingsServiceTest {
     }
 
     @Test
-    fun `선행 일수가 허용 범위를 벗어나면 예외를 던진다`() {
-        assertFailsWith<BusinessException> { update(leadDays = 0) }
-        assertFailsWith<BusinessException> { update(leadDays = 8) }
+    fun `여분 부족 기준 일수가 허용 범위를 벗어나면 예외를 던진다`() {
+        assertFailsWith<BusinessException> { update(lowStockLeadDays = 0) }
+        assertFailsWith<BusinessException> { update(lowStockLeadDays = 8) }
+    }
+
+    @Test
+    fun `사전 스텝은 교체일에서 먼 순서로 정규화해서 저장한다`() {
+        val settings = update(preReplacementStepDays = " 0, 1 ,7,3 ")
+
+        assertEquals("7,3,1,0", settings.preReplacementStepDays)
+    }
+
+    @Test
+    fun `사전 스텝이 허용 범위를 벗어나거나 중복되면 예외를 던진다`() {
+        assertFailsWith<BusinessException> { update(preReplacementStepDays = "-1,3") }
+        assertFailsWith<BusinessException> { update(preReplacementStepDays = "31,3") }
+        assertFailsWith<BusinessException> { update(preReplacementStepDays = "3,3,1") }
+    }
+
+    @Test
+    fun `사전 스텝이 비어 있거나 숫자가 아니거나 상한을 넘으면 예외를 던진다`() {
+        assertFailsWith<BusinessException> { update(preReplacementStepDays = " ") }
+        assertFailsWith<BusinessException> { update(preReplacementStepDays = "7,셋") }
+        assertFailsWith<BusinessException> { update(preReplacementStepDays = "10,7,5,3,1,0") }
     }
 
     @Test
@@ -164,6 +204,6 @@ class NotificationSettingsServiceTest {
         notificationSettingsService.current().overdueStepDays = "1,깨진값,7"
 
         assertEquals(listOf(1, 7), notificationSettingsService.current().overdueSteps())
-        assertEquals(NotificationType.OVERDUE, notificationPolicyService.evaluate().firstOrNull()?.type)
+        assertEquals(listOf(NotificationType.OVERDUE), notificationPolicyService.evaluate().firstOrNull()?.reasons)
     }
 }
