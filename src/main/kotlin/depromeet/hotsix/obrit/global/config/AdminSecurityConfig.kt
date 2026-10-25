@@ -91,6 +91,7 @@ class AdminSecurityConfig {
             "/receipts", "/receipts/**",
             "/home", "/home/**",
             "/notifications", "/notifications/**",
+            "/files/category-icon/**",
             "/h2-console", "/h2-console/**",
             "/swagger-ui/**", "/swagger-ui.html",
             "/v3/api-docs/**",
