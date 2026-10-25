@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.bind.annotation.RestControllerAdvice
 import org.springframework.web.method.annotation.HandlerMethodValidationException
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException
+import org.springframework.web.servlet.NoHandlerFoundException
+import org.springframework.web.servlet.resource.NoResourceFoundException
 
 @RestControllerAdvice
 class GlobalExceptionHandler {
@@ -23,6 +25,11 @@ class GlobalExceptionHandler {
     @ExceptionHandler(ResourceNotFoundException::class)
     fun handleResourceNotFoundException(exception: ResourceNotFoundException): ResponseEntity<ErrorResponse> =
         ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse(exception.message.orEmpty()))
+
+    // 없는 경로·정적 파일(아이콘 등) 요청이 아래 Exception 처리기에서 500으로 바뀌지 않게 한다.
+    @ExceptionHandler(NoResourceFoundException::class, NoHandlerFoundException::class)
+    fun handleNoResourceFoundException(): ResponseEntity<ErrorResponse> =
+        ResponseEntity.status(HttpStatus.NOT_FOUND).body(ErrorResponse("존재하지 않는 리소스입니다."))
 
     @ExceptionHandler(ConflictException::class)
     fun handleConflictException(exception: ConflictException): ResponseEntity<ErrorResponse> =
