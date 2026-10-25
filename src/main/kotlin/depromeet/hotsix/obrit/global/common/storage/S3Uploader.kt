@@ -1,5 +1,6 @@
 package depromeet.hotsix.obrit.global.common.storage
 
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty
 import org.springframework.context.annotation.Profile
 import org.springframework.stereotype.Component
 import org.springframework.web.multipart.MultipartFile
@@ -10,6 +11,7 @@ import java.util.UUID
 
 @Component
 @Profile("prod")
+@ConditionalOnProperty(prefix = "storage", name = ["type"], havingValue = "s3")
 class S3Uploader(private val s3Client: S3Client, private val s3Properties: S3Properties) : FileUploader {
 
     override fun upload(prefix: String, file: MultipartFile): String {

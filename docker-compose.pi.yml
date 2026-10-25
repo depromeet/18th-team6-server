@@ -2,6 +2,8 @@ services:
   app:
     environment:
       DB_URL: jdbc:mysql://mysql:3306/${DB_DATABASE:-orbit}?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=Asia/Seoul
+    volumes:
+      - storage-data:/app/storage
     depends_on:
       mysql:
         condition: service_healthy
@@ -31,3 +33,5 @@ services:
 volumes:
   mysql-data:
     name: orbit-mysql-data
+  storage-data:
+    name: orbit-storage-data
