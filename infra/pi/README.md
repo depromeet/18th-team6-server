@@ -21,6 +21,42 @@ Pi 오버레이는 MySQL `8.4.11`과 `orbit-mysql-data` Docker 볼륨을 사용�
 docker compose --env-file .env -f docker-compose.yml -f docker-compose.pi.yml config --quiet
 ```
 
-앱 `.env`와 MySQL `.env.mysql`은 서버에서만 보관한다. RDS 데이터 복원, 외부 백업, MinIO 이전은 후속 작업이다.
+앱 `.env`와 MySQL `.env.mysql`은 서버에서만 보관한다. RDS 데이터 복원과 외부 백업은 후속 작업이다.
+
+## 파일 저장소
+
+`STORAGE_TYPE`으로 저장소를 고른다. 기본값 `filesystem`은 Pi 디스크에, `s3`는 기존 AWS S3에 저장한다(S3 코드는 되돌릴 수 있게 유지한다). `filesystem`에서 앱은 `orbit-storage-data` Docker 볼륨을 `/app/storage`에 마운트하고 업로드 키(`category-icon/...`, `receipts/...`)를 그대로 상대 경로로 쓴다. 아이콘만 `GET /files/category-icon/**`로 공개하고 URL은 `STORAGE_PUBLIC_BASE_URL` + `/files/` + 키로 만든다. 영수증은 공개 경로가 없다.
+
+`filesystem`에서는 `STORAGE_PUBLIC_BASE_URL`이 `ENV_FILE`에 필수다. 없으면 앱이 기동하지 않으므로 이 변경을 배포하기 전에 Secret에 추가한다. `S3_BUCKET`, `S3_REGION`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`는 `STORAGE_TYPE=s3`일 때만 필요하다.
+
+### S3 백업 복원
+
+S3 백업 폴더는 버킷 구조 그대로 `category-icon/`과 `receipts/`를 담고 있어 DB의 `icon_key`를 바꾸지 않아도 된다. 앱을 한 번 배포해 Compose가 볼륨을 만든 뒤 진행한다.
+
+```bash
+# 로컬에서 백업을 Pi로 복사
+scp -P <SERVER_PORT> -r ~/Downloads/s3-backup <SERVER_USER>@<SERVER_HOST>:~/s3-backup
+
+# Pi의 ~/deploy에서 볼륨에 복사하고 앱 사용자에게 소유권을 준다
+app_image=$(grep '^APP_IMAGE=' .env | cut -d= -f2)
+app_uid=$(docker run --rm --network none --entrypoint id "$app_image" -u)
+docker run --rm --network none --user 0 \
+  --mount type=volume,source=orbit-storage-data,target=/app/storage \
+  --mount type=bind,source=$HOME/s3-backup,target=/backup,readonly \
+  --entrypoint sh "$app_image" -c "cp -a /backup/. /app/storage/ && chown -R $app_uid /app/storage"
+
+# 파일 수 확인 (백업 기준 아이콘 81, 영수증 83)
+docker exec orbit-server sh -c 'find /app/storage/category-icon -type f | wc -l; find /app/storage/receipts -type f | wc -l'
+```
+
+RDS 데이터를 복원한 뒤 백오피스가 직접 읽는 `icons.url`의 S3 주소를 새 주소로 바꾼다. `<STORAGE_PUBLIC_BASE_URL>`은 `.env`의 값으로 바꿔 넣는다.
+
+```sql
+UPDATE icons
+SET url = CONCAT('<STORAGE_PUBLIC_BASE_URL>/files/', icon_key)
+WHERE url LIKE 'https://%.amazonaws.com/%';
+```
+
+확인: `curl -I <STORAGE_PUBLIC_BASE_URL>/files/<icon_key>`가 200, `/files/receipts/<파일>`이 200이 아니어야 한다. 백오피스에서 아이콘을 하나 업로드해 볼륨 쓰기 권한도 확인한다.
 
 [Firebase Secret을 사용한 Actions 배포](https://github.com/depromeet/18th-team6-server/actions/runs/36987283270)가 성공했다. 배포 후 앱·모니터링 실행과 기존 MySQL 컨테이너 유지 및 `healthy` 상태를 읽기 전용으로 확인했다. Firebase 알림 실제 발송, 모니터링 데이터 수집, DB 데이터 유지 검증은 남아 있다.
