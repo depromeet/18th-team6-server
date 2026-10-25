@@ -18,6 +18,7 @@ import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
@@ -49,8 +50,9 @@ class NotificationDispatchServiceTest {
     @Autowired
     private lateinit var notificationService: NotificationService
 
+    // 발송 서비스는 Asia/Seoul 기준 날짜를 쓴다. 시스템 시간대(CI는 UTC)로 구하면 KST 0~9시에 날짜가 하루 어긋난다.
     private val today: LocalDate
-        get() = LocalDate.now(clock)
+        get() = LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul")))
     private var userId: Long = 0
 
     @BeforeEach
