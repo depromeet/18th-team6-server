@@ -8,6 +8,7 @@ import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.dto.request.UpdateNotificationSettingsRequest
 import depromeet.hotsix.obrit.notification.entity.FcmSendResult
 import depromeet.hotsix.obrit.notification.repository.DeviceRegistrationRepository
+import depromeet.hotsix.obrit.notification.repository.NotificationEntryRepository
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
 import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.user.entity.UserFixture
@@ -40,6 +41,9 @@ class UserDispatchTimeTest {
 
     @Autowired
     private lateinit var notificationRepository: NotificationRepository
+
+    @Autowired
+    private lateinit var notificationEntryRepository: NotificationEntryRepository
 
     @Autowired
     private lateinit var fcmPushService: FcmPushService
@@ -98,6 +102,7 @@ class UserDispatchTimeTest {
     private fun dispatcher(instant: String, pushService: FcmPushService = fcmPushService) = NotificationDispatchService(
         notificationPolicyService = policyService,
         notificationRepository = notificationRepository,
+        notificationEntryRepository = notificationEntryRepository,
         fcmPushService = pushService,
         itemService = itemService,
         clock = Clock.fixed(Instant.parse(instant), ZoneOffset.UTC),
