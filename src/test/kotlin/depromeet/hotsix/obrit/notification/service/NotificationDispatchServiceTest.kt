@@ -133,6 +133,7 @@ class NotificationDispatchServiceTest {
                 it.type
             },
         )
+        assertTrue(response.cards.all { it.hasLowStock })
         assertEquals(
             listOf("obrit://items/${urgent.id}", "obrit://items/${other.id}"),
             response.cards.map { it.deepLink },
@@ -156,6 +157,7 @@ class NotificationDispatchServiceTest {
         assertEquals(listOf(NotificationType.OVERDUE, NotificationType.PRE_REPLACEMENT), response.cards.map { it.type })
         assertEquals(listOf(overdue.id, upcoming.id), response.cards.map { it.itemId })
         assertEquals(listOf("교체 D+1", "교체 D-3"), response.cards.map { it.label })
+        assertTrue(response.cards.none { it.hasLowStock })
     }
 
     @Test
@@ -169,6 +171,10 @@ class NotificationDispatchServiceTest {
         assertEquals("교체 D-3 · 여분 부족", notification.label)
         assertEquals("교체 시기가 다가와요", notification.title)
         assertEquals("면도날 교체가 얼마 남지 않았어요 여분도 없어요", notification.body)
+        val card = notificationService.listAllNotification(userId).single().cards.single()
+        assertEquals(NotificationType.PRE_REPLACEMENT, card.type)
+        assertTrue(card.hasLowStock)
+        assertEquals("면도날 교체가 얼마 남지 않았어요 여분도 없어요", card.content)
         assertEquals(today, itemRepository.getReferenceById(requireNotNull(item.id)).lowStockNotifiedAt)
     }
 

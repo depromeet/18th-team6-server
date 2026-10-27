@@ -73,6 +73,7 @@ class NotificationService(
         content = entry.body,
         itemName = entry.itemName,
         label = entry.label,
+        hasLowStock = entry.hasLowStock,
         nextReplacementDate = entry.nextReplacementDate,
         itemId = entry.itemId,
         deepLink = notificationDeepLinkService.resolve(entry.itemId),

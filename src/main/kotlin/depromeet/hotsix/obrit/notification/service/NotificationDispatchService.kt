@@ -228,6 +228,7 @@ class NotificationDispatchService(
             body = message.body,
             itemName = itemName,
             label = label(),
+            hasLowStock = hasLowStock,
             nextReplacementDate = nextReplacementDate,
             displayOrder = displayOrder,
         )

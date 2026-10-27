@@ -53,6 +53,9 @@ class NotificationEntry(
     @Column(length = 50)
     val label: String? = null,
 
+    @Column(name = "has_low_stock", nullable = false)
+    val hasLowStock: Boolean = false,
+
     @Column(name = "next_replacement_date")
     val nextReplacementDate: LocalDate? = null,
 

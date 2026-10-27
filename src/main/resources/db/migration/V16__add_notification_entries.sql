@@ -9,6 +9,7 @@ CREATE TABLE notification_entries (
     body VARCHAR(255) NOT NULL,
     item_name VARCHAR(255) NULL,
     label VARCHAR(50) NULL,
+    has_low_stock BOOLEAN NOT NULL DEFAULT FALSE,
     next_replacement_date DATE NULL,
     display_order INT NOT NULL,
     created_at DATETIME(6) NOT NULL,

@@ -24,6 +24,9 @@ data class NotificationCardResponse(
     @field:Schema(description = "발송 당시 라벨. 공지는 null", example = "교체 D+3")
     val label: String?,
 
+    @field:Schema(description = "발송 당시 여분 부족 여부. 공지는 false")
+    val hasLowStock: Boolean,
+
     @field:Schema(description = "발송 당시 다음 교체 예상일. 공지는 null")
     val nextReplacementDate: LocalDate?,
 
