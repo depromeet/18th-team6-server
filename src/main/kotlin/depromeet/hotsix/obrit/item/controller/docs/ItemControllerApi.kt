@@ -70,7 +70,7 @@ interface ItemControllerApi {
             ),
             SwaggerApiResponse(
                 responseCode = "404",
-                description = "존재하지 않는 소모품입니다.",
+                description = "존재하지 않거나 삭제된 소모품입니다. 알림 카드의 딥링크로 삭제된 소모품에 접근한 경우에도 반환됩니다.",
                 content = [
                     Content(
                         mediaType = "application/json",
