@@ -6,7 +6,7 @@ CREATE TABLE notification_entries (
     type VARCHAR(20) NOT NULL,
     item_id BIGINT NULL,
     title VARCHAR(255) NOT NULL,
-    body VARCHAR(255) NOT NULL,
+    body VARCHAR(500) NOT NULL,
     item_name VARCHAR(255) NULL,
     label VARCHAR(50) NULL,
     has_low_stock BOOLEAN NOT NULL DEFAULT FALSE,

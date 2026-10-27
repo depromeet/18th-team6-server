@@ -44,7 +44,8 @@ class NotificationEntry(
     @Column(nullable = false)
     val title: String,
 
-    @Column(nullable = false)
+    // 소모품 이름(최대 255자)에 접미 문구가 붙으므로 이름 길이보다 넉넉하게 둔다.
+    @Column(nullable = false, length = 500)
     val body: String,
 
     @Column(name = "item_name")
