@@ -1,5 +1,10 @@
 package depromeet.hotsix.obrit.notification.service
 
+import depromeet.hotsix.obrit.category.entity.CategoryIcon
+import depromeet.hotsix.obrit.category.repository.CategoryFixture
+import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
+import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.global.common.storage.UrlResolver
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
@@ -13,6 +18,7 @@ import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
@@ -48,6 +54,16 @@ class NotificationDispatchServiceTest {
     private lateinit var clock: Clock
 
     @Autowired
+    private lateinit var categoryRepository: CategoryRepository
+
+    @Autowired
+    private lateinit var categoryIconRepository: CategoryIconRepository
+
+    @Autowired
+    @Qualifier("s3PublicUrlResolver")
+    private lateinit var iconUrlResolver: UrlResolver
+
+    @Autowired
     private lateinit var notificationService: NotificationService
 
     // 발송 서비스는 Asia/Seoul 기준 날짜를 쓴다. 시스템 시간대(CI는 UTC)로 구하면 KST 0~9시에 날짜가 하루 어긋난다.
@@ -61,17 +77,18 @@ class NotificationDispatchServiceTest {
         userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
-    private fun saveItem(name: String, quantity: Int, nextReplacementDate: LocalDate): Item = itemRepository.save(
-        Item(
-            userId = userId,
-            categoryId = 1L,
-            name = name,
-            quantity = quantity,
-            replacementIntervalDays = 30,
-            lastReplacedDate = nextReplacementDate.minusDays(30),
-            nextReplacementDate = nextReplacementDate,
-        ),
-    )
+    private fun saveItem(name: String, quantity: Int, nextReplacementDate: LocalDate, categoryId: Long = 1L): Item =
+        itemRepository.save(
+            Item(
+                userId = userId,
+                categoryId = categoryId,
+                name = name,
+                quantity = quantity,
+                replacementIntervalDays = 30,
+                lastReplacedDate = nextReplacementDate.minusDays(30),
+                nextReplacementDate = nextReplacementDate,
+            ),
+        )
 
     @Test
     fun `대상이 하나면 단건 알림을 발송하고 지연 발송 횟수를 기록한다`() {
@@ -252,6 +269,20 @@ class NotificationDispatchServiceTest {
         assertEquals("여분 부족", response.label)
         assertEquals(today.plusDays(2), response.nextReplacementDate)
         assertEquals(item.id, response.itemId)
+    }
+
+    @Test
+    fun `알림 카드는 삭제된 소모품이어도 카테고리 아이콘 URL을 반환한다`() {
+        val icon = categoryIconRepository.save(CategoryIcon(name = "수건", key = "category-icon/towel.png", url = ""))
+        val category = categoryRepository.save(CategoryFixture.presetCategory(name = "수건", iconId = icon.id))
+        val item = saveItem("수건", 2, today.minusDays(1), categoryId = requireNotNull(category.id))
+        notificationDispatchService.dispatch()
+        item.softDelete()
+        itemRepository.flush()
+
+        val card = notificationService.listAllNotification(userId).single().cards.single()
+
+        assertEquals(iconUrlResolver.resolve(icon.key), card.iconUrl)
     }
 
     @Test
