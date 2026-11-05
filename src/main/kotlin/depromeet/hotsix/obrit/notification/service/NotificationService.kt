@@ -1,6 +1,8 @@
 package depromeet.hotsix.obrit.notification.service
 
+import depromeet.hotsix.obrit.category.service.CategoryQueryService
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
+import depromeet.hotsix.obrit.item.service.ItemService
 import depromeet.hotsix.obrit.notification.dto.response.ListNotificationResponse
 import depromeet.hotsix.obrit.notification.dto.response.MarkReadNotificationResponse
 import depromeet.hotsix.obrit.notification.dto.response.NotificationCardResponse
@@ -16,6 +18,8 @@ class NotificationService(
     private val notificationRepository: NotificationRepository,
     private val notificationEntryRepository: NotificationEntryRepository,
     private val notificationDeepLinkService: NotificationDeepLinkService,
+    private val itemService: ItemService,
+    private val categoryQueryService: CategoryQueryService,
 ) {
 
     @Transactional(readOnly = true)
@@ -23,12 +27,12 @@ class NotificationService(
         val notifications = notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId)
         if (notifications.isEmpty()) return emptyList()
 
-        val entriesByNotificationId = notificationEntryRepository
-            .findAllByNotificationIds(notifications.map { requireNotNull(it.id) })
-            .groupBy { requireNotNull(it.notification.id) }
+        val entries = notificationEntryRepository.findAllByNotificationIds(notifications.map { requireNotNull(it.id) })
+        val entriesByNotificationId = entries.groupBy { requireNotNull(it.notification.id) }
+        val iconUrlByItemId = findIconUrlsByItemId(userId, entries.mapNotNull { it.itemId })
 
         return notifications.map {
-            val cards = entriesByNotificationId[it.id].orEmpty().map(::toCardResponse)
+            val cards = entriesByNotificationId[it.id].orEmpty().map { entry -> toCardResponse(entry, iconUrlByItemId) }
             ListNotificationResponse(
                 id = it.id!!,
                 title = it.title,
@@ -66,12 +70,21 @@ class NotificationService(
         notificationRepository.markAllAsReadByUserId(userId, LocalDateTime.now())
     }
 
-    private fun toCardResponse(entry: NotificationEntry) = NotificationCardResponse(
+    private fun findIconUrlsByItemId(userId: Long, itemIds: Collection<Long>): Map<Long, String> {
+        val categoryIdByItemId = itemService.findCategoryIdsByItemIds(userId, itemIds)
+        val iconUrlByCategoryId = categoryQueryService.findVisibleCategoryIconUrls(userId, categoryIdByItemId.values)
+        return categoryIdByItemId.mapNotNull { (itemId, categoryId) ->
+            iconUrlByCategoryId[categoryId]?.let { itemId to it }
+        }.toMap()
+    }
+
+    private fun toCardResponse(entry: NotificationEntry, iconUrlByItemId: Map<Long, String>) = NotificationCardResponse(
         entryId = requireNotNull(entry.id),
         type = entry.type,
         title = entry.title,
         content = entry.body,
         itemName = entry.itemName,
+        iconUrl = entry.itemId?.let { iconUrlByItemId[it] },
         label = entry.label,
         hasLowStock = entry.hasLowStock,
         nextReplacementDate = entry.nextReplacementDate,

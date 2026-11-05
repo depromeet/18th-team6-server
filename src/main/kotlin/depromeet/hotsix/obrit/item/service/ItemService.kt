@@ -53,6 +53,15 @@ class ItemService(
             .associate { (it[0] as Long) to CategoryItemStats((it[1] as Long).toInt(), (it[2] as Long).toInt()) }
     }
 
+    /** 과거 알림 카드의 아이콘을 위해 삭제된 소모품도 포함한다. */
+    @Transactional(readOnly = true)
+    fun findCategoryIdsByItemIds(userId: Long, itemIds: Collection<Long>): Map<Long, Long> {
+        if (itemIds.isEmpty()) return emptyMap()
+        return itemRepository.findAllById(itemIds.toSet())
+            .filter { it.userId == userId }
+            .associate { requireNotNull(it.id) to it.categoryId }
+    }
+
     @Transactional(readOnly = true)
     fun listItems(userId: Long): List<ItemResponse> {
         val items = itemRepository.findActiveByUserId(userId)

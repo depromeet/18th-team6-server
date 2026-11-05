@@ -21,6 +21,9 @@ data class NotificationCardResponse(
     @field:Schema(description = "발송 당시 소모품 이름. 공지는 null")
     val itemName: String?,
 
+    @field:Schema(description = "소모품 카테고리 아이콘 URL. 발송 당시가 아닌 현재 카테고리 기준. 공지이거나 카테고리가 삭제되면 null")
+    val iconUrl: String?,
+
     @field:Schema(description = "발송 당시 라벨. 여분 부족이 겹치면 ' · 여분 부족'이 붙음. 공지는 null", example = "교체 D+1 · 여분 부족")
     val label: String?,
 
