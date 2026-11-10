@@ -26,6 +26,14 @@ class FileSystemFileUploader(private val storageProperties: StorageProperties) :
         return key
     }
 
+    override fun download(key: String): ByteArray {
+        val root = storageProperties.rootDir.normalize()
+        val target = root.resolve(key).normalize()
+        require(target.startsWith(root)) { "잘못된 파일 키입니다: $key" }
+        require(Files.exists(target)) { "파일 저장소에 파일이 없습니다: $key" }
+        return Files.readAllBytes(target)
+    }
+
     companion object {
         private val SAFE_EXTENSION = Regex("[A-Za-z0-9]{1,10}")
     }

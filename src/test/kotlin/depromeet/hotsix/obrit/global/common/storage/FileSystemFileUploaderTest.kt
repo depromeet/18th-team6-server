@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Assertions.assertArrayEquals
 import org.junit.jupiter.api.Assertions.assertEquals
 import org.junit.jupiter.api.Assertions.assertTrue
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import org.junit.jupiter.api.io.TempDir
 import org.springframework.mock.web.MockMultipartFile
 import java.nio.file.Files
@@ -37,6 +38,19 @@ class FileSystemFileUploaderTest {
         assertTrue(Files.exists(rootDir.resolve(key)))
         val topLevelNames = Files.list(rootDir).use { files -> files.map { it.fileName.toString() }.toList() }
         assertEquals(listOf("receipts"), topLevelNames)
+    }
+
+    @Test
+    fun `업로드한 키로 다운로드하면 같은 내용을 돌려준다`() {
+        val content = byteArrayOf(1, 2, 3)
+        val key = uploader.upload("receipts", MockMultipartFile("file", "r.jpg", "image/jpeg", content))
+
+        assertArrayEquals(content, uploader.download(key))
+    }
+
+    @Test
+    fun `저장 디렉터리를 벗어나는 키는 다운로드를 거부한다`() {
+        assertThrows<IllegalArgumentException> { uploader.download("../outside.jpg") }
     }
 
     @Test
