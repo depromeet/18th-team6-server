@@ -23,6 +23,12 @@ spring:
 firebase:
   credentials-path: ${FIREBASE_CREDENTIALS_PATH:/app/secrets/firebase-credentials.json}
 
+# filesystem(기본): Pi 디스크 저장, s3: 기존 AWS S3 저장
+storage:
+  type: ${STORAGE_TYPE:filesystem}
+  root-dir: ${STORAGE_ROOT_DIR:/app/storage}
+  public-base-url: ${STORAGE_PUBLIC_BASE_URL}
+
 cloud:
   aws:
     s3:

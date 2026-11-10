@@ -1,5 +1,10 @@
 package depromeet.hotsix.obrit.notification.service
 
+import depromeet.hotsix.obrit.category.entity.CategoryIcon
+import depromeet.hotsix.obrit.category.repository.CategoryFixture
+import depromeet.hotsix.obrit.category.repository.CategoryIconRepository
+import depromeet.hotsix.obrit.category.repository.CategoryRepository
+import depromeet.hotsix.obrit.global.common.storage.UrlResolver
 import depromeet.hotsix.obrit.global.exception.ResourceNotFoundException
 import depromeet.hotsix.obrit.item.entity.Item
 import depromeet.hotsix.obrit.item.repository.ItemRepository
@@ -13,11 +18,13 @@ import depromeet.hotsix.obrit.user.repository.UserRepository
 import org.junit.jupiter.api.BeforeEach
 import org.junit.jupiter.api.Test
 import org.springframework.beans.factory.annotation.Autowired
+import org.springframework.beans.factory.annotation.Qualifier
 import org.springframework.boot.test.context.SpringBootTest
 import org.springframework.test.context.ActiveProfiles
 import org.springframework.transaction.annotation.Transactional
 import java.time.Clock
 import java.time.LocalDate
+import java.time.ZoneId
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
 import kotlin.test.assertNull
@@ -47,10 +54,21 @@ class NotificationDispatchServiceTest {
     private lateinit var clock: Clock
 
     @Autowired
+    private lateinit var categoryRepository: CategoryRepository
+
+    @Autowired
+    private lateinit var categoryIconRepository: CategoryIconRepository
+
+    @Autowired
+    @Qualifier("s3PublicUrlResolver")
+    private lateinit var iconUrlResolver: UrlResolver
+
+    @Autowired
     private lateinit var notificationService: NotificationService
 
+    // 발송 서비스는 Asia/Seoul 기준 날짜를 쓴다. 시스템 시간대(CI는 UTC)로 구하면 KST 0~9시에 날짜가 하루 어긋난다.
     private val today: LocalDate
-        get() = LocalDate.now(clock)
+        get() = LocalDate.now(clock.withZone(ZoneId.of("Asia/Seoul")))
     private var userId: Long = 0
 
     @BeforeEach
@@ -59,17 +77,18 @@ class NotificationDispatchServiceTest {
         userNotificationSettingsRepository.save(UserNotificationSettingsFixture.allEnabled(userId))
     }
 
-    private fun saveItem(name: String, quantity: Int, nextReplacementDate: LocalDate): Item = itemRepository.save(
-        Item(
-            userId = userId,
-            categoryId = 1L,
-            name = name,
-            quantity = quantity,
-            replacementIntervalDays = 30,
-            lastReplacedDate = nextReplacementDate.minusDays(30),
-            nextReplacementDate = nextReplacementDate,
-        ),
-    )
+    private fun saveItem(name: String, quantity: Int, nextReplacementDate: LocalDate, categoryId: Long = 1L): Item =
+        itemRepository.save(
+            Item(
+                userId = userId,
+                categoryId = categoryId,
+                name = name,
+                quantity = quantity,
+                replacementIntervalDays = 30,
+                lastReplacedDate = nextReplacementDate.minusDays(30),
+                nextReplacementDate = nextReplacementDate,
+            ),
+        )
 
     @Test
     fun `대상이 하나면 단건 알림을 발송하고 지연 발송 횟수를 기록한다`() {
@@ -89,6 +108,12 @@ class NotificationDispatchServiceTest {
         assertEquals(today.minusDays(1), response.nextReplacementDate)
         assertEquals(item.id, response.itemId)
         assertEquals("obrit://items/${item.id}", response.deepLink)
+        assertEquals(false, response.isBundled)
+        assertEquals(1, response.cards.size)
+        assertEquals(NotificationType.OVERDUE, response.cards.single().type)
+        assertEquals("수건", response.cards.single().itemName)
+        assertEquals("교체 D+1", response.cards.single().label)
+        assertEquals("obrit://items/${item.id}", response.cards.single().deepLink)
         val read = notificationService.markAsRead(userId, response.id)
         assertEquals(response.deepLink, read.deepLink)
         assertEquals(response.itemId, read.itemId)
@@ -116,10 +141,40 @@ class NotificationDispatchServiceTest {
         assertNull(response.label)
         assertNull(response.nextReplacementDate)
         assertEquals("obrit://home", response.deepLink)
+        assertTrue(response.isBundled)
+        assertEquals(listOf("치실", "면봉"), response.cards.map { it.itemName })
+        // D-1은 사전 스텝이라 교체 예정이 대표 유형이고, D-2는 스텝이 아니라 여분 부족만 남는다.
+        assertEquals(
+            listOf(NotificationType.PRE_REPLACEMENT, NotificationType.LOW_STOCK),
+            response.cards.map {
+                it.type
+            },
+        )
+        assertTrue(response.cards.all { it.hasLowStock })
+        assertEquals(
+            listOf("obrit://items/${urgent.id}", "obrit://items/${other.id}"),
+            response.cards.map { it.deepLink },
+        )
         assertEquals("obrit://home", notificationService.markAsRead(userId, response.id).deepLink)
 
         assertEquals(today, itemRepository.getReferenceById(requireNotNull(urgent.id)).lowStockNotifiedAt)
         assertEquals(today, itemRepository.getReferenceById(requireNotNull(other.id)).lowStockNotifiedAt)
+    }
+
+    // 서로 다른 유형의 후보도 사용자 단위 묶음 안에서 각 카드의 유형을 유지하는지 확인한다.
+    @Test
+    fun `서로 다른 유형의 후보도 카드별 상세 정보를 유지한다`() {
+        val overdue = saveItem(name = "수건", quantity = 2, nextReplacementDate = today.minusDays(1))
+        val upcoming = saveItem(name = "칫솔", quantity = 2, nextReplacementDate = today.plusDays(3))
+
+        notificationDispatchService.dispatch()
+
+        val response = notificationService.listAllNotification(userId).single()
+        assertTrue(response.isBundled)
+        assertEquals(listOf(NotificationType.OVERDUE, NotificationType.PRE_REPLACEMENT), response.cards.map { it.type })
+        assertEquals(listOf(overdue.id, upcoming.id), response.cards.map { it.itemId })
+        assertEquals(listOf("교체 D+1", "교체 D-3"), response.cards.map { it.label })
+        assertTrue(response.cards.none { it.hasLowStock })
     }
 
     @Test
@@ -133,6 +188,10 @@ class NotificationDispatchServiceTest {
         assertEquals("교체 D-3 · 여분 부족", notification.label)
         assertEquals("교체 시기가 다가와요", notification.title)
         assertEquals("면도날 교체가 얼마 남지 않았어요 여분도 없어요", notification.body)
+        val card = notificationService.listAllNotification(userId).single().cards.single()
+        assertEquals(NotificationType.PRE_REPLACEMENT, card.type)
+        assertTrue(card.hasLowStock)
+        assertEquals("면도날 교체가 얼마 남지 않았어요 여분도 없어요", card.content)
         assertEquals(today, itemRepository.getReferenceById(requireNotNull(item.id)).lowStockNotifiedAt)
     }
 
@@ -213,6 +272,20 @@ class NotificationDispatchServiceTest {
     }
 
     @Test
+    fun `알림 카드는 삭제된 소모품이어도 카테고리 아이콘 URL을 반환한다`() {
+        val icon = categoryIconRepository.save(CategoryIcon(name = "수건", key = "category-icon/towel.png", url = ""))
+        val category = categoryRepository.save(CategoryFixture.presetCategory(name = "수건", iconId = icon.id))
+        val item = saveItem("수건", 2, today.minusDays(1), categoryId = requireNotNull(category.id))
+        notificationDispatchService.dispatch()
+        item.softDelete()
+        itemRepository.flush()
+
+        val card = notificationService.listAllNotification(userId).single().cards.single()
+
+        assertEquals(iconUrlResolver.resolve(icon.key), card.iconUrl)
+    }
+
+    @Test
     fun `사전 알림은 교체 D 마이너스 라벨을 반환한다`() {
         saveItem("칫솔", 2, today.plusDays(3))
         notificationDispatchService.dispatch()
@@ -227,6 +300,8 @@ class NotificationDispatchServiceTest {
         assertNull(response.nextReplacementDate)
         assertNull(response.itemId)
         assertEquals("obrit://home", response.deepLink)
+        assertEquals(false, response.isBundled)
+        assertTrue(response.cards.isEmpty())
         assertEquals("obrit://home", notificationService.markAsRead(userId, response.id).deepLink)
         assertFailsWith<ResourceNotFoundException> {
             notificationService.markAsRead(userId + 10000, requireNotNull(notification.id))

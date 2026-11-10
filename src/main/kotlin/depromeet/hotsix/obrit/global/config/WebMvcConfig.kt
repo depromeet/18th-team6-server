@@ -9,6 +9,6 @@ class WebMvcConfig(private val accessLogInterceptor: AccessLogInterceptor) : Web
 
     override fun addInterceptors(registry: InterceptorRegistry) {
         registry.addInterceptor(accessLogInterceptor)
-            .excludePathPatterns("/actuator/**", "/admin/**")
+            .excludePathPatterns("/actuator/**", "/admin/**", "/files/**")
     }
 }

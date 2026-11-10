@@ -9,6 +9,7 @@ import depromeet.hotsix.obrit.notification.DeviceRegistrationFixture
 import depromeet.hotsix.obrit.notification.UserNotificationSettingsFixture
 import depromeet.hotsix.obrit.notification.entity.NotificationType
 import depromeet.hotsix.obrit.notification.repository.DeviceRegistrationRepository
+import depromeet.hotsix.obrit.notification.repository.NotificationEntryRepository
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
 import depromeet.hotsix.obrit.notification.repository.UserNotificationSettingsRepository
 import depromeet.hotsix.obrit.notification.service.NotificationSettingsService
@@ -42,6 +43,9 @@ class AdminNotificationServiceTest {
 
     @Autowired
     private lateinit var notificationRepository: NotificationRepository
+
+    @Autowired
+    private lateinit var notificationEntryRepository: NotificationEntryRepository
 
     @Autowired
     private lateinit var itemRepository: ItemRepository
@@ -156,6 +160,10 @@ class AdminNotificationServiceTest {
         val saved = notificationRepository.findAllByUserIdOrderByCreatedAtDesc(userId).single()
         assertEquals(NotificationType.NOTICE, saved.type)
         assertEquals("알림 기능이 생겼어요", saved.title)
+        val entry = notificationEntryRepository.findAllByNotificationIds(listOf(requireNotNull(saved.id))).single()
+        assertEquals(NotificationType.NOTICE, entry.type)
+        assertEquals("알림 기능이 생겼어요", entry.title)
+        assertEquals("교체 시기를 알려드릴게요", entry.body)
     }
 
     @Test

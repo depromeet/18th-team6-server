@@ -6,8 +6,10 @@ import depromeet.hotsix.obrit.notification.entity.FcmSendOutcome
 import depromeet.hotsix.obrit.notification.entity.Notification
 import depromeet.hotsix.obrit.notification.entity.NotificationCandidate
 import depromeet.hotsix.obrit.notification.entity.NotificationDispatchResult
+import depromeet.hotsix.obrit.notification.entity.NotificationEntry
 import depromeet.hotsix.obrit.notification.entity.NotificationPreviewSnapshot
 import depromeet.hotsix.obrit.notification.entity.NotificationType
+import depromeet.hotsix.obrit.notification.repository.NotificationEntryRepository
 import depromeet.hotsix.obrit.notification.repository.NotificationRepository
 import org.slf4j.LoggerFactory
 import org.springframework.beans.factory.annotation.Value
@@ -32,6 +34,7 @@ import java.util.concurrent.locks.ReentrantLock
 class NotificationDispatchService(
     private val notificationPolicyService: NotificationPolicyService,
     private val notificationRepository: NotificationRepository,
+    private val notificationEntryRepository: NotificationEntryRepository,
     private val fcmPushService: FcmPushService,
     private val itemService: ItemService,
     private val clock: Clock,
@@ -177,7 +180,7 @@ class NotificationDispatchService(
         }
 
         transaction.executeWithoutResult {
-            notificationRepository.save(
+            val notification = notificationRepository.save(
                 Notification(
                     userId = userId,
                     type = sorted.first().primaryType,
@@ -187,6 +190,9 @@ class NotificationDispatchService(
                     label = single?.label(),
                     nextReplacementDate = single?.nextReplacementDate,
                 ),
+            )
+            notificationEntryRepository.saveAll(
+                sorted.mapIndexed { index, candidate -> candidate.toEntry(notification, index) },
             )
             sorted.forEach { recordSent(it, today) }
             userNotificationSettingsService.recordDispatch(userId, today)
@@ -211,6 +217,22 @@ class NotificationDispatchService(
 
     private fun buildMessage(sorted: List<NotificationCandidate>): NotificationMessage =
         if (sorted.size == 1) singleMessage(sorted.single()) else bundleMessage(sorted)
+
+    private fun NotificationCandidate.toEntry(notification: Notification, displayOrder: Int): NotificationEntry {
+        val message = singleMessage(this)
+        return NotificationEntry(
+            notification = notification,
+            type = primaryType,
+            itemId = itemId,
+            title = message.title,
+            body = message.body,
+            itemName = itemName,
+            label = label(),
+            hasLowStock = hasLowStock,
+            nextReplacementDate = nextReplacementDate,
+            displayOrder = displayOrder,
+        )
+    }
 
     /** 일정 사유가 있으면 그 문구에 여분 부족을 덧붙이고, 여분 부족만 있으면 여분 부족 문구를 쓴다. */
     private fun singleMessage(candidate: NotificationCandidate): NotificationMessage {
