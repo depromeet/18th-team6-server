@@ -6,7 +6,7 @@ import depromeet.hotsix.obrit.receipt.client.BatchOcrImage
 import depromeet.hotsix.obrit.receipt.dto.AnalyzeReceiptResponse
 import depromeet.hotsix.obrit.receipt.dto.BatchOcrResult
 import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
-import depromeet.hotsix.obrit.receipt.dto.ReceiptJobResponse
+import depromeet.hotsix.obrit.receipt.dto.ReceiptScanResponse
 import depromeet.hotsix.obrit.receipt.entity.ReceiptImage
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJob
 import depromeet.hotsix.obrit.receipt.entity.ReceiptJobStatus
@@ -55,15 +55,15 @@ class ReceiptJobService(
      * 다른 사용자의 잡은 존재 여부를 노출하지 않도록 없는 잡과 동일하게 처리한다.
      */
     @Transactional(readOnly = true)
-    fun getJob(userId: Long, jobId: Long): ReceiptJobResponse {
+    fun getJob(userId: Long, jobId: Long): ReceiptScanResponse {
         val job = findJob(jobId)
         if (job.userId != userId) {
             throw ResourceNotFoundException("영수증 분석 잡을 찾을 수 없습니다: $jobId")
         }
 
         val result = job.resultJson?.let { objectMapper.readValue(it, AnalyzeReceiptResponse::class.java) }
-        return ReceiptJobResponse(
-            jobId = job.id!!,
+        return ReceiptScanResponse(
+            scanId = job.id!!,
             status = job.status,
             result = result,
             errorMessage = job.errorMessage,
