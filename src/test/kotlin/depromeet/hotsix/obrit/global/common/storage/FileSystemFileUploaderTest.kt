@@ -50,7 +50,13 @@ class FileSystemFileUploaderTest {
 
     @Test
     fun `저장 디렉터리를 벗어나는 키는 다운로드를 거부한다`() {
-        assertThrows<IllegalArgumentException> { uploader.download("../outside.jpg") }
+        // 루트 밖에 실제 파일을 두어, 파일 부재가 아니라 경로 검사로 거부되는지 확인한다.
+        Files.write(rootDir.resolve("outside.jpg"), byteArrayOf(1))
+        val nestedUploader = FileSystemFileUploader(
+            StorageProperties(rootDir = rootDir.resolve("storage"), publicBaseUrl = "https://api.example.com"),
+        )
+
+        assertThrows<IllegalArgumentException> { nestedUploader.download("../outside.jpg") }
     }
 
     @Test
