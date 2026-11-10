@@ -30,6 +30,8 @@ class ReceiptController(private val receiptService: ReceiptService) {
 
 응답 결과를 그대로 POST /items/bulk 에 전달하여 소모품을 일괄 등록합니다. (2단계)
 
+비동기 분석(등록 후 폴링)은 POST /receipts/scans입니다. 요청 형식이 같으니 경로를 혼동하지 않도록 주의하세요.
+
 **1단계 → 2단계 필드 매핑**
 | 1단계 응답 (AnalyzedItem) | 2단계 요청 (CreateItemRequest) | 조건 |
 |---|---|---|
