@@ -10,7 +10,9 @@ import depromeet.hotsix.obrit.receipt.client.OcrFailedException
 import depromeet.hotsix.obrit.receipt.client.OcrFailureReason
 import depromeet.hotsix.obrit.receipt.dto.AnalyzeReceiptResponse
 import depromeet.hotsix.obrit.receipt.dto.AnalyzedItem
+import depromeet.hotsix.obrit.receipt.dto.OcrAnalysisResponse
 import depromeet.hotsix.obrit.receipt.dto.OcrItem
+import depromeet.hotsix.obrit.receipt.entity.ReceiptImage
 import org.slf4j.LoggerFactory
 import org.springframework.stereotype.Service
 import org.springframework.web.multipart.MultipartFile
@@ -18,17 +20,6 @@ import java.util.concurrent.CompletableFuture
 import java.util.concurrent.CompletionException
 import java.util.concurrent.ForkJoinPool
 import java.util.concurrent.TimeUnit
-
-private const val RECEIPT_PREFIX = "receipts"
-private const val MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024
-private val EXTENSION_TO_MIME_TYPE = mapOf(
-    "jpg" to "image/jpeg",
-    "jpeg" to "image/jpeg",
-    "png" to "image/png",
-    "webp" to "image/webp",
-    "heic" to "image/heic",
-    "heif" to "image/heif",
-)
 
 @Service
 class ReceiptService(
@@ -44,8 +35,8 @@ class ReceiptService(
         var ocrMs: Long? = null
 
         // 검증 실패는 OCR 호출 전에 끝나므로, 이 구간에서 난 예외는 INVALID_FILE로 구분한다.
-        try {
-            validateImageFile(imageFile)
+        val image = try {
+            ReceiptImage.from(imageFile.bytes, imageFile.originalFilename)
         } catch (t: Throwable) {
             publishAnalysisFinished(
                 userId = userId,
@@ -59,10 +50,9 @@ class ReceiptService(
         }
 
         try {
-            val mimeType = resolveMimeType(imageFile)
             val ocrStartedAt = System.nanoTime()
             val ocrResult = try {
-                ocrService.analyzeReceiptImage(imageFile.bytes, mimeType)
+                ocrService.analyzeReceiptImage(image.bytes, image.mimeType)
             } finally {
                 ocrMs = elapsedMsSince(ocrStartedAt)
             }
@@ -71,38 +61,18 @@ class ReceiptService(
                 ForkJoinPool.commonPool(),
             )
 
-            val categoryNameToId = categoryQueryService.findAccessibleCategoryNameToIdMap(userId)
-            val matchedCategoryIds = ocrResult.items.mapNotNull { categoryNameToId[it.category] }
-            val categoryIdToIconUrl = categoryQueryService.findVisibleCategoryIconUrls(userId, matchedCategoryIds)
-            val categoryIdToInterval =
-                categoryQueryService.findVisibleCategoryDefaultIntervals(userId, matchedCategoryIds)
-            val defaultIconUrl = categoryQueryService.getDefaultCategoryIconUrl()
-            val defaultInterval = categoryQueryService.getUserCategoryDefaultIntervalDays()
-
-            val analyzedItems = buildAnalyzedItems(
-                ocrResult.items,
-                categoryNameToId,
-                categoryIdToIconUrl,
-                categoryIdToInterval,
-                defaultIconUrl,
-                defaultInterval,
-            )
-            val receiptImageUrl = awaitUpload(uploadFuture)
+            val response = assembleResponse(userId, ocrResult, awaitUpload(uploadFuture))
 
             publishAnalysisFinished(
                 userId = userId,
                 success = true,
                 totalMs = elapsedMsSince(startedAt),
                 ocrMs = ocrMs,
-                detectedItemCount = analyzedItems.size,
+                detectedItemCount = response.items.size,
                 failureReason = null,
             )
 
-            return AnalyzeReceiptResponse(
-                receiptImageUrl = receiptImageUrl,
-                purchasedDate = ocrResult.date,
-                items = analyzedItems,
-            )
+            return response
         } catch (t: Throwable) {
             publishAnalysisFinished(
                 userId = userId,
@@ -114,6 +84,39 @@ class ReceiptService(
             )
             throw t
         }
+    }
+
+    /**
+     * OCR 분석 결과를 사용자의 카테고리 정보와 결합해 등록용 응답으로 조립한다.
+     * 동기 분석과 비동기 워커가 공유한다.
+     */
+    fun assembleResponse(
+        userId: Long,
+        ocrResult: OcrAnalysisResponse,
+        receiptImageUrl: String,
+    ): AnalyzeReceiptResponse {
+        val categoryNameToId = categoryQueryService.findAccessibleCategoryNameToIdMap(userId)
+        val matchedCategoryIds = ocrResult.items.mapNotNull { categoryNameToId[it.category] }
+        val categoryIdToIconUrl = categoryQueryService.findVisibleCategoryIconUrls(userId, matchedCategoryIds)
+        val categoryIdToInterval =
+            categoryQueryService.findVisibleCategoryDefaultIntervals(userId, matchedCategoryIds)
+        val defaultIconUrl = categoryQueryService.getDefaultCategoryIconUrl()
+        val defaultInterval = categoryQueryService.getUserCategoryDefaultIntervalDays()
+
+        val analyzedItems = buildAnalyzedItems(
+            ocrResult.items,
+            categoryNameToId,
+            categoryIdToIconUrl,
+            categoryIdToInterval,
+            defaultIconUrl,
+            defaultInterval,
+        )
+
+        return AnalyzeReceiptResponse(
+            receiptImageUrl = receiptImageUrl,
+            purchasedDate = ocrResult.date,
+            items = analyzedItems,
+        )
     }
 
     private fun elapsedMsSince(startedAtNanos: Long): Long =
@@ -155,11 +158,6 @@ class ReceiptService(
         }
     }
 
-    private fun resolveMimeType(imageFile: MultipartFile): String {
-        val extension = imageFile.originalFilename!!.substringAfterLast('.').lowercase()
-        return EXTENSION_TO_MIME_TYPE[extension]!!
-    }
-
     private fun buildAnalyzedItems(
         ocrItems: List<OcrItem>,
         categoryNameToId: Map<String, Long>,
@@ -188,21 +186,7 @@ class ReceiptService(
         throw BusinessException("영수증 이미지 업로드 중 오류가 발생했습니다.")
     }
 
-    private fun validateImageFile(file: MultipartFile) {
-        val originalFilename = file.originalFilename
-            ?: throw BusinessException("파일명이 없습니다.")
-
-        val extension = originalFilename.substringAfterLast('.').lowercase()
-        if (extension !in EXTENSION_TO_MIME_TYPE) {
-            throw BusinessException("허용되지 않은 파일 확장자입니다. (허용: jpg, jpeg, png, webp, heic, heif)")
-        }
-
-        if (file.size > MAX_IMAGE_SIZE_BYTES) {
-            throw BusinessException("파일 크기가 10MB를 초과합니다.")
-        }
-
-        if (file.isEmpty) {
-            throw BusinessException("빈 파일입니다.")
-        }
+    companion object {
+        const val RECEIPT_PREFIX = "receipts"
     }
 }

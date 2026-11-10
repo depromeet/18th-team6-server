@@ -9,6 +9,8 @@ firebase:
   credentials-path: dummy-for-test
 
 obrit:
+  scheduling:
+    enabled: false
   admin:
     username: admin
     password: admin

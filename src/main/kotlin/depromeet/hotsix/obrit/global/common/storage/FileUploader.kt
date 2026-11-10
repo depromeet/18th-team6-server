@@ -4,4 +4,6 @@ import org.springframework.web.multipart.MultipartFile
 
 interface FileUploader {
     fun upload(prefix: String, file: MultipartFile): String
+
+    fun download(key: String): ByteArray
 }
